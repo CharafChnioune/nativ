@@ -106,7 +106,7 @@ public final class NativResponsesClient: @unchecked Sendable {
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
         urlRequest.setValue("text/event-stream", forHTTPHeaderField: "Accept")
-        urlRequest.httpBody = try JSONEncoder().encode(payload)
+        urlRequest.httpBody = try JSONEncoder.stableRequest.encode(payload)
         return urlRequest
     }
 

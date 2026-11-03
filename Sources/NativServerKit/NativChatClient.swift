@@ -128,7 +128,7 @@ public struct MLXChatFunctionCall: Codable, Equatable, Sendable {
         if let string = try? container.decodeIfPresent(String.self, forKey: .arguments) {
             arguments = string
         } else if let value = try container.decodeIfPresent(MLXJSONValue.self, forKey: .arguments) {
-            let data = try JSONEncoder().encode(value)
+            let data = try JSONEncoder.stableRequest.encode(value)
             arguments = String(decoding: data, as: UTF8.self)
         } else {
             arguments = nil
@@ -394,6 +394,20 @@ public struct MLXChatStreamOptions: Encodable, Equatable, Sendable {
 
     enum CodingKeys: String, CodingKey {
         case includeUsage = "include_usage"
+    }
+}
+
+extension JSONEncoder {
+    /// Encoder for request bodies sent to an inference server.
+    ///
+    /// Swift dictionaries iterate in a different order from one encode to the next, so the same tool
+    /// definitions would be written with their keys shuffled on every request. Servers that reuse the
+    /// prompt prefix match raw text, so the shuffle makes each turn miss and re-process the whole tool
+    /// block. Sorted keys keep identical content byte-identical.
+    static var stableRequest: JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        return encoder
     }
 }
 
@@ -910,7 +924,7 @@ public final class NativChatClient: @unchecked Sendable {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(accepts, forHTTPHeaderField: "Accept")
         NativServerAuthorization.authorize(&request, apiKey: apiKey)
-        request.httpBody = try JSONEncoder().encode(payload)
+        request.httpBody = try JSONEncoder.stableRequest.encode(payload)
         return request
     }
 
