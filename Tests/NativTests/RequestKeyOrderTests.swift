@@ -21,11 +21,15 @@ final class RequestKeyOrderTests: XCTestCase {
         ))
     }
 
-    private func body(tools: [MLXChatToolDefinition]) throws -> Data {
-        let request = MLXChatCompletionRequest(
+    private func request(tools: [MLXChatToolDefinition]) -> MLXChatCompletionRequest {
+        MLXChatCompletionRequest(
             model: "org/model", messages: [MLXChatMessage(role: "user", content: "hi")],
             maxTokens: 64, temperature: 0.6, topK: 20, topP: 0.95, minP: 0, tools: tools
         )
+    }
+
+    private func body(tools: [MLXChatToolDefinition]) throws -> Data {
+        let request = request(tools: tools)
         let wire = try NativResponsesClient(baseURL: server, tenant: "test").makeResponseRequest(
             request, input: try NativResponsesClient.inputItems(request.messages), compactThreshold: 96000
         )
@@ -39,6 +43,19 @@ final class RequestKeyOrderTests: XCTestCase {
             bodies.insert(try body(tools: [tool(keyOrder: order)]))
         }
         XCTAssertEqual(bodies.count, 1, "Equal tool definitions must produce byte-identical request bodies")
+    }
+
+    func testChatRequestsWithTheSameToolsAreSentAsIdenticalBytesEveryTime() throws {
+        let client = NativChatClient(baseURL: server)
+        var bodies = Set<Data>()
+        for attempt in 0..<30 {
+            let order = Array(keys[attempt...] + keys[..<attempt])
+            let wire = try client.makeURLRequest(
+                payload: request(tools: [tool(keyOrder: order)]), accepts: "application/json"
+            )
+            bodies.insert(try XCTUnwrap(wire.httpBody))
+        }
+        XCTAssertEqual(bodies.count, 1, "Equal tool definitions must produce byte-identical chat request bodies")
     }
 
     func testToolCallArgumentsDecodedFromAnObjectSerialiseTheSameEveryTime() throws {
