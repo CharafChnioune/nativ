@@ -162,11 +162,21 @@ final class ChatViewModel: ObservableObject {
     weak var mcpHost: MCPHostManager?
     private static let liveDecodeRateRefreshInterval: TimeInterval = 0.25
 
+    private struct ContinuationExpiry: Equatable {
+        let sessionID: UUID
+        let responseID: UUID
+        let checkpointID: String
+        let deadline: Date
+    }
+
     private struct QueuedChatRequest {
         let id: UUID
         let sessionID: UUID
         let userMessageID: UUID
         let assistantMessageID: UUID
+        let resumingResponse: ChatTranscriptMessage?
+        var resumingResponseID: UUID? { resumingResponse?.id }
+        var appendsToResponse: Bool { assistantMessageID == resumingResponseID }
         let settings: NativSettings
         let accessMode: ChatAccessMode
         let personalizationSnapshot: String
@@ -195,11 +205,16 @@ final class ChatViewModel: ObservableObject {
     }
 
     @Published private(set) var sessions: [ChatSessionSummary] = []
-    @Published private(set) var currentSessionID: UUID?
+    @Published private(set) var currentSessionID: UUID? {
+        didSet { scheduleContinuationExpiry() }
+    }
     @Published private(set) var workState = ChatWorkState()
     @Published private(set) var currentProjectID: UUID?
     @Published private(set) var messages: [ChatTranscriptMessage] = [] {
-        didSet { searchLibrary.invalidate(currentSessionID, from: self) }
+        didSet {
+            searchLibrary.invalidate(currentSessionID, from: self)
+            scheduleContinuationExpiry()
+        }
     }
     @Published private(set) var pendingImageAttachments: [ChatImageAttachment] = [] {
         didSet {
@@ -212,6 +227,7 @@ final class ChatViewModel: ObservableObject {
     @Published private(set) var attachmentValidations: [UUID: ChatAttachmentValidation] = [:]
     @Published private(set) var attachmentImportError: String?
     @Published private var documentOmissionsBySessionID: [UUID: [ChatDocumentOmission]] = [:]
+    @Published private var resumptionErrorsBySessionID: [UUID: String] = [:]
     @Published private(set) var pendingAnnotations: [ChatAnnotation] = []
     private(set) lazy var annotationActions = ChatAnnotationActions(chat: self)
     // Only views that read draft text should update on a keystroke. Publishing it
@@ -263,13 +279,17 @@ final class ChatViewModel: ObservableObject {
     }
     @Published private(set) var promptEditContext: ChatPromptEditContext?
     @Published private(set) var composerFocusToken = 0
-    @Published private(set) var activeRequestSessionID: UUID?
+    @Published private(set) var activeRequestSessionID: UUID? {
+        didSet { scheduleContinuationExpiry() }
+    }
     @Published private(set) var sendingStartedAt: Date?
     let transcriptRevision = ChatTranscriptRevision()
     let searchLibrary: ChatSearchLibrary
     @Published private(set) var transcriptSubmissionID: UUID?
     @Published var scrollTargetMessageID: UUID?
-    @Published private(set) var isLoadingSessions = true
+    @Published private(set) var isLoadingSessions = true {
+        didSet { scheduleContinuationExpiry() }
+    }
     @Published private(set) var imageModelSelectionRequests:
         [UUID: ChatImageModelSelectionRequest] = [:]
 
@@ -290,6 +310,8 @@ final class ChatViewModel: ObservableObject {
     private let attachmentValidator: ChatAttachmentValidator
     private var sessionLoadTask: Task<Void, Never>?
     private var activeTask: Task<Void, Never>?
+    private var continuationExpiryTask: Task<Void, Never>?
+    private var scheduledContinuationExpiry: ContinuationExpiry?
     private var activeRequestID: UUID?
     private var activeAssistantMessageID: UUID?
     @Published private var requestQueue: [QueuedChatRequest] = [] {
@@ -297,6 +319,7 @@ final class ChatViewModel: ObservableObject {
             for id in Set(oldValue.map(\.sessionID) + requestQueue.map(\.sessionID)) {
                 searchLibrary.invalidate(id, from: self)
             }
+            scheduleContinuationExpiry()
         }
     }
     private var storedSessions: [ChatSession] = []
@@ -364,6 +387,7 @@ final class ChatViewModel: ObservableObject {
     deinit {
         activeTask?.cancel()
         sessionLoadTask?.cancel()
+        continuationExpiryTask?.cancel()
         attachmentValidationTasks.values.forEach { $0.cancel() }
     }
 
@@ -377,6 +401,7 @@ final class ChatViewModel: ObservableObject {
                 }
                 self.observeInferenceActivity()
                 self.startNextRequestIfNeeded()
+                self.scheduleContinuationExpiry()
             }
         }
     }
@@ -386,6 +411,23 @@ final class ChatViewModel: ObservableObject {
             return false
         }
         return activeRequestSessionID == currentSessionID
+    }
+
+    private var pendingResponseResumption: ChatResponseResumption? {
+        guard let currentSessionID, !isLoadingSessions,
+              !isSessionBusy(currentSessionID), canModifySession(currentSessionID),
+              promptEditContext == nil else { return nil }
+        return ChatResponseResumption.pending(in: messages)
+    }
+
+    var canResumeResponse: Bool { pendingResponseResumption != nil }
+
+    var shouldResumeFromComposer: Bool {
+        canResumeResponse && !hasPendingPrompt
+    }
+
+    var responseResumptionError: String? {
+        currentSessionID.flatMap { resumptionErrorsBySessionID[$0] }
     }
 
     var currentSessionLiveResponseMetrics: ChatResponseMetrics? {
@@ -438,7 +480,9 @@ final class ChatViewModel: ObservableObject {
 
     func searchableTranscriptItems(in sessionID: UUID) -> [ChatTranscriptItem] {
         if sessionID == currentSessionID { return visibleTranscriptItems }
-        let queuedIDs = Set(requestQueue.lazy.filter { $0.sessionID == sessionID }.map(\.userMessageID))
+        let queuedIDs = Set(requestQueue.lazy.filter {
+            $0.sessionID == sessionID && $0.resumingResponseID == nil
+        }.map(\.userMessageID))
         let messages = (sessionMessages(for: sessionID) ?? []).filter { !queuedIDs.contains($0.id) }
         return ChatTranscriptPresentation.items(from: messages)
     }
@@ -450,7 +494,7 @@ final class ChatViewModel: ObservableObject {
     private var visibleUnqueuedMessages: [ChatTranscriptMessage] {
         let queuedMessageIDs = Set(
             requestQueue.lazy
-                .filter { $0.sessionID == self.currentSessionID }
+                .filter { $0.sessionID == self.currentSessionID && $0.resumingResponseID == nil }
                 .map(\.userMessageID)
         )
         return messages.filter { !queuedMessageIDs.contains($0.id) }
@@ -465,8 +509,8 @@ final class ChatViewModel: ObservableObject {
             }
             return ChatQueuedPrompt(
                 id: queuedRequest.id,
-                content: message.content,
-                attachmentCount: message.imageAttachments.count,
+                content: queuedRequest.resumingResponseID == nil ? message.content : "Resume response",
+                attachmentCount: queuedRequest.resumingResponseID == nil ? message.imageAttachments.count : 0,
                 position: index + 1
             )
         }
@@ -483,8 +527,11 @@ final class ChatViewModel: ObservableObject {
             && !isDeletingCurrentSession
             && selectedModelID?.isEmpty == false
             && !hasBlockingAttachmentValidation
-            && (pastedTextDraft.hasContent
-                || !pendingImageAttachments.isEmpty)
+            && hasPendingPrompt
+    }
+
+    private var hasPendingPrompt: Bool {
+        pastedTextDraft.hasContent || !pendingImageAttachments.isEmpty
     }
 
     var hasPendingImageAttachments: Bool {
@@ -2079,28 +2126,61 @@ final class ChatViewModel: ObservableObject {
         )
     }
 
+    func resumeResponse(
+        using appModel: NativModel,
+        languageModelSupportsTools: Bool,
+        languageModelSupportsVision: Bool
+    ) {
+        guard let settings = try? submissionSettings(using: appModel) else { return }
+        self.appModel = appModel
+        resumeResponse(settings: settings,
+                        languageModelSupportsTools: languageModelSupportsTools,
+                        languageModelSupportsVision: languageModelSupportsVision)
+    }
+
+    func resumeResponse(
+        settings: NativSettings,
+        languageModelSupportsTools: Bool,
+        languageModelSupportsVision: Bool
+    ) {
+        guard let resumption = pendingResponseResumption,
+              let sessionID = currentSessionID else { return }
+        enqueueGeneration(
+            for: resumption.userMessageID,
+            in: sessionID,
+            settings: settings,
+            languageModelSupportsTools: languageModelSupportsTools,
+            languageModelSupportsVision: languageModelSupportsVision,
+            appModel: appModel,
+            resumingResponse: message(resumption.responseMessageID, in: sessionID)
+        )
+    }
+
     private func enqueueGeneration(
         for userMessageID: UUID,
         in sessionID: UUID,
         settings: NativSettings,
         languageModelSupportsTools: Bool,
         languageModelSupportsVision: Bool,
-        appModel: NativModel
+        appModel: NativModel?,
+        resumingResponse: ChatTranscriptMessage? = nil
     ) {
         // A send (including prompt regeneration) releases previously attached
         // history. Streaming revisions must not repeatedly reset the reader.
         transcriptSubmissionID = UUID()
         if let modelID = settings.languageModelID {
-            appModel.clearModelLoadFailure(for: modelID)
+            appModel?.clearModelLoadFailure(for: modelID)
         }
         self.appModel = appModel
         documentOmissionsBySessionID[sessionID] = nil
+        resumptionErrorsBySessionID[sessionID] = nil
         requestQueue.append(
             QueuedChatRequest(
                 id: UUID(),
                 sessionID: sessionID,
                 userMessageID: userMessageID,
-                assistantMessageID: UUID(),
+                assistantMessageID: resumingResponse.flatMap { $0.toolCalls.isEmpty ? $0.id : nil } ?? UUID(),
+                resumingResponse: resumingResponse,
                 settings: settings,
                 accessMode: (currentSession?.id == sessionID
                     ? currentSession?.accessMode
@@ -2377,7 +2457,9 @@ final class ChatViewModel: ObservableObject {
             return
         }
         let queuedRequest = requestQueue.remove(at: index)
-        removeMessage(queuedRequest.userMessageID, from: queuedRequest.sessionID)
+        if queuedRequest.resumingResponseID == nil {
+            removeMessage(queuedRequest.userMessageID, from: queuedRequest.sessionID)
+        }
         persistSession(queuedRequest.sessionID, updateTimestamp: true)
         if currentSessionID == queuedRequest.sessionID {
             bumpScroll()
@@ -2730,11 +2812,19 @@ final class ChatViewModel: ObservableObject {
                         )
                     }
                     if let activeAssistantMessageID {
-                        failAssistantMessage(
-                            activeAssistantMessageID,
-                            in: queuedRequest.sessionID,
-                            error: error
-                        )
+                        if queuedRequest.appendsToResponse, activeAssistantMessageID == queuedRequest.assistantMessageID {
+                            // A failed continuation must not replace the answer
+                            // the user had before pressing Play.
+                            finishActiveAssistantAsCancelled(in: queuedRequest.sessionID)
+                            recordResumptionFailure(error, responseID: activeAssistantMessageID,
+                                                    in: queuedRequest.sessionID)
+                        } else {
+                            failAssistantMessage(
+                                activeAssistantMessageID,
+                                in: queuedRequest.sessionID,
+                                error: error
+                            )
+                        }
                     }
                     appModel?.refreshMetricsIfRunning(force: true)
                 }
@@ -2848,6 +2938,7 @@ final class ChatViewModel: ObservableObject {
 
             if advertisesTools, request.tools?.contains(where: { $0.function.name == ChatWorkToolRegistry.toolName }) == true {
                 request.completionInstruction = [
+                    request.completionInstruction,
                     ChatBrowserEvidence.missingPageInstruction(messages: request.messages),
                     ChatBrowserEvidence.stalledSearchInstruction(messages: request.messages),
                 ].compactMap { $0 }.joined(separator: "\n\n")
@@ -2857,6 +2948,7 @@ final class ChatViewModel: ObservableObject {
             let streamingSessionID = queuedRequest.sessionID
             let appendEvent: @MainActor @Sendable (MLXChatStreamDelta) -> Void = {
                 [weak self] event in
+                guard self?.ownsActiveRequest(queuedRequest.id) == true else { return }
                 self?.append(
                     event: event,
                     to: streamingMessageID,
@@ -2866,7 +2958,7 @@ final class ChatViewModel: ObservableObject {
             let eventRelay = ChatStreamEventRelay(delivery: appendEvent)
             let completion: MLXChatCompletion
             do {
-                if queuedRequest.settings.compactionEnabled {
+                if request.continuation?.responses ?? queuedRequest.settings.compactionEnabled {
                     var contextLimit = try await responsesClient.contextLimit(for: request.model)
                     for path in activeSettings.localModelSearchPaths.all {
                         let metadata = await LocalModelDiscovery.configurationMetadata(
@@ -2889,7 +2981,7 @@ final class ChatViewModel: ObservableObject {
                     let result = try await responsesClient.streamResponse(
                         request, input: input, compactThreshold: threshold,
                         onCompaction: { [weak self] _ in
-                            await self?.markCompacting(streamingMessageID, in: streamingSessionID)
+                            await self?.markCompacting(streamingMessageID, in: streamingSessionID, requestID: queuedRequest.id)
                         },
                         onEvent: { event in eventRelay.submit(event) }
                     )
@@ -2917,6 +3009,8 @@ final class ChatViewModel: ObservableObject {
                         onEvent: { event in eventRelay.submit(event) }
                     )
                 }
+                try Task.checkCancellation()
+                guard ownsActiveRequest(queuedRequest.id) else { throw CancellationError() }
                 eventRelay.finish()
             } catch {
                 eventRelay.cancel()
@@ -2931,6 +3025,8 @@ final class ChatViewModel: ObservableObject {
                 responseMetrics: ChatResponseMetrics(completion: completion),
                 toolCalls: toolCalls,
                 savedWorkFiles: toolCalls.isEmpty && tracksWorkSaves ? savedWorkFiles.values.sorted() : nil,
+                initialResponse: queuedRequest.appendsToResponse && assistantMessageID == queuedRequest.assistantMessageID
+                    ? queuedRequest.resumingResponse : nil,
                 isCancelled: false
             )
 
@@ -3407,7 +3503,13 @@ final class ChatViewModel: ObservableObject {
             return nil
         }
 
-        let precedingMessages = sessionMessages[..<assistantIndex]
+        var precedingMessages = Array(sessionMessages[..<assistantIndex])
+        if queuedRequest.appendsToResponse, assistantMessageID == queuedRequest.assistantMessageID,
+           let response = queuedRequest.resumingResponse {
+            // Keep the partial answer as a frozen request prefix while new
+            // tokens stream into that same transcript message.
+            precedingMessages.append(ChatResponseResumption.streamingMessage(from: response, settings: settings))
+        }
 
         let advertisesToolsForModel = advertisesTools && queuedRequest.languageModelSupportsTools
         let toolDefinitions = advertisesToolsForModel
@@ -3436,7 +3538,7 @@ final class ChatViewModel: ObservableObject {
                 skills: settings.skills.filter(\.isEnabled),
                 toolRoundLimitReached: queuedRequest.languageModelSupportsTools && !advertisesTools
             ),
-            transcript: precedingMessages,
+            transcript: precedingMessages[...],
             includesImages: queuedRequest.languageModelSupportsVision
         )
         var request = MLXChatCompletionRequest(
@@ -3461,10 +3563,18 @@ final class ChatViewModel: ObservableObject {
             toolChoice: tools == nil ? nil : "auto",
             stream: true
         )
+        request.resumable = true
+        if queuedRequest.appendsToResponse, assistantMessageID == queuedRequest.assistantMessageID {
+            request.continuation = queuedRequest.resumingResponse?.continuation
+            request.continueFinalMessage = request.continuation == nil
+                && requestMessages.last?.role == "assistant"
+                && (requestMessages.last?.textContent?.isEmpty == false
+                    || requestMessages.last?.reasoningContent?.isEmpty == false)
+        }
         let items = includesWorkContext
             ? (try? workState(for: queuedRequest.sessionID)?.itemListJSON()) ?? "[]" : nil
         request.transientContext = Self.completionContext(
-            transcript: precedingMessages, documentContexts: documentContexts, workItems: items
+            transcript: precedingMessages[...], documentContexts: documentContexts, workItems: items
         )
         if includesWorkContext {
             request.toolResultContext = ChatBrowserEvidence.recoveryContext(
@@ -3576,9 +3686,24 @@ final class ChatViewModel: ObservableObject {
     }
 
     private func insertAssistantMessage(for queuedRequest: QueuedChatRequest) -> Bool {
-        insertAssistantMessage(
+        if queuedRequest.appendsToResponse, let response = queuedRequest.resumingResponse {
+            return updateMessage(response.id, in: queuedRequest.sessionID) { message in
+                message = ChatResponseResumption.streamingMessage(from: response, settings: queuedRequest.settings)
+            }
+        }
+        let anchorID: UUID
+        if let responseID = queuedRequest.resumingResponseID {
+            guard let messages = sessionMessages(for: queuedRequest.sessionID),
+                  let anchor = ChatResponseResumption.insertionAnchor(after: responseID, in: messages) else {
+                return false
+            }
+            anchorID = anchor
+        } else {
+            anchorID = queuedRequest.userMessageID
+        }
+        return insertAssistantMessage(
             id: queuedRequest.assistantMessageID,
-            after: queuedRequest.userMessageID,
+            after: anchorID,
             in: queuedRequest.sessionID,
             settings: queuedRequest.settings
         )
@@ -3766,10 +3891,73 @@ final class ChatViewModel: ObservableObject {
         }
     }
 
+    func recordResumptionFailure(_ error: Error, responseID: UUID, in sessionID: UUID) {
+        resumptionErrorsBySessionID[sessionID] = error.localizedDescription
+        guard (error as? NativChatError)?.isContinuationUnavailable == true,
+              message(responseID, in: sessionID)?.continuation != nil else { return }
+        updateMessage(responseID, in: sessionID) { message in
+            message.continuation = nil
+            message.continuationExpiresAt = nil
+            message.isInterrupted = false
+        }
+        resumptionErrorsBySessionID[sessionID] = nil
+        persistSession(sessionID, updateTimestamp: true)
+    }
+
+    private func scheduleContinuationExpiry() {
+        var expiry: ContinuationExpiry?
+        if let sessionID = currentSessionID, !isLoadingSessions,
+           !isSessionBusy(sessionID), canModifySession(sessionID),
+           let response = messages.last(where: { $0.role != .tool }),
+           response.isInterrupted, !response.isStreaming,
+           let checkpoint = response.continuation,
+           let deadline = response.continuationExpiresAt {
+            expiry = ContinuationExpiry(sessionID: sessionID, responseID: response.id,
+                                        checkpointID: checkpoint.id, deadline: deadline)
+        }
+        guard expiry != scheduledContinuationExpiry else { return }
+        continuationExpiryTask?.cancel()
+        scheduledContinuationExpiry = expiry
+        guard let expiry else {
+            continuationExpiryTask = nil
+            return
+        }
+        continuationExpiryTask = Task { @MainActor [weak self] in
+            // Recheck wall time after waking; cap each sleep for unusually long
+            // server lifetimes rather than overflowing Duration conversion.
+            let delay = min(3_600, max(0, expiry.deadline.timeIntervalSinceNow))
+            do { try await Task.sleep(for: .seconds(delay)) } catch { return }
+            guard let self, scheduledContinuationExpiry == expiry else { return }
+            scheduledContinuationExpiry = nil
+            continuationExpiryTask = nil
+            if currentSessionID == expiry.sessionID, !isSessionBusy(expiry.sessionID),
+               canModifySession(expiry.sessionID),
+               let response = message(expiry.responseID, in: expiry.sessionID),
+               response.continuation?.id == expiry.checkpointID,
+               response.hasExpiredContinuation {
+                updateMessage(expiry.responseID, in: expiry.sessionID) { message in
+                    message.isInterrupted = false
+                    message.continuation = nil
+                    message.continuationExpiresAt = nil
+                }
+                resumptionErrorsBySessionID[expiry.sessionID] = nil
+                persistSession(expiry.sessionID, updateTimestamp: false)
+            }
+            scheduleContinuationExpiry()
+        }
+    }
+
     private func finishActiveAssistantAsCancelled(in sessionID: UUID) {
         guard let activeAssistantMessageID,
-            message(activeAssistantMessageID, in: sessionID)?.isStreaming == true
+            let assistant = message(activeAssistantMessageID, in: sessionID)
         else {
+            return
+        }
+        // The assistant may already have finished its tool call while a tool is
+        // still running. Preserve that call and its receipts when stopping.
+        if !assistant.isStreaming {
+            updateMessage(activeAssistantMessageID, in: sessionID) { $0.markInterrupted() }
+            persistSession(sessionID, updateTimestamp: true)
             return
         }
         finishAssistantMessage(
@@ -3849,20 +4037,24 @@ final class ChatViewModel: ObservableObject {
         searchLibrary.invalidate(sessionID, from: self)
     }
 
-    private func markCompacting(_ id: UUID, in sessionID: UUID) {
+    private func markCompacting(_ id: UUID, in sessionID: UUID, requestID: UUID) {
+        guard ownsActiveRequest(requestID) else { return }
         updateMessage(id, in: sessionID) { $0.isCompacting = true }
     }
 
     private func append(event: MLXChatStreamDelta, to id: UUID, in sessionID: UUID) {
+        guard message(id, in: sessionID)?.isStreaming == true else { return }
         let content = event.content ?? ""
         let reasoning = event.reasoningContent ?? ""
         let hasToolUpdates = event.toolCalls?.isEmpty == false
         let refreshMetrics = shouldRefreshLiveMetrics(event, for: id)
-        guard !content.isEmpty || !reasoning.isEmpty || hasToolUpdates || refreshMetrics else {
+        guard !content.isEmpty || !reasoning.isEmpty || hasToolUpdates || refreshMetrics || event.continuation != nil else {
             return
         }
 
         updateMessage(id, in: sessionID) { message in
+            if event.continuation != nil { message.continuationExpiresAt = nil }
+            message.continuation = event.continuation ?? message.continuation
             message.isCompacting = false
             if let toolCalls = event.toolCalls, !toolCalls.isEmpty {
                 var accumulator = MLXChatToolCallAccumulator(toolCalls: message.streamingToolCalls)
@@ -3933,16 +4125,29 @@ final class ChatViewModel: ObservableObject {
         responseMetrics: ChatResponseMetrics?,
         toolCalls: [MLXChatToolCall] = [],
         savedWorkFiles: [String]? = nil,
+        initialResponse: ChatTranscriptMessage? = nil,
         isCancelled: Bool
     ) {
         liveDecodeRateRefreshDates.removeValue(forKey: id)
         updateMessage(id, in: sessionID) { message in
             message.isStreaming = false
+            if isCancelled {
+                message.markInterrupted()
+            } else {
+                message.isInterrupted = false
+                message.continuation = nil
+                message.continuationExpiresAt = nil
+            }
             message.isCompacting = false
-            if message.content.isEmpty {
+            if let initialResponse, message.content == initialResponse.content {
+                message.content.append(fallbackContent)
+            } else if message.content.isEmpty {
                 message.content = fallbackContent
             }
-            if message.reasoningContent.isEmpty,
+            if let initialResponse, message.reasoningContent == initialResponse.reasoningContent,
+               let fallbackReasoningContent {
+                message.reasoningContent.append(fallbackReasoningContent)
+            } else if message.reasoningContent.isEmpty,
                 let fallbackReasoningContent
             {
                 message.reasoningContent = fallbackReasoningContent

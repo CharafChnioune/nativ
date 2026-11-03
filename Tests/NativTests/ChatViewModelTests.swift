@@ -1,5 +1,6 @@
 import AppKit
 import Observation
+@testable import NativServerKit
 import UniformTypeIdentifiers
 import XCTest
 
@@ -179,6 +180,451 @@ final class ChatViewModelTests: XCTestCase {
 
         XCTAssertEqual(title.count, 56)
         XCTAssertTrue(title.hasSuffix("…"))
+    }
+}
+
+private final class RecoveryRequestRecorder: @unchecked Sendable {
+    private let lock = NSLock()
+    private var requests: [MLXJSONValue] = []
+    var values: [MLXJSONValue] { lock.withLock { requests } }
+    func append(_ request: MLXJSONValue) { lock.withLock { requests.append(request) } }
+}
+
+@MainActor
+final class ChatResponseResumptionTests: XCTestCase {
+    func testOnlyUnavailableCheckpointsEndResumption() {
+        for message in [
+            "This response checkpoint is no longer available. Regenerate the response to continue.",
+            "The inference checkpoint is no longer available. Regenerate the response.",
+            "The inference checkpoint expired. Regenerate the response.",
+            "The inference checkpoint was evicted to release cache memory. Regenerate the response.",
+            "The model was unloaded. Regenerate the response.",
+        ] {
+            XCTAssertTrue(NativChatError.httpStatus(409, #"{"error":{"message":"\#(message)"}}"#).isContinuationUnavailable)
+            XCTAssertTrue(NativChatError.httpStatus(409, #"{"detail":"\#(message)"}"#).isContinuationUnavailable)
+            XCTAssertTrue(NativChatError.serverError(message).isContinuationUnavailable)
+            XCTAssertFalse(NativChatError.httpStatus(503, message).isContinuationUnavailable)
+        }
+        for message in ["Invalid response checkpoint.", "Invalid response checkpoint text offsets.",
+                        "The interrupted response has not started generating yet.", "Conflict"] {
+            XCTAssertFalse(NativChatError.httpStatus(409, message).isContinuationUnavailable)
+        }
+    }
+
+    func testExpiredCheckpointReturnsToNormalComposerAndPersistsAcrossBothAPIs() async throws {
+        for responses in [false, true] {
+            let requests = RecoveryRequestRecorder()
+            let server = try ChatTimeoutHTTPFixture(delays: [0], responder: { headers, data in
+                if headers.hasPrefix("GET /health ") {
+                    return (200, #"{"effective_context_limit":8192}"#)
+                }
+                if headers.hasPrefix("POST /v1/responses/input_tokens ") {
+                    return (200, #"{"input_tokens":100}"#)
+                }
+                let request = (try? MLXJSONValue(jsonData: data)) ?? .null
+                requests.append(request)
+                if request["continuation"] != nil {
+                    return (409, #"{"error":{"message":"This response checkpoint is no longer available. Regenerate the response to continue."}}"#)
+                }
+                let event = responses
+                    ? #"{"type":"response.completed","response":{"status":"completed","output":[{"type":"message","content":[{"type":"output_text","text":"A fresh answer."}]}]}}"#
+                    : #"{"choices":[{"delta":{"content":"A fresh answer."},"finish_reason":"stop"}]}"#
+                return (200, "data: \(event)\n\ndata: [DONE]\n\n")
+            })
+            let url = try await server.start()
+            defer { server.stop() }
+            let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            defer { try? FileManager.default.removeItem(at: directory) }
+            let chat = try await stoppedChat(directory: directory, responses: responses)
+            let original = chat.messages
+            let sessionID = try XCTUnwrap(chat.currentSessionID)
+            let response = try XCTUnwrap(original.last)
+            let settings = NativSettings(languageModelID: "model", serverHost: "127.0.0.1",
+                                         serverPort: try XCTUnwrap(url.port), compactionEnabled: responses)
+            chat.draft = "Keep this draft"
+
+            chat.resumeResponse(settings: settings, languageModelSupportsTools: false, languageModelSupportsVision: false)
+            try await waitForRecovery(chat)
+
+            XCTAssertEqual(requests.values.count, 1, "Expiry must not silently regenerate")
+            XCTAssertEqual(chat.messages.map(\.id), original.map(\.id))
+            XCTAssertEqual(chat.messages.last?.content, response.content)
+            XCTAssertEqual(chat.messages.last?.reasoningContent, response.reasoningContent)
+            XCTAssertFalse(chat.messages.last?.isInterrupted == true)
+            XCTAssertNil(chat.messages.last?.continuation)
+            XCTAssertFalse(chat.canResumeResponse)
+            XCTAssertEqual(chat.draft, "Keep this draft")
+            XCTAssertTrue(chat.canSend(isRunning: true, selectedModelID: "model"))
+            XCTAssertFalse(chat.shouldResumeFromComposer)
+            XCTAssertNil(chat.responseResumptionError)
+            chat.draft = ""
+            XCTAssertFalse(chat.shouldResumeFromComposer, "An empty composer returns to normal Send mode")
+            XCTAssertFalse(chat.canSend(isRunning: true, selectedModelID: "model"))
+
+            let reloaded = ChatViewModel(sessionDirectory: directory)
+            try await waitForRecovery(reloaded)
+            XCTAssertEqual(reloaded.currentSessionID, sessionID)
+            XCTAssertFalse(reloaded.canResumeResponse)
+            XCTAssertFalse(reloaded.shouldResumeFromComposer)
+            XCTAssertNil(reloaded.messages.last?.continuation)
+            XCTAssertNil(reloaded.responseResumptionError)
+            reloaded.resumeResponse(settings: settings, languageModelSupportsTools: false, languageModelSupportsVision: false)
+            try await waitForRecovery(reloaded)
+
+            XCTAssertEqual(requests.values.count, 1, "The expired checkpoint must not be retried or regenerated")
+            XCTAssertEqual(reloaded.messages.map(\.id), original.map(\.id))
+            XCTAssertEqual(Array(reloaded.messages.dropLast()), Array(original.dropLast()))
+            XCTAssertEqual(reloaded.messages.last?.content, response.content)
+            XCTAssertEqual(reloaded.messages.last?.reasoningContent, response.reasoningContent)
+            reloaded.draft = "A new question"
+            XCTAssertTrue(reloaded.canSend(isRunning: true, selectedModelID: "model"))
+            let history = ChatViewModel.completionMessages(systemPrompt: "System",
+                transcript: reloaded.messages[...], includesImages: true)
+            XCTAssertEqual(history.last?.textContent, response.content, "The partial answer remains ordinary conversation history")
+        }
+    }
+
+    func testRetryableFailuresKeepCheckpointAndResumeAction() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let chat = try await stoppedChat(directory: directory, responses: false)
+        let original = chat.messages
+        let response = try XCTUnwrap(original.last)
+        let errors: [Error] = [URLError(.timedOut), NativChatError.httpStatus(503, "Unavailable"),
+                              NativChatError.httpStatus(409, "The interrupted response has not started generating yet.")]
+        for error in errors {
+            chat.recordResumptionFailure(error, responseID: response.id, in: try XCTUnwrap(chat.currentSessionID))
+            XCTAssertEqual(chat.messages, original)
+            XCTAssertTrue(chat.shouldResumeFromComposer)
+            XCTAssertEqual(chat.responseResumptionError, error.localizedDescription)
+        }
+    }
+
+    func testAdvertisedTimeoutStartsAtStopAndDoesNotExtendOnRepeatedCancellation() throws {
+        var response = ChatTranscriptMessage(role: .assistant, content: "Partial")
+        response.continuation = try JSONDecoder().decode(MLXGenerationContinuation.self,
+            from: Data(#"{"id":"saved","cursor":1,"content":7,"reasoning":0,"responses":false,"idle_timeout_seconds":60}"#.utf8))
+        XCTAssertNil(response.continuationExpiresAt, "Streaming events do not start the idle clock")
+        let stoppedAt = Date(timeIntervalSince1970: 1_000)
+        response.markInterrupted(at: stoppedAt)
+        XCTAssertEqual(response.continuationExpiresAt, stoppedAt.addingTimeInterval(60))
+        response.markInterrupted(at: stoppedAt.addingTimeInterval(20))
+        XCTAssertEqual(response.continuationExpiresAt, stoppedAt.addingTimeInterval(60))
+        let reloaded = try JSONDecoder().decode(ChatTranscriptMessage.self, from: JSONEncoder().encode(response))
+        XCTAssertEqual(reloaded.continuationExpiresAt, response.continuationExpiresAt)
+        XCTAssertNil(ChatResponseResumption.pending(in: [
+            ChatTranscriptMessage(role: .user, content: "Task"), reloaded
+        ]), "An expired deadline must block a resume even before the timer callback")
+    }
+
+    func testAutomaticExpiryPreservesDraftAndHistoryAndDoesNotResetOnLoad() async throws {
+        for age in [0.0, 10.0] {
+            let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+            defer { try? FileManager.default.removeItem(at: directory) }
+            let chat = try await stoppedChat(directory: directory, responses: false, timeout: 0.25,
+                                             stoppedAt: Date().addingTimeInterval(-age))
+            let original = chat.messages
+            chat.draft = "My next question"
+            for _ in 0..<200 {
+                if chat.messages.last?.isInterrupted == false { break }
+                try await Task.sleep(for: .milliseconds(10))
+            }
+            XCTAssertFalse(chat.messages.last?.isInterrupted == true)
+            XCTAssertNil(chat.messages.last?.continuation)
+            XCTAssertNil(chat.messages.last?.continuationExpiresAt)
+            XCTAssertFalse(chat.canResumeResponse)
+            XCTAssertNil(chat.responseResumptionError)
+            XCTAssertEqual(chat.draft, "My next question")
+            XCTAssertEqual(chat.messages.map(\.id), original.map(\.id))
+            XCTAssertEqual(chat.messages.map(\.content), original.map(\.content))
+            XCTAssertEqual(chat.messages.map(\.reasoningContent), original.map(\.reasoningContent))
+            let reloaded = ChatViewModel(sessionDirectory: directory)
+            try await waitForRecovery(reloaded)
+            XCTAssertFalse(reloaded.canResumeResponse)
+            XCTAssertNil(reloaded.messages.last?.continuation)
+        }
+    }
+
+    func testChangingChatsCancelsOldTimerAndExpiredChatClearsOnReturn() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let chat = try await stoppedChat(directory: directory, responses: false, timeout: 0.2)
+        let stoppedID = try XCTUnwrap(chat.currentSessionID)
+        chat.createSession()
+        let newID = chat.currentSessionID
+        chat.draft = "Draft in another chat"
+        try await Task.sleep(for: .milliseconds(300))
+        XCTAssertEqual(chat.currentSessionID, newID)
+        XCTAssertTrue(chat.messages.isEmpty)
+        XCTAssertEqual(chat.draft, "Draft in another chat")
+        chat.selectSession(stoppedID)
+        XCTAssertFalse(chat.canResumeResponse)
+        for _ in 0..<200 {
+            if chat.messages.last?.continuation == nil { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTAssertNil(chat.messages.last?.continuation)
+        XCTAssertFalse(chat.messages.last?.isInterrupted == true)
+    }
+
+    func testOldExpiryDoesNotInterruptAnActiveResume() async throws {
+        let server = try ChatTimeoutHTTPFixture(delays: [0, 3], responder: { headers, _ in
+            if headers.hasPrefix("GET /health ") {
+                return (200, #"{"effective_context_limit":8192}"#)
+            }
+            return (200, "data: {\"choices\":[{\"delta\":{\"content\":\" Resumed.\"},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n")
+        })
+        let url = try await server.start()
+        defer { server.stop() }
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let chat = try await stoppedChat(directory: directory, responses: false, timeout: 2)
+        let original = try XCTUnwrap(chat.messages.last)
+        XCTAssertTrue(chat.canResumeResponse)
+        let settings = NativSettings(languageModelID: "model", serverHost: "127.0.0.1",
+                                    serverPort: try XCTUnwrap(url.port), compactionEnabled: false)
+        chat.resumeResponse(settings: settings, languageModelSupportsTools: false, languageModelSupportsVision: false)
+        let deadline = try XCTUnwrap(original.continuationExpiresAt)
+        try await Task.sleep(for: .seconds(max(0, deadline.timeIntervalSinceNow) + 0.1))
+        XCTAssertTrue(chat.isCurrentSessionSending)
+        XCTAssertEqual(chat.messages.last?.continuation, original.continuation)
+        try await waitForRecovery(chat)
+        XCTAssertEqual(chat.messages.last?.id, original.id)
+        XCTAssertEqual(chat.messages.last?.content, original.content + " Resumed.")
+        XCTAssertFalse(chat.canResumeResponse)
+        XCTAssertNil(chat.messages.last?.continuationExpiresAt)
+    }
+
+    private func stoppedChat(directory: URL, responses: Bool, timeout: TimeInterval? = nil,
+                             stoppedAt: Date = Date()) async throws -> ChatViewModel {
+        let call = MLXChatToolCall(id: "read", function: .init(name: "read_file", arguments: "{}"))
+        var response = ChatTranscriptMessage(role: .assistant, content: "An unfinished answer",
+                                             reasoningContent: "An unfinished thought", modelID: "model")
+        let timeoutField = timeout.map { ",\"idle_timeout_seconds\":\($0)" } ?? ""
+        response.continuation = try JSONDecoder().decode(MLXGenerationContinuation.self,
+            from: Data(#"{"id":"expired","cursor":2,"content":20,"reasoning":21,"responses":\#(responses)\#(timeoutField)}"#.utf8))
+        response.markInterrupted(at: stoppedAt)
+        let messages = [ChatTranscriptMessage(role: .user, content: "Original task"),
+                        ChatTranscriptMessage(role: .assistant, content: "", toolCalls: [call]),
+                        ChatTranscriptMessage(role: .tool, content: "Saved tool result", toolCallID: call.id,
+                                              toolName: "read_file", toolStatus: .succeeded), response]
+        let session = ChatSession(id: UUID(), title: "Recovery", createdAt: Date(), updatedAt: Date(), messages: messages)
+        XCTAssertTrue(ChatSessionStore(chatDirectory: directory).saveSession(session))
+        let chat = ChatViewModel(sessionDirectory: directory)
+        try await waitForRecovery(chat)
+        return chat
+    }
+
+    private func waitForRecovery(_ chat: ChatViewModel) async throws {
+        for _ in 0..<1_000 {
+            if !chat.isLoadingSessions && !chat.hasPendingRequests { break }
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        XCTAssertFalse(chat.isLoadingSessions)
+        XCTAssertFalse(chat.hasPendingRequests)
+    }
+
+    func testCheckpointTravelsWithResponseDeltaAndBothRequestFormats() throws {
+        var stream = MLXResponseStream()
+        let delta = try XCTUnwrap(stream.consume(#"{"type":"response.output_text.delta","delta":" unfinished","continuation":{"id":"saved","cursor":17,"content":11,"reasoning":8,"responses":true,"idle_timeout_seconds":60}}"#))
+        XCTAssertEqual(delta.content, " unfinished")
+        let checkpoint = try XCTUnwrap(delta.continuation)
+        XCTAssertEqual(checkpoint.cursor, 17)
+        XCTAssertEqual(checkpoint.idleTimeoutSeconds, 60)
+        var request = MLXChatCompletionRequest(model: "model", messages: [
+            .init(role: "user", content: "Original task"), .init(role: "assistant", content: " unfinished")
+        ], maxTokens: 100, temperature: 0, topK: 0, topP: 1, minP: 0)
+        request.resumable = true
+        request.continuation = checkpoint
+        let expected = try MLXJSONValue(jsonData: JSONEncoder().encode(checkpoint))
+        let chat = try MLXJSONValue(jsonData: JSONEncoder().encode(request))
+        XCTAssertEqual(chat["continuation"], expected)
+        XCTAssertNil(chat["transient_context"])
+        let responseRequest = try NativResponsesClient(baseURL: URL(string: "http://localhost:8080")!, tenant: "test")
+            .makeResponseRequest(request, input: NativResponsesClient.inputItems(request.messages), compactThreshold: 4_096)
+        let response = try MLXJSONValue(jsonData: XCTUnwrap(responseRequest.httpBody))
+        XCTAssertEqual(response["continuation"], expected)
+        XCTAssertNil(response["transient_context"])
+    }
+
+    func testResumeReusesTheResponseRowAndPreservesPartialTextAndReasoning() throws {
+        let user = ChatTranscriptMessage(role: .user, content: "Explain this")
+        var response = ChatTranscriptMessage(role: .assistant, content: "The answer is",
+            reasoningContent: "Considering", modelID: "model")
+        response.isInterrupted = true
+        var settings = NativSettings()
+        settings.languageModelID = "model"
+        var resumed = ChatResponseResumption.streamingMessage(from: response, settings: settings)
+        XCTAssertEqual(resumed.id, response.id)
+        XCTAssertEqual(resumed.content, response.content)
+        XCTAssertEqual(resumed.reasoningContent, response.reasoningContent)
+        XCTAssertTrue(resumed.isStreaming)
+        XCTAssertFalse(resumed.isInterrupted)
+
+        resumed.content += " 42."
+        let items = ChatTranscriptPresentation.items(from: [user, resumed])
+        XCTAssertEqual(items.count, 2)
+        XCTAssertEqual(items.last?.id, response.id)
+        guard case .message(let visible) = items.last else { return XCTFail("Expected the original response row") }
+        XCTAssertEqual(visible.content, "The answer is 42.")
+
+        resumed.isInterrupted = true
+        resumed.isStreaming = false
+        let restarted = ChatResponseResumption.streamingMessage(from: resumed, settings: settings)
+        XCTAssertEqual(restarted.id, response.id)
+        XCTAssertEqual(restarted.content, "The answer is 42.")
+        let restored = try JSONDecoder().decode(ChatTranscriptMessage.self, from: JSONEncoder().encode(resumed))
+        XCTAssertEqual(ChatResponseResumption.pending(in: [user, restored])?.responseMessageID, response.id)
+    }
+
+    func testResumeRemovesTheCancellationPlaceholderBeforeAppending() {
+        for role in [ChatTranscriptMessage.Role.error, .assistant] {
+            var response = ChatTranscriptMessage(role: role, content: "Response canceled.", reasoningContent: "Thinking")
+            response.isInterrupted = true
+            let resumed = ChatResponseResumption.streamingMessage(from: response, settings: NativSettings())
+            XCTAssertEqual(resumed.id, response.id)
+            XCTAssertEqual(resumed.role, .assistant)
+            XCTAssertTrue(resumed.content.isEmpty)
+            XCTAssertEqual(resumed.reasoningContent, "Thinking")
+        }
+    }
+
+    func testOnlyTheLatestInterruptedResponseCanResume() {
+        let user = ChatTranscriptMessage(role: .user, content: "Explain this")
+        var response = ChatTranscriptMessage(role: .assistant, content: "First,")
+        XCTAssertNil(ChatResponseResumption.pending(in: [user, response]))
+        response.isInterrupted = true
+        XCTAssertEqual(ChatResponseResumption.pending(in: [user, response]),
+                       ChatResponseResumption(userMessageID: user.id, responseMessageID: response.id))
+        XCTAssertNil(ChatResponseResumption.pending(in: [user, response,
+            ChatTranscriptMessage(role: .user, content: "A different question")]))
+        XCTAssertNil(ChatResponseResumption.pending(in: [user, response,
+            ChatTranscriptMessage(role: .assistant, content: "the rest of the answer.")]))
+        response.isStreaming = true
+        XCTAssertNil(ChatResponseResumption.pending(in: [user, response]))
+    }
+
+    func testStopBeforeFirstTokenAndDuringReasoningRemainResumable() {
+        let user = ChatTranscriptMessage(role: .user, content: "Explain this")
+        for role in [ChatTranscriptMessage.Role.error, .assistant] {
+            var response = ChatTranscriptMessage(role: role, content: "Response canceled.",
+                reasoningContent: role == .assistant ? "Considering the question" : "")
+            response.isInterrupted = true
+            XCTAssertEqual(ChatResponseResumption.pending(in: [user, response])?.responseMessageID, response.id)
+        }
+    }
+
+    func testResumeFollowsToolReceiptsButPrecedesQueuedUserMessages() throws {
+        let user = ChatTranscriptMessage(role: .user, content: "Update the file")
+        let call = MLXChatToolCall(id: "write", function: .init(name: "write_file", arguments: "{}"))
+        var response = ChatTranscriptMessage(role: .assistant, content: "Updating", toolCalls: [call])
+        response.isInterrupted = true
+        let receipt = ChatTranscriptMessage(role: .tool, content: "Cancelled", toolCallID: call.id,
+                                           toolName: call.function?.name, toolStatus: .cancelled)
+        let queued = ChatTranscriptMessage(role: .user, content: "Next request")
+        XCTAssertEqual(ChatResponseResumption.pending(in: [user, response, receipt])?.responseMessageID, response.id)
+        XCTAssertEqual(ChatResponseResumption.insertionAnchor(after: response.id, in: [user, response]), response.id)
+        XCTAssertEqual(ChatResponseResumption.insertionAnchor(after: response.id,
+            in: [user, response, receipt, queued]), receipt.id)
+        XCTAssertNil(ChatResponseResumption.insertionAnchor(after: UUID(), in: [user, response]))
+
+        let history = ChatViewModel.completionMessages(systemPrompt: "System",
+            transcript: [user, response, receipt][...], includesImages: true)
+        var request = MLXChatCompletionRequest(model: "model", messages: history, maxTokens: 100,
+                                              temperature: 0, topK: 0, topP: 1, minP: 0)
+        request.resumable = true
+        XCTAssertEqual(history.map(\.role), ["system", "user", "assistant", "tool"])
+        XCTAssertEqual(history[2].toolCalls, [call])
+        XCTAssertEqual(history[2].textContent, "Updating")
+        XCTAssertEqual(history[3].toolCallID, call.id)
+        let wire = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(request)) as? [String: Any])
+        XCTAssertNil(wire["transient_context"])
+        XCTAssertEqual(wire["resumable"] as? Bool, true)
+        XCTAssertEqual((wire["messages"] as? [Any])?.count, 4)
+        let input = try NativResponsesClient.inputItems(history)
+        let responsesRequest = try NativResponsesClient(baseURL: URL(string: "http://localhost:8080")!, tenant: "resume")
+            .makeResponseRequest(request, input: input, compactThreshold: 4_096)
+        let responsesWire = try MLXJSONValue(jsonData: XCTUnwrap(responsesRequest.httpBody))
+        XCTAssertNil(responsesWire["transient_context"])
+        XCTAssertEqual(responsesWire["resumable"], .bool(true))
+        XCTAssertEqual(responsesWire["input"], .array(input))
+    }
+
+    func testInterruptionSurvivesPersistenceAndLegacyMessagesDefaultToCompleted() throws {
+        var response = ChatTranscriptMessage(role: .assistant, content: "A partial answer")
+        response.isInterrupted = true
+        response.continuation = try JSONDecoder().decode(MLXGenerationContinuation.self,
+            from: Data(#"{"id":"checkpoint","cursor":23,"content":16,"reasoning":0,"responses":true}"#.utf8))
+        let restored = try JSONDecoder().decode(ChatTranscriptMessage.self, from: JSONEncoder().encode(response))
+        XCTAssertTrue(restored.isInterrupted)
+        XCTAssertEqual(restored.continuation, response.continuation)
+        XCTAssertEqual(restored.content, response.content)
+        response.isInterrupted = false
+        let legacyData = try JSONEncoder().encode(response)
+        XCTAssertFalse(String(decoding: legacyData, as: UTF8.self).contains("isInterrupted"))
+        XCTAssertFalse(try JSONDecoder().decode(ChatTranscriptMessage.self, from: legacyData).isInterrupted)
+    }
+
+    func testLegacyRestartStateLoadsAsOrdinaryHistory() throws {
+        let user = ChatTranscriptMessage(role: .user, content: "Original task")
+        var response = ChatTranscriptMessage(role: .assistant, content: "A partial answer",
+                                             reasoningContent: "A partial thought")
+        response.isInterrupted = true
+        response.continuation = try JSONDecoder().decode(MLXGenerationContinuation.self,
+            from: Data(#"{"id":"expired","cursor":23,"content":16,"reasoning":0,"responses":true}"#.utf8))
+        var legacy = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(response)) as? [String: Any])
+        legacy["requiresRestart"] = true
+        let restored = try JSONDecoder().decode(ChatTranscriptMessage.self,
+            from: JSONSerialization.data(withJSONObject: legacy))
+        XCTAssertEqual(restored.content, response.content)
+        XCTAssertEqual(restored.reasoningContent, response.reasoningContent)
+        XCTAssertFalse(restored.isInterrupted)
+        XCTAssertNil(restored.continuation)
+        XCTAssertNil(ChatResponseResumption.pending(in: [user, restored]))
+        let saved = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(restored)) as? [String: Any])
+        XCTAssertNil(saved["requiresRestart"])
+    }
+
+    func testLoadedChatOffersResumeWithoutConsumingDraftAndRespectsEditingAndWindowOwnership() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let user = ChatTranscriptMessage(role: .user, content: "Explain this")
+        var response = ChatTranscriptMessage(role: .assistant, content: "First,")
+        response.isInterrupted = true
+        let session = ChatSession(id: UUID(), title: "Resume", createdAt: Date(), updatedAt: Date(),
+                                  messages: [user, response])
+        XCTAssertTrue(ChatSessionStore(chatDirectory: directory).saveSession(session))
+        let activity = InferenceActivityCoordinator()
+        let chat = ChatViewModel(inferenceActivity: activity, sessionDirectory: directory)
+        for _ in 0..<1_000 {
+            if !chat.isLoadingSessions { break }
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        XCTAssertFalse(chat.isLoadingSessions)
+        XCTAssertTrue(chat.canResumeResponse)
+        XCTAssertTrue(chat.shouldResumeFromComposer)
+        chat.draft = "Unsent draft"
+        XCTAssertTrue(chat.canResumeResponse)
+        XCTAssertFalse(chat.shouldResumeFromComposer)
+        chat.beginEditingUserMessage(user.id)
+        XCTAssertFalse(chat.canResumeResponse)
+        chat.cancelPromptEditing()
+        XCTAssertEqual(chat.draft, "Unsent draft")
+        XCTAssertTrue(chat.canResumeResponse)
+        chat.draft = ""
+        XCTAssertTrue(chat.shouldResumeFromComposer)
+        let attachment = ChatImageAttachment(filename: "photo.png", mimeType: "image/png", base64Data: "AA==")
+        chat.stageAttachment(attachment)
+        XCTAssertFalse(chat.shouldResumeFromComposer)
+        chat.removePendingImageAttachment(attachment.id)
+        XCTAssertTrue(chat.shouldResumeFromComposer)
+        let operationID = UUID()
+        XCTAssertTrue(activity.begin(resource: .chat(session.id), windowID: UUID(), operationID: operationID))
+        XCTAssertFalse(chat.canResumeResponse)
+        activity.end(resource: .chat(session.id), operationID: operationID)
+        XCTAssertTrue(chat.canResumeResponse)
+        chat.createSession()
+        XCTAssertFalse(chat.canResumeResponse)
     }
 }
 

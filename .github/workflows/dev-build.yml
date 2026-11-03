@@ -92,6 +92,7 @@ jobs:
             -only-testing:NativTests/MLXImageModelResolverTests \
             -only-testing:NativTests/NativModelTypeRegistryDrafterTests \
             -only-testing:NativTests/ChatResponseSpeechTests \
+            -only-testing:NativTests/ChatResponseResumptionTests \
             -only-testing:NativTests/NativAudioSpeechClientTests \
             -only-testing:NativTests/HuggingFaceCapabilityFilterTests \
             -only-testing:NativTests/SystemTelemetryTests \

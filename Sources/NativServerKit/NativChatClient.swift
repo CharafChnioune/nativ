@@ -30,6 +30,27 @@ public enum NativChatError: Error, LocalizedError, CustomStringConvertible {
     public var errorDescription: String? {
         description
     }
+
+    /// The continuation API currently reports these failures as messages, without
+    /// a machine-readable error code. Other conflicts and transport errors may be retried.
+    public var isContinuationUnavailable: Bool {
+        let message: String
+        switch self {
+        case .httpStatus(409, let body):
+            message = NativServerErrorMessage.detail(from: body) ?? body
+        case .serverError(let detail):
+            message = detail
+        default:
+            return false
+        }
+        return [
+            "This response checkpoint is no longer available. Regenerate the response to continue.",
+            "The inference checkpoint is no longer available. Regenerate the response.",
+            "The inference checkpoint expired. Regenerate the response.",
+            "The inference checkpoint was evicted to release cache memory. Regenerate the response.",
+            "The model was unloaded. Regenerate the response.",
+        ].contains(message.trimmingCharacters(in: .whitespacesAndNewlines))
+    }
 }
 
 public struct MLXChatMessage: Codable, Equatable, Sendable {
@@ -363,25 +384,43 @@ public struct MLXChatCompletion: Equatable, Sendable {
     }
 }
 
+/// Opaque server checkpoint paired with the exact text delivered in a stream event.
+public struct MLXGenerationContinuation: Codable, Equatable, Sendable {
+    public let id: String
+    public let cursor: Int
+    public let content: Int
+    public let reasoning: Int
+    public let responses: Bool
+    public let idleTimeoutSeconds: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case id, cursor, content, reasoning, responses
+        case idleTimeoutSeconds = "idle_timeout_seconds"
+    }
+}
+
 public struct MLXChatStreamDelta: Equatable, Sendable {
     public let content: String?
     public let reasoningContent: String?
     public let toolCalls: [MLXChatToolCall]?
     public let decodeTokensPerSecond: Double?
     public let generatedTokens: Int?
+    public var continuation: MLXGenerationContinuation?
 
     public init(
         content: String? = nil,
         reasoningContent: String? = nil,
         toolCalls: [MLXChatToolCall]? = nil,
         decodeTokensPerSecond: Double? = nil,
-        generatedTokens: Int? = nil
+        generatedTokens: Int? = nil,
+        continuation: MLXGenerationContinuation? = nil
     ) {
         self.content = content
         self.reasoningContent = reasoningContent
         self.toolCalls = toolCalls
         self.decodeTokensPerSecond = decodeTokensPerSecond
         self.generatedTokens = generatedTokens
+        self.continuation = continuation
     }
 }
 
@@ -514,6 +553,10 @@ public struct MLXChatCompletionRequest: Encodable, Equatable, Sendable {
     public var toolResultContext: MLXToolResultContext? = nil
     /// One-request closing guidance, placed after environment data without changing the saved prefix.
     public var completionInstruction: String? = nil
+    public var continuation: MLXGenerationContinuation? = nil
+    /// For older interrupted transcripts that predate raw-generation checkpoints.
+    public var continueFinalMessage = false
+    public var resumable = false
 
     public var maxTokens: Int
     public var temperature: Double
@@ -584,6 +627,9 @@ public struct MLXChatCompletionRequest: Encodable, Equatable, Sendable {
     enum CodingKeys: String, CodingKey {
         case model
         case messages
+        case continuation
+        case continueFinalMessage = "continue_final_message"
+        case resumable
         case requestContext = "transient_context"
         case toolResultContext = "tool_result_context"
         case maxTokens = "max_tokens"
@@ -607,6 +653,9 @@ public struct MLXChatCompletionRequest: Encodable, Equatable, Sendable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(model, forKey: .model)
         try container.encode(messages, forKey: .messages)
+        if resumable { try container.encode(true, forKey: .resumable) }
+        if continueFinalMessage { try container.encode(true, forKey: .continueFinalMessage) }
+        try container.encodeIfPresent(continuation, forKey: .continuation)
         try container.encodeIfPresent(requestContext, forKey: .requestContext)
         try container.encodeIfPresent(toolResultContext, forKey: .toolResultContext)
         try container.encode(maxTokens, forKey: .maxTokens)
@@ -782,6 +831,10 @@ public final class NativChatClient: @unchecked Sendable {
         guard (200..<300).contains(httpResponse.statusCode) else {
             throw NativChatError.httpStatus(httpResponse.statusCode, await readErrorBody(from: bytes))
         }
+        if (request.continuation != nil || request.continueFinalMessage),
+           httpResponse.value(forHTTPHeaderField: "X-MLX-Continuation") != "1" {
+            throw NativChatError.serverError("This server does not support continuing an interrupted response. Update the server and retry.")
+        }
 
         var content = ""
         var reasoningContent = ""
@@ -792,10 +845,13 @@ public final class NativChatClient: @unchecked Sendable {
         var streamedGeneratedTokens = 0
         var firstGeneratedTokenAt: Date?
         var lastGeneratedTokenAt: Date?
+        // Resumed streams can replay buffered chunks. Their arrival rate and count
+        // do not describe decoding or include the already delivered response.
+        let allowsLocalMetrics = request.continuation == nil && !request.continueFinalMessage
         var toolCallAccumulator = MLXChatToolCallAccumulator()
 
         func cumulativeDecodeTokensPerSecond() -> Double? {
-            guard streamedGeneratedTokens > 1,
+            guard allowsLocalMetrics, streamedGeneratedTokens > 1,
                   let firstGeneratedTokenAt,
                   let lastGeneratedTokenAt
             else {
@@ -861,11 +917,11 @@ public final class NativChatClient: @unchecked Sendable {
                 if let toolCallDeltas, !toolCallDeltas.isEmpty {
                     toolCallAccumulator.merge(toolCallDeltas)
                 }
-                let liveDecodeTokensPerSecond = cumulativeDecodeTokensPerSecond()
+                let liveDecodeTokensPerSecond = decodeTokensPerSecond ?? cumulativeDecodeTokensPerSecond()
                 if contentDelta?.isEmpty == false
                     || reasoningDelta?.isEmpty == false
                     || toolCallDeltas?.isEmpty == false
-                    || liveDecodeTokensPerSecond != nil {
+                    || liveDecodeTokensPerSecond != nil || chunk.continuation != nil {
                     await onEvent(
                         MLXChatStreamDelta(
                             content: contentDelta,
@@ -873,22 +929,25 @@ public final class NativChatClient: @unchecked Sendable {
                             toolCalls: toolCallDeltas,
                             decodeTokensPerSecond: liveDecodeTokensPerSecond,
                             generatedTokens: chunk.usage?.completionTokens
-                                ?? streamedGeneratedTokens
+                                ?? (allowsLocalMetrics ? streamedGeneratedTokens : nil),
+                            continuation: chunk.continuation
                         )
                     )
                 }
-            } else if chunk.usage?.completionTokens != nil || decodeTokensPerSecond != nil {
+            } else if chunk.usage?.completionTokens != nil || decodeTokensPerSecond != nil || chunk.continuation != nil {
                 await onEvent(
                     MLXChatStreamDelta(
                         decodeTokensPerSecond: decodeTokensPerSecond,
                         generatedTokens: chunk.usage?.completionTokens
-                            ?? streamedGeneratedTokens
+                            ?? (allowsLocalMetrics ? streamedGeneratedTokens : nil),
+                        continuation: chunk.continuation
                     )
                 )
             }
         }
 
-        let resolvedContent = try validatedAssistantContent(
+        let resolvedContent = request.continuation != nil && content.isEmpty && reasoningContent.isEmpty
+            && toolCallAccumulator.toolCalls.isEmpty ? (content: "", reasoningContent: nil) : try validatedAssistantContent(
             content: content,
             reasoningContent: reasoningContent.isEmpty ? nil : reasoningContent,
             toolCalls: toolCallAccumulator.toolCalls
@@ -1087,6 +1146,12 @@ private struct ChatStreamChunk: Decodable {
     let choices: [Choice]
     let usage: MLXChatUsage?
     let timings: MLXChatTimings?
+    let continuation: MLXGenerationContinuation?
+
+    enum CodingKeys: String, CodingKey {
+        case model, choices, usage, timings
+        case continuation
+    }
 
     struct Choice: Decodable {
         let finishReason: String?
