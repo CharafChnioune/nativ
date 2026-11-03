@@ -1,27 +1,31 @@
 <p align="center">
-  <img src="Design/NativBanner.png" alt="Nativ banner" width="100%">
-</p>
-
-<h1 align="center">Nativ</h1>
-
-<p align="center">
-  <strong>Local AI, native to your Mac.</strong>
+  <a href="https://runnativ.ai">
+    <img src="Design/NativBanner.png" alt="Nativ — Local AI. Native to your Mac. Download for macOS." width="100%">
+  </a>
 </p>
 
 <p align="center">
-  Chat, serve, monitor, and connect MLX models from one macOS app.
+  <strong>Nativ is an open-source local AI app for Mac.</strong><br>
+  It runs open AI models on Apple Silicon, and nothing leaves your Mac.
 </p>
 
 <p align="center">
-  <img alt="macOS 26+" src="https://img.shields.io/badge/macOS-26%2B-111111?logo=apple&logoColor=white">
-  <img alt="Apple silicon" src="https://img.shields.io/badge/Apple%20silicon-required-111111?logo=apple&logoColor=white">
-  <img alt="Swift 5" src="https://img.shields.io/badge/Swift-5-F05138?logo=swift&logoColor=white">
-  <img alt="MLX" src="https://img.shields.io/badge/Powered%20by-MLX-6E5AE6">
+  <a href="https://runnativ.ai"><strong>Download for macOS</strong></a>
+  &nbsp;&nbsp;·&nbsp;&nbsp;
+  <a href="Docs/README.md">Documentation</a>
+  &nbsp;&nbsp;·&nbsp;&nbsp;
+  <a href="https://github.com/Blaizzy/nativ/releases">Releases</a>
 </p>
 
-Nativ is a native macOS workspace for running AI models locally on Apple silicon. It bundles an [`mlx-vlm`](https://github.com/Blaizzy/mlx-vlm) server, finds compatible models in your Hugging Face cache (honoring `HF_HUB_CACHE` and `HF_HOME`), and wraps the whole experience in a polished SwiftUI app.
+<p align="center">
+  macOS 26+ &nbsp;·&nbsp; Apple Silicon &nbsp;·&nbsp; Powered by <a href="https://github.com/Blaizzy/mlx-vlm">MLX-VLM</a>
+</p>
 
-Use Nativ as a private chat app, a model manager, a performance dashboard, or an OpenAI- and Anthropic-compatible local inference server for the tools you already use.
+<p align="center">
+  Made by <a href="https://www.neywalabs.ai">Neywa Labs</a>, a local AI company.
+</p>
+
+---
 
 ## Documentation
 
@@ -69,6 +73,8 @@ flowchart LR
 ```
 
 `NativServerKit` owns the embedded Python distribution and server lifecycle. The app adds model discovery, chat, analytics, configuration, integrations, logs, menu bar controls, and software updates around that runtime.
+
+Nativ bundles an [`mlx-vlm`](https://github.com/Blaizzy/mlx-vlm) server and discovers compatible models in your Hugging Face cache, honoring `HF_HUB_CACHE` and `HF_HOME`. Use it as a private chat app, a model manager, a performance dashboard, or an OpenAI- and Anthropic-compatible local inference server for the tools you already use.
 
 ## Requirements
 
