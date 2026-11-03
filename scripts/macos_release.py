@@ -70,8 +70,16 @@ def parse_item(data, tag, repository):
     if len(enclosures) != 1:
         raise ValueError(f"{tag}: expected one enclosure")
     enclosure = enclosures[0]
-    prefix = f"https://github.com/{repository}/releases/download/{tag}/Nativ-{version}"
-    if enclosure.get("url") not in (prefix + ".dmg", prefix + ".zip"):
+    repositories = [repository]
+    if repository.casefold() == "neywa-labs/nativ":
+        # Published feeds retain their original URLs after the repository transfer.
+        repositories.append("Blaizzy/nativ")
+    download_urls = {
+        f"https://github.com/{name}/releases/download/{tag}/Nativ-{version}{suffix}"
+        for name in repositories
+        for suffix in (".dmg", ".zip")
+    }
+    if enclosure.get("url") not in download_urls:
         raise ValueError(f"{tag}: incorrect download URL")
     signature = enclosure.get(sparkle("edSignature"), "")
     if len(base64.b64decode(signature, validate=True)) != 64:

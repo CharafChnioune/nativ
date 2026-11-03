@@ -12,7 +12,7 @@ final class ChatGitHubPullRequestTests: XCTestCase {
         for (state, draft, label) in [("OPEN", false, "Open"), ("OPEN", true, "Draft"),
                                       ("MERGED", false, "Merged"), ("CLOSED", false, "Closed")] {
             let json = """
-            {"number":656,"title":"Worktrees","url":"https://github.com/Blaizzy/nativ/pull/656",
+            {"number":656,"title":"Worktrees","url":"https://github.com/Neywa-Labs/nativ/pull/656",
              "state":"\(state)","isDraft":\(draft),"headRefName":"123"}
             """
             guard case .found(let request) = ChatGitHubPullRequestDetector.decode(output(json), branch: "123") else {

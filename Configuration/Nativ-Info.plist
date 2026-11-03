@@ -54,7 +54,7 @@
 	<key>NativGitHubAppSlug</key>
 	<string>$(NATIV_GITHUB_APP_SLUG)</string>
 	<key>SUFeedURL</key>
-	<string>https://github.com/Blaizzy/nativ/releases/latest/download/appcast.xml</string>
+	<string>https://github.com/Neywa-Labs/nativ/releases/latest/download/appcast.xml</string>
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
 	<key>SUPublicEDKey</key>

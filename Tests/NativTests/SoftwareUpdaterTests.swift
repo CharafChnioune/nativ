@@ -72,7 +72,7 @@ final class SoftwareUpdaterTests: XCTestCase {
         let restored = updater(defaults)
         XCTAssertEqual(restored.channel, .releaseCandidates)
         XCTAssertEqual(restored.allowedChannels(for: restored.updater), ["rc"])
-        XCTAssertEqual(restored.feedURLString(for: restored.updater), "https://github.com/Blaizzy/nativ/releases/download/preview/appcast.xml")
+        XCTAssertEqual(restored.feedURLString(for: restored.updater), "https://github.com/Neywa-Labs/nativ/releases/download/preview/appcast.xml")
         restored.setChannel(.stable)
         XCTAssertEqual(updater(defaults).channel, .stable)
     }

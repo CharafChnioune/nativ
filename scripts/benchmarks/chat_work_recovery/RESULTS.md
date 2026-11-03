@@ -115,7 +115,7 @@ This follow-up additionally requires MLX-VLM [#2617](https://github.com/Blaizzy/
 Nativ requirements are unchanged. The client needs MLX-VLM
 [#2612](https://github.com/Blaizzy/mlx-vlm/pull/2612) and the long-loop parser fix
 [#2613](https://github.com/Blaizzy/mlx-vlm/pull/2613) before release. The client
-changes are in [#780](https://github.com/Blaizzy/nativ/pull/780), stacked on #778.
+changes are in [#780](https://github.com/Neywa-Labs/nativ/pull/780), stacked on #778.
 No keyless search service, separate browser tool or production CLI was added.
 
 ## Causal checks

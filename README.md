@@ -14,7 +14,7 @@
   &nbsp;&nbsp;·&nbsp;&nbsp;
   <a href="Docs/README.md">Documentation</a>
   &nbsp;&nbsp;·&nbsp;&nbsp;
-  <a href="https://github.com/Blaizzy/nativ/releases">Releases</a>
+  <a href="https://github.com/Neywa-Labs/nativ/releases">Releases</a>
 </p>
 
 <p align="center">
@@ -97,7 +97,7 @@ To build from source, you will also need:
 
 ### Download a release
 
-Download the latest DMG from [GitHub Releases](https://github.com/Blaizzy/nativ/releases/latest), drag **Nativ** to Applications, and launch it. Alternatively, install it via Homebrew:
+Download the latest DMG from [GitHub Releases](https://github.com/Neywa-Labs/nativ/releases/latest), drag **Nativ** to Applications, and launch it. Alternatively, install it via Homebrew:
 ```sh
 brew install --cask nativ
 ```

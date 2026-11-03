@@ -171,7 +171,7 @@ if [[ -n "$release_notes" ]]; then
     cp "$release_notes" "${staged_archive%.*}.$notes_extension"
 fi
 
-github_repository="${NATIV_GITHUB_REPOSITORY:-${GITHUB_REPOSITORY:-Blaizzy/nativ}}"
+github_repository="${NATIV_GITHUB_REPOSITORY:-${GITHUB_REPOSITORY:-Neywa-Labs/nativ}}"
 [[ "$github_repository" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || \
     fail "invalid GitHub repository: $github_repository"
 download_prefix="https://github.com/${github_repository}/releases/download/${release_tag}/"

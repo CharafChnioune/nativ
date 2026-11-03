@@ -21,7 +21,7 @@ import zipfile
 spec = importlib.util.spec_from_file_location("macos_release", Path(__file__).parents[1] / "macos_release.py")
 release = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(release)
-REPOSITORY = "Blaizzy/nativ"
+REPOSITORY = "Neywa-Labs/nativ"
 SIGNATURE = base64.b64encode(bytes(64)).decode()
 
 
@@ -99,6 +99,23 @@ class ReleaseTests(unittest.TestCase):
         item = release.parse_item(feed(), "v0.4.0rc1", REPOSITORY)
         self.assertEqual(item.find("enclosure").get(release.sparkle("edSignature")), SIGNATURE)
         release.parse_item(feed("0.4.0", channel=None), "v0.4.0", REPOSITORY)
+
+    def test_transferred_repository_preserves_legacy_download_urls_and_signatures(self):
+        for suffix in (".dmg", ".zip"):
+            with self.subTest(suffix=suffix):
+                root = ET.fromstring(feed())
+                enclosure = root.find("./channel/item/enclosure")
+                url = f"https://github.com/Blaizzy/nativ/releases/download/v0.4.0rc1/Nativ-0.4.0rc1{suffix}"
+                enclosure.set("url", url)
+                item = release.parse_item(ET.tostring(root), "v0.4.0rc1", REPOSITORY)
+                self.assertEqual(item.find("enclosure").get("url"), url)
+                self.assertEqual(item.find("enclosure").get(release.sparkle("edSignature")), SIGNATURE)
+
+    def test_legacy_download_urls_are_not_accepted_for_other_repositories(self):
+        data = feed().replace(REPOSITORY.encode(), b"Blaizzy/nativ")
+        for repository in ("Other/nativ", "Neywa-Labs/other"):
+            with self.subTest(repository=repository), self.assertRaisesRegex(ValueError, "incorrect download URL"):
+                release.parse_item(data, "v0.4.0rc1", repository)
 
     def test_bad_channel_or_tag_is_rejected(self):
         for xml, tag in [(feed(channel=None), "v0.4.0rc1"), (feed(channel="nightly"), "v0.4.0rc1"),

@@ -100,7 +100,7 @@ document.querySelectorAll('[data-screen]').forEach((button) => {
   });
 });
 
-fetch('https://api.github.com/repos/Blaizzy/nativ/releases/latest', {
+fetch('https://api.github.com/repos/Neywa-Labs/nativ/releases/latest', {
   cache: 'no-store',
   headers: { Accept: 'application/vnd.github+json' }
 })
@@ -126,7 +126,7 @@ fetch('https://api.github.com/repos/Blaizzy/nativ/releases/latest', {
   })
   .catch(() => {});
 
-fetch('https://api.github.com/repos/Blaizzy/nativ')
+fetch('https://api.github.com/repos/Neywa-Labs/nativ')
   .then((response) => (response.ok ? response.json() : Promise.reject()))
   .then((repository) => {
     const value = repository.stargazers_count;

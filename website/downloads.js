@@ -1,48 +1,48 @@
-const releasesEndpoint = 'https://api.github.com/repos/Blaizzy/nativ/releases';
+const releasesEndpoint = 'https://api.github.com/repos/Neywa-Labs/nativ/releases';
 
 const fallbackReleases = [
   {
     tag_name: 'v0.2.2',
     published_at: '2026-08-04T15:47:48Z',
-    html_url: 'https://github.com/Blaizzy/nativ/releases/tag/v0.2.2',
+    html_url: 'https://github.com/Neywa-Labs/nativ/releases/tag/v0.2.2',
     assets: [
-      { name: 'appcast.xml', download_count: 1092, browser_download_url: 'https://github.com/Blaizzy/nativ/releases/download/v0.2.2/appcast.xml' },
-      { name: 'Nativ-0.2.2.dmg', download_count: 591, browser_download_url: 'https://github.com/Blaizzy/nativ/releases/download/v0.2.2/Nativ-0.2.2.dmg' }
+      { name: 'appcast.xml', download_count: 1092, browser_download_url: 'https://github.com/Neywa-Labs/nativ/releases/download/v0.2.2/appcast.xml' },
+      { name: 'Nativ-0.2.2.dmg', download_count: 591, browser_download_url: 'https://github.com/Neywa-Labs/nativ/releases/download/v0.2.2/Nativ-0.2.2.dmg' }
     ]
   },
   {
     tag_name: 'v0.2.1',
     published_at: '2026-08-03T23:26:00Z',
-    html_url: 'https://github.com/Blaizzy/nativ/releases/tag/v0.2.1',
+    html_url: 'https://github.com/Neywa-Labs/nativ/releases/tag/v0.2.1',
     assets: [
-      { name: 'appcast.xml', download_count: 198, browser_download_url: 'https://github.com/Blaizzy/nativ/releases/download/v0.2.1/appcast.xml' },
-      { name: 'Nativ-0.2.1.dmg', download_count: 180, browser_download_url: 'https://github.com/Blaizzy/nativ/releases/download/v0.2.1/Nativ-0.2.1.dmg' }
+      { name: 'appcast.xml', download_count: 198, browser_download_url: 'https://github.com/Neywa-Labs/nativ/releases/download/v0.2.1/appcast.xml' },
+      { name: 'Nativ-0.2.1.dmg', download_count: 180, browser_download_url: 'https://github.com/Neywa-Labs/nativ/releases/download/v0.2.1/Nativ-0.2.1.dmg' }
     ]
   },
   {
     tag_name: 'v0.2.0',
     published_at: '2026-08-03T19:50:52Z',
-    html_url: 'https://github.com/Blaizzy/nativ/releases/tag/v0.2.0',
+    html_url: 'https://github.com/Neywa-Labs/nativ/releases/tag/v0.2.0',
     assets: [
-      { name: 'appcast.xml', download_count: 26, browser_download_url: 'https://github.com/Blaizzy/nativ/releases/download/v0.2.0/appcast.xml' },
-      { name: 'Nativ-0.2.0.dmg', download_count: 64, browser_download_url: 'https://github.com/Blaizzy/nativ/releases/download/v0.2.0/Nativ-0.2.0.dmg' }
+      { name: 'appcast.xml', download_count: 26, browser_download_url: 'https://github.com/Neywa-Labs/nativ/releases/download/v0.2.0/appcast.xml' },
+      { name: 'Nativ-0.2.0.dmg', download_count: 64, browser_download_url: 'https://github.com/Neywa-Labs/nativ/releases/download/v0.2.0/Nativ-0.2.0.dmg' }
     ]
   },
   {
     tag_name: 'v0.1.0',
     published_at: '2026-07-27T20:41:58Z',
-    html_url: 'https://github.com/Blaizzy/nativ/releases/tag/v0.1.0',
+    html_url: 'https://github.com/Neywa-Labs/nativ/releases/tag/v0.1.0',
     assets: [
-      { name: 'appcast.xml', download_count: 719, browser_download_url: 'https://github.com/Blaizzy/nativ/releases/download/v0.1.0/appcast.xml' },
-      { name: 'Nativ-0.1.0.dmg', download_count: 870, browser_download_url: 'https://github.com/Blaizzy/nativ/releases/download/v0.1.0/Nativ-0.1.0.dmg' }
+      { name: 'appcast.xml', download_count: 719, browser_download_url: 'https://github.com/Neywa-Labs/nativ/releases/download/v0.1.0/appcast.xml' },
+      { name: 'Nativ-0.1.0.dmg', download_count: 870, browser_download_url: 'https://github.com/Neywa-Labs/nativ/releases/download/v0.1.0/Nativ-0.1.0.dmg' }
     ]
   },
   {
     tag_name: 'v0.0.1',
     published_at: '2026-07-20T16:53:28Z',
-    html_url: 'https://github.com/Blaizzy/nativ/releases/tag/v0.0.1',
+    html_url: 'https://github.com/Neywa-Labs/nativ/releases/tag/v0.0.1',
     assets: [
-      { name: 'Nativ-0.0.1.dmg', download_count: 4854, browser_download_url: 'https://github.com/Blaizzy/nativ/releases/download/v0.0.1/Nativ-0.0.1.dmg' }
+      { name: 'Nativ-0.0.1.dmg', download_count: 4854, browser_download_url: 'https://github.com/Neywa-Labs/nativ/releases/download/v0.0.1/Nativ-0.0.1.dmg' }
     ]
   }
 ];

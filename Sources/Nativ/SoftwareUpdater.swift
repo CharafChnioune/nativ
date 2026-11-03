@@ -85,7 +85,7 @@ final class SoftwareUpdater: NSObject, ObservableObject, SPUUpdaterDelegate {
     func allowedChannels(for updater: SPUUpdater) -> Set<String> { channel.allowedChannels }
 
     func feedURLString(for updater: SPUUpdater) -> String? {
-        channel == .releaseCandidates ? "https://github.com/Blaizzy/nativ/releases/download/preview/appcast.xml" : nil
+        channel == .releaseCandidates ? "https://github.com/Neywa-Labs/nativ/releases/download/preview/appcast.xml" : nil
     }
 
     func bestValidUpdate(in appcast: SUAppcast, for updater: SPUUpdater) -> SUAppcastItem? {

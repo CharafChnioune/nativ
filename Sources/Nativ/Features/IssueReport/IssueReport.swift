@@ -271,7 +271,7 @@ enum IssueDiagnostics {
 }
 
 enum IssueReportBuilder {
-    static let newIssueURL = "https://github.com/Blaizzy/nativ/issues/new"
+    static let newIssueURL = "https://github.com/Neywa-Labs/nativ/issues/new"
     static let urlBodyCharacterBudget = 6_000
 
     static func markdown(

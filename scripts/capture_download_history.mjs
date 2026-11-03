@@ -3,7 +3,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const repository = process.env.GITHUB_REPOSITORY || 'Blaizzy/nativ';
+const repository = process.env.GITHUB_REPOSITORY || 'Neywa-Labs/nativ';
 const outputArgument = process.argv.find((argument) => argument.startsWith('--output='));
 const outputPath = path.resolve(outputArgument?.slice('--output='.length) || 'website/data/download-history.json');
 const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;

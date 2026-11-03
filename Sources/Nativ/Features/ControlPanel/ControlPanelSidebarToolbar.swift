@@ -109,7 +109,7 @@ extension ControlPanelView {
     var supportButton: some View {
         footerControl(.support, tooltip: "Star Nativ on GitHub") {
             Button {
-                guard let url = URL(string: "https://github.com/Blaizzy/nativ") else {
+                guard let url = URL(string: "https://github.com/Neywa-Labs/nativ") else {
                     return
                 }
                 NSWorkspace.shared.open(url)
