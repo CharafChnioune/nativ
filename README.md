@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://runnativ.ai">
-    <img src="Design/NativBanner.png" alt="Nativ — Local AI. Native to your Mac. Download for macOS." width="100%">
+    <img src="Design/NativBannerLocalAI.png" alt="Nativ — Local AI. Native to your Mac. Download for macOS." width="100%">
   </a>
 </p>
 
