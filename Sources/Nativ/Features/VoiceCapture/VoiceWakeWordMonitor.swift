@@ -46,6 +46,7 @@ final class VoiceWakeWordMonitor: ObservableObject {
     private let inputSession: AudioInputCaptureSession
     private let requestMicrophone: () async -> Bool
     private let makeProcessor: @Sendable () throws -> VoiceWakeWordProcessor
+    private var isSuspendedByAudioOwnership = false
     private var isFinishingCapture = false
     private var sessionID = UUID()
     private var task: Task<Void, Never>?
@@ -55,7 +56,7 @@ final class VoiceWakeWordMonitor: ObservableObject {
     private var continuation: AsyncStream<VoiceWakeWordAudioChunk>.Continuation?
 
     init(
-        inputSession: AudioInputCaptureSession = AudioInputCaptureSession(passive: true),
+        inputSession: AudioInputCaptureSession = AudioInputCaptureSession(passive: true, owner: .init(name: "Wake word"), passiveListener: true),
         requestMicrophone: @escaping () async -> Bool = { await NativSystemPermissionController.requestMicrophone() },
         makeProcessor: @escaping @Sendable () throws -> VoiceWakeWordProcessor = {
             guard let url = Bundle.main.url(forResource: "HeyNativ", withExtension: "mlmodelc")
@@ -66,6 +67,17 @@ final class VoiceWakeWordMonitor: ObservableObject {
         self.inputSession = inputSession
         self.requestMicrophone = requestMicrophone
         self.makeProcessor = makeProcessor
+        AudioSessionCoordinator.shared.registerPassiveListener(suspend: { [weak self] in
+            guard let self else { return }
+            self.isSuspendedByAudioOwnership = true
+            self.stopSession()
+            self.state = .paused
+            await self.inputSession.stopAndWait()
+        }, resume: { [weak self] in
+            guard let self else { return }
+            self.isSuspendedByAudioOwnership = false
+            self.restart()
+        })
     }
 
     func configure(enabled: Bool, suspended: Bool, deviceID: String?, powerSavingPaused: Bool = false, inputUnavailable: Bool = false) {
@@ -84,7 +96,7 @@ final class VoiceWakeWordMonitor: ObservableObject {
     func restart() {
         stopSession()
         guard configuration.enabled else { state = .off; return }
-        guard !configuration.suspended else { state = .paused; return }
+        guard !configuration.suspended, !isSuspendedByAudioOwnership, !AudioSessionCoordinator.shared.hasForegroundActivity else { state = .paused; return }
         guard !configuration.inputUnavailable else { state = .pausedForMicrophone; return }
         guard !configuration.powerSavingPaused else { state = .pausedForInactivity; return }
         state = .preparing

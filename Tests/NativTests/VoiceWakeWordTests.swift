@@ -449,7 +449,8 @@ struct VoiceWakeWordMicrophoneRoutingTests {
     private func capturingMonitor() async throws -> (VoiceWakeWordMonitor, WakeWordInputProbe) {
         let capture = WakeWordInputProbe()
         let monitor = VoiceWakeWordMonitor(
-            inputSession: AudioInputCaptureSession { capture },
+            // Match the production wake-word session's passive audio ownership.
+            inputSession: AudioInputCaptureSession(passive: true, passiveListener: true) { capture },
             requestMicrophone: { true },
             makeProcessor: { VoiceWakeWordProcessor(detect: { _ in true }) }
         )

@@ -35,6 +35,16 @@ final class SystemAudioMeetingRecorder: NSObject {
     var onMicrophoneLevelUpdate: ((Float) -> Void)?
     var onInterruption: (() -> Void)?
 
+    private let audioSessions: AudioSessionCoordinator
+    init(audioSessions: AudioSessionCoordinator = .shared) {
+        self.audioSessions = audioSessions
+        super.init()
+    }
+
+    private var captureGeneration = UUID()
+    private var startupTask: Task<Void, Error>?
+    private var audioLease: AudioSessionLease?
+    private let audioOwner = AudioSessionOwner(name: "Meeting recording")
     private var stream: SCStream?
     private var temporaryAudioURL: URL?
     private var destinationAudioURL: URL?
@@ -52,57 +62,77 @@ final class SystemAudioMeetingRecorder: NSObject {
             return
         }
 
-        let availableContent = try await SCShareableContent.excludingDesktopWindows(
-            false,
-            onScreenWindowsOnly: true
-        )
-        guard let display = availableContent.displays.first else {
-            throw SystemAudioMeetingRecorderError.noDisplayAvailable
+        let preparationID = UUID()
+        captureGeneration = preparationID
+        audioLease = try await audioSessions.acquire(owner: audioOwner, resources: [.microphone, .systemAudio])
+        do {
+            let availableContent = try await SCShareableContent.excludingDesktopWindows(
+                false,
+                onScreenWindowsOnly: true
+            )
+            guard captureGeneration == preparationID, !Task.isCancelled else { throw CancellationError() }
+            guard let display = availableContent.displays.first else {
+                throw SystemAudioMeetingRecorderError.noDisplayAvailable
+            }
+
+            let excludedApplications = availableContent.applications.filter {
+                $0.bundleIdentifier == Bundle.main.bundleIdentifier
+            }
+            let filter = SCContentFilter(
+                display: display,
+                excludingApplications: excludedApplications,
+                exceptingWindows: []
+            )
+
+            let configuration = SCStreamConfiguration()
+            configuration.capturesAudio = true
+            configuration.captureMicrophone = true
+            configuration.microphoneCaptureDeviceID = try AudioInputDeviceResolver.captureDeviceID(
+                preferredID: microphoneDeviceID
+            )
+            configuration.excludesCurrentProcessAudio = true
+
+            let stream = SCStream(
+                filter: filter,
+                configuration: configuration,
+                delegate: self
+            )
+            try await start(stream: stream, outputURL: outputURL)
+        } catch {
+            if captureGeneration == preparationID { releaseAudioLease() }
+            throw error
         }
-
-        let excludedApplications = availableContent.applications.filter {
-            $0.bundleIdentifier == Bundle.main.bundleIdentifier
-        }
-        let filter = SCContentFilter(
-            display: display,
-            excludingApplications: excludedApplications,
-            exceptingWindows: []
-        )
-
-        let configuration = SCStreamConfiguration()
-        configuration.capturesAudio = true
-        configuration.captureMicrophone = true
-        configuration.microphoneCaptureDeviceID = try AudioInputDeviceResolver.captureDeviceID(
-            preferredID: microphoneDeviceID
-        )
-        configuration.excludesCurrentProcessAudio = true
-
-        let stream = SCStream(
-            filter: filter,
-            configuration: configuration,
-            delegate: self
-        )
-        try await start(stream: stream, outputURL: outputURL)
     }
 
     func start(stream: SCStream, outputURL: URL) async throws {
         guard self.stream == nil else { return }
-        try FileManager.default.createDirectory(
-            at: outputURL.deletingLastPathComponent(),
-            withIntermediateDirectories: true
-        )
-
-        let temporaryURL = outputURL
-            .deletingPathExtension()
-            .appendingPathExtension("audio.mov")
-        try? FileManager.default.removeItem(at: temporaryURL)
-        try? FileManager.default.removeItem(at: outputURL)
-
-        try audioWriter.prepare(outputURL: temporaryURL)
-        captureFailure = nil
-        // Recognize delegate failures while capture startup is suspended.
-        self.stream = stream
+        let id = UUID()
+        captureGeneration = id
+        if audioLease == nil {
+            audioLease = try await audioSessions.acquire(owner: audioOwner, resources: [.microphone, .systemAudio])
+        }
         do {
+            try Task.checkCancellation()
+            guard captureGeneration == id else { throw CancellationError() }
+        } catch { releaseAudioLease(); throw error }
+        do {
+            try FileManager.default.createDirectory(
+                at: outputURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+
+            let temporaryURL = outputURL
+                .deletingPathExtension()
+                .appendingPathExtension("audio.mov")
+            try? FileManager.default.removeItem(at: temporaryURL)
+            try? FileManager.default.removeItem(at: outputURL)
+
+            try audioWriter.prepare(outputURL: temporaryURL)
+            captureFailure = nil
+            // Recognize delegate failures while capture startup is suspended.
+            self.stream = stream
+            temporaryAudioURL = temporaryURL
+            destinationAudioURL = outputURL
             try stream.addStreamOutput(
                 self,
                 type: .audio,
@@ -113,20 +143,28 @@ final class SystemAudioMeetingRecorder: NSObject {
                 type: .microphone,
                 sampleHandlerQueue: audioWriter.sampleQueue
             )
-            try await stream.startCapture()
+            let startup = Task { try await stream.startCapture() }
+            startupTask = startup
+            try await startup.value
+            guard captureGeneration == id else { throw CancellationError() }
+            try Task.checkCancellation()
+            startupTask = nil
             if let captureFailure {
                 throw captureFailure
             }
+            temporaryAudioURL = temporaryURL
         } catch {
+            // A concurrent cancel owns teardown and must retain its lease until startup drains.
+            guard captureGeneration == id else { throw CancellationError() }
+            try? await stream.stopCapture()
             try? stream.removeStreamOutput(self, type: .audio)
             try? stream.removeStreamOutput(self, type: .microphone)
             audioWriter.cancel()
-            try? FileManager.default.removeItem(at: temporaryURL)
+            try? FileManager.default.removeItem(at: outputURL.deletingPathExtension().appendingPathExtension("audio.mov"))
             reset()
             throw error
         }
 
-        temporaryAudioURL = temporaryURL
         destinationAudioURL = outputURL
         isRecording = true
     }
@@ -174,6 +212,7 @@ final class SystemAudioMeetingRecorder: NSObject {
         try? stream.removeStreamOutput(self, type: .audio)
         try? stream.removeStreamOutput(self, type: .microphone)
 
+        releaseAudioLease()
         do {
             try await audioWriter.finish()
             try await Self.exportMixedAudio(
@@ -195,6 +234,10 @@ final class SystemAudioMeetingRecorder: NSObject {
     }
 
     func cancel() async {
+        captureGeneration = UUID()
+        let startup = startupTask
+        startupTask = nil
+        _ = await startup?.result
         if let stream {
             try? await stream.stopCapture()
             try? stream.removeStreamOutput(self, type: .audio)
@@ -210,7 +253,15 @@ final class SystemAudioMeetingRecorder: NSObject {
         reset()
     }
 
+    private func releaseAudioLease() {
+        if let audioLease { audioSessions.release(audioLease) }
+        audioLease = nil
+    }
+
     private func reset() {
+        captureGeneration = UUID()
+        startupTask = nil
+        releaseAudioLease()
         stream = nil
         temporaryAudioURL = nil
         destinationAudioURL = nil

@@ -1,0 +1,4 @@
+module WebRTCVAD {
+ header "fvad.h"
+ export *
+}

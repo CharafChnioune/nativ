@@ -19,7 +19,7 @@ final class SystemAudioMeetingRecorderTests: XCTestCase {
     func testStreamDelegateInterruptionSavesWithoutStoppingStreamAgain() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
-        let recorder = SystemAudioMeetingRecorder()
+        let recorder = SystemAudioMeetingRecorder(audioSessions: .init())
         let stream = StoppedMeetingTestStream(
             filter: SCContentFilter(), configuration: SCStreamConfiguration(), delegate: recorder
         )
@@ -40,7 +40,7 @@ final class SystemAudioMeetingRecorderTests: XCTestCase {
     func testInterruptionDuringStartupThrowsAndAllowsAnotherRecording() async throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
-        let recorder = SystemAudioMeetingRecorder()
+        let recorder = SystemAudioMeetingRecorder(audioSessions: .init())
         let stream = StoppedMeetingTestStream(
             filter: SCContentFilter(), configuration: SCStreamConfiguration(), delegate: recorder
         )
@@ -73,6 +73,29 @@ final class SystemAudioMeetingRecorderTests: XCTestCase {
         XCTAssertGreaterThan(try AVAudioFile(forReading: savedURL).length, 0)
     }
 
+    func testCancelDuringStartupCannotReviveMeetingRecording() async throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recorder = SystemAudioMeetingRecorder(audioSessions: .init())
+        let stream = StoppedMeetingTestStream(filter: SCContentFilter(), configuration: SCStreamConfiguration(), delegate: recorder)
+        let gate = MeetingStartupGate()
+        stream.beforeStartCompletion = { await gate.wait() }
+        let starting = Task { try await recorder.start(stream: stream, outputURL: directory.appendingPathComponent("cancelled.wav")) }
+        let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+        while !(await gate.isWaiting), ContinuousClock.now < deadline { await Task.yield() }
+        guard await gate.isWaiting else {
+            let result = await starting.result
+            XCTFail("Capture never reached injected startup: \(result)")
+            return
+        }
+        let cancel = Task { await recorder.cancel() }
+        for _ in 0..<10 { await Task.yield() }
+        await gate.resume()
+        await cancel.value
+        do { try await starting.value; XCTFail("Cancelled capture revived after startup") } catch is CancellationError {}
+        XCTAssertFalse(recorder.isRecording)
+    }
+
     private func verifySavedAudio(
         stopError: SCStreamError.Code?,
         prepareForInterruption: Bool = false
@@ -80,7 +103,7 @@ final class SystemAudioMeetingRecorderTests: XCTestCase {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
         let outputURL = directory.appendingPathComponent("recording.wav")
-        let recorder = SystemAudioMeetingRecorder()
+        let recorder = SystemAudioMeetingRecorder(audioSessions: .init())
         let stream = StoppedMeetingTestStream(
             filter: SCContentFilter(), configuration: SCStreamConfiguration(), delegate: recorder
         )
@@ -189,4 +212,11 @@ private final class StoppedMeetingTestStream: SCStream, @unchecked Sendable {
             audioOutput?.stream?(self, didOutputSampleBuffer: sampleBuffer, of: .microphone)
         }
     }
+}
+
+private actor MeetingStartupGate {
+    var continuation: CheckedContinuation<Void, Never>?
+    var isWaiting: Bool { continuation != nil }
+    func wait() async { await withCheckedContinuation { continuation = $0 } }
+    func resume() { continuation?.resume(); continuation = nil }
 }

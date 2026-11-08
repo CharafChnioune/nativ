@@ -17,7 +17,7 @@ final class AudioInputLevelMonitor: ObservableObject {
     @Published private(set) var isMonitoring = false
     @Published private(set) var errorMessage: String?
 
-    private let inputSession = AudioInputCaptureSession(passive: true)
+    private let inputSession = AudioInputCaptureSession(passive: true, owner: AudioSessionOwner(name: "Input test"))
     private var requestID = UUID()
     private var realtimeMeter: RealtimeAudioMeter?
     private var meterPublisherTask: Task<Void, Never>?
@@ -163,9 +163,18 @@ final class AudioInputCaptureSession {
     private var delivery: AudioInputCaptureDelivery?
     private var operation: Task<Void, Never>?
     private var generation = UUID()
+    private let audioSessions: AudioSessionCoordinator
+    private let owner: AudioSessionOwner
+    private let passiveListener: Bool
+    private var lease: AudioSessionLease?
 
-    init(passive: Bool = false, makeCapture: (() -> any AudioInputCaptureDriving)? = nil) {
+    init(passive: Bool = false, owner: AudioSessionOwner = .init(name: "Microphone recording"),
+         passiveListener: Bool = false, audioSessions: AudioSessionCoordinator = .shared,
+         makeCapture: (() -> any AudioInputCaptureDriving)? = nil) {
         self.makeCapture = makeCapture ?? { SystemAudioInputCapture(passive: passive) }
+        self.owner = owner
+        self.passiveListener = passiveListener
+        self.audioSessions = audioSessions
     }
 
     func start(
@@ -175,12 +184,20 @@ final class AudioInputCaptureSession {
     ) async throws {
         stop()
         let id = generation
+        await operation?.value
+        guard generation == id else { throw CancellationError() }
+        let lease = try await audioSessions.acquire(owner: owner, resources: [.microphone], passive: passiveListener)
+        guard generation == id, !Task.isCancelled else {
+            audioSessions.release(lease)
+            throw CancellationError()
+        }
+        self.lease = lease
         let capture = makeCapture()
         let delivery = AudioInputCaptureDelivery(tap: tap)
         self.capture = capture
         self.delivery = delivery
         let previous = operation
-        let start = Task {
+        let start = Task { [self] in
             await previous?.value
             guard generation == id, !Task.isCancelled else { throw CancellationError() }
             try await capture.start(deviceUniqueID: deviceUniqueID, delivery: delivery) { [weak self] error in
@@ -221,22 +238,36 @@ final class AudioInputCaptureSession {
         generation = UUID()
         delivery?.stop()
         delivery = nil
-        guard let capture else { return }
+        let capture = capture
+        let lease = lease
         self.capture = nil
+        self.lease = nil
         let previous = operation
+        let audioSessions = audioSessions
         operation = Task {
             await previous?.value
-            await capture.stop()
+            await capture?.stop()
+            if let lease { audioSessions.release(lease) }
         }
+    }
+
+    /// Wait for this exact teardown, including startup and the underlying device stop.
+    func stopAndWait() async {
+        stop()
+        let terminalOperation = operation
+        await terminalOperation?.value
     }
 
     isolated deinit {
         delivery?.stop()
         let capture = capture
+        let lease = lease
+        let audioSessions = audioSessions
         let previous = operation
-        Task {
+        Task { @MainActor in
             await previous?.value
             await capture?.stop()
+            if let lease { audioSessions.release(lease) }
         }
     }
 }

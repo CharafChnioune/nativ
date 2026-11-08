@@ -162,7 +162,7 @@ final class VoiceAudioRecorder {
                 create: true
             )
             let directory = applicationSupport
-                .appendingPathComponent("Nativ", isDirectory: true)
+                .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
                 .appendingPathComponent("Voice Recordings", isDirectory: true)
             try FileManager.default.createDirectory(
                 at: directory,
@@ -253,6 +253,12 @@ final class VoiceAudioRecorder {
             return nil
         }
         return recordingURL
+    }
+
+    func stopAndWait() async -> URL? {
+        let url = stop()
+        await inputSession.stopAndWait()
+        return url
     }
 
     func discard() {
