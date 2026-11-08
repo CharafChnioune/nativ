@@ -1,0 +1,5447 @@
+{
+  "schema_version": 1,
+  "qualification_status": "experimental-unqualified",
+  "outcome": "aborted; 100 warm turns and 30-minute endurance not achieved",
+  "primary_run": {
+    "schema_version": 1,
+    "run_id": "7f71bee6-4f46-4c18-82c0-9f419a8eb3aa",
+    "started_utc": "2026-11-08T12:36:13Z",
+    "measurement": "Synthetic fixture end-input commit to received loopback text/PCM; excludes capture, VAD endpointing, playback, acoustic output and human interpretation quality",
+    "qualified": false,
+    "cold_start_definition": "New helper process and model load; OS file cache retained",
+    "hardware": {
+      "model": "Mac17,3",
+      "chip": "Apple M5",
+      "ram_bytes": 17179869184,
+      "macos": "26.6",
+      "macos_build": "25G72"
+    },
+    "software": {
+      "python": "3.9.6 (default, Oct 19 2026, 19:18:13) \n[Clang 21.0.0 (clang-2100.4.1.1)]",
+      "websockets": "15.0.1",
+      "git_head_at_start": "5cb79ed65659414774745c1331cce08397d16055"
+    },
+    "identity": {
+      "runtime": {
+        "repository": "https://github.com/ggml-org/llama.cpp.git",
+        "commit": "cd959bae99ff4bed22bef2604f45241c09bbb8c8",
+        "version": "0.9.0",
+        "architecture": "arm64",
+        "backend": "Metal",
+        "license": "MIT",
+        "executable": "bin/llama-server",
+        "buildFlags": [
+          "-DCMAKE_BUILD_TYPE=Release",
+          "-DCMAKE_OSX_ARCHITECTURES=arm64",
+          "-DGGML_METAL=ON",
+          "-DGGML_METAL_EMBED_LIBRARY=ON",
+          "-DGGML_NATIVE=OFF",
+          "-DBUILD_SHARED_LIBS=OFF",
+          "-DLLAMA_BUILD_TESTS=OFF",
+          "-DLLAMA_BUILD_EXAMPLES=OFF",
+          "-DLLAMA_BUILD_TOOLS=ON",
+          "-DLLAMA_CURL=OFF",
+          "-DLLAMA_OPENSSL=OFF"
+        ],
+        "patches": [
+          {
+            "filename": "reject-browser-origins.patch",
+            "sha256": "77cb10eff2c10e4d0d5b2919cc7853956304550954f5108052078297811513c1",
+            "purpose": "Reject every nonempty Origin for native-only loopback HTTP/WebSocket requests."
+          }
+        ],
+        "validatedVersion": "0.9.0-dev (build 12110, commit cd959bae9)"
+      },
+      "model": {
+        "repository": "LiquidAI/LFM3-Omni-2B-GGUF",
+        "revision": "d508b88f08a5b4286f2d2805a6a8d69a0ff44c72",
+        "license": "LFM Open License v1.0 (lfm1.0)",
+        "artifacts": {
+          "Q8_0": {
+            "filename": "LFM3-Omni-2B-Q8_0.gguf",
+            "size": 1846240768,
+            "sha256": "59118f661eaacb93d204723d76355b53347f0940b508c11412f6290fd49158d4"
+          },
+          "Q4_K_M": {
+            "filename": "LFM3-Omni-2B-Q4_K_M.gguf",
+            "size": 1099630080,
+            "sha256": "9f8d30e9d4fd7a9349d586e077988229b3ca0a0e4ad730897563d1eccc9893e2"
+          },
+          "projector": {
+            "filename": "mmproj-LFM3-Omni-2B-Q8_0.gguf",
+            "size": 506842528,
+            "sha256": "8a25f9d1931244429de404fccacfb7fb933970a36aa5688d2f5069f29c6b27b1"
+          }
+        }
+      },
+      "helper_sha256": "360abd72ac928837ec91216a66d919e36abef8e2f38304c9f438f529ceeb6c80",
+      "harness_sha256": "d506ac91228d72267da1427883dffd3a164085926601d4aeb7baa59cc13b1d9a",
+      "runtime_build_evidence_sha256": "8c216d156bb40369926486147eefacc495f09dc6d7a020a66e76998c1d2c24c9"
+    },
+    "concurrent_activity": "Root native app tests/build with up to 3 compiler jobs and later UI inspection; possible lightweight Swift package checks; unrelated user apps and pre-existing system swap; no other planned model inference",
+    "protocol": {
+      "input_pacing": "20ms chunks at real-time rate",
+      "input_format": "PCM16 LE mono 16000Hz",
+      "context": "fresh WebSocket per turn, same resident single-slot helper",
+      "ctx_size": 4096,
+      "tools": [],
+      "reasoning": "off",
+      "max_output_tokens": 512,
+      "tts_n_predict": 512,
+      "outputs": "PCM16 realtime; FLOAT32 /tts using actual received format metadata",
+      "first_nonzero_pcm_threshold": "First received block with any normalized PCM sample >0.0001 in absolute value; still not acoustic onset",
+      "audio_retained": false,
+      "no_microphone_or_playback": true,
+      "network": "authenticated 127.0.0.1 only, no proxies"
+    },
+    "fixtures": {
+      "nl": {
+        "path": "build/lfm-realtime/probes/q8-fixed/synthetic-nl.wav",
+        "sha256": "1fcaaca892f61ae35e2c8a23c6919b1488c82cb0573c59f065ba14832e3abd0a",
+        "seconds": 2.47,
+        "kind": "Existing original synthetic fixture; macOS Xander/Samantha source voice, not output TTS"
+      },
+      "en": {
+        "path": "build/lfm-realtime/probes/q8-fixed/synthetic-en.wav",
+        "sha256": "780e5ac06f1fdd319089b9c86df25076733e6226b242c12fd9e389aba8eb50fa",
+        "seconds": 2.9701875,
+        "kind": "Existing original synthetic fixture; macOS Xander/Samantha source voice, not output TTS"
+      }
+    },
+    "targets": {
+      "duration_seconds": 1800.0,
+      "warm_turns": 100,
+      "process_cold_starts": 10
+    },
+    "guard": {
+      "baseline": {
+        "monotonic": 1.403853041,
+        "pressure_level": 2,
+        "swap_used_mib": 18990.62,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0
+      },
+      "critical_pressure_level": 4,
+      "maximum_swap_growth_mib": 2048,
+      "rss_limitation": "Process RSS excludes some Metal/unified-memory accounting; not a hardware-fit guarantee"
+    },
+    "cold_starts": [
+      {
+        "index": 1,
+        "ready_seconds": 2.387869458,
+        "memory": {
+          "monotonic": 3.882100125,
+          "pressure_level": 2,
+          "swap_used_mib": 19982.19,
+          "helper_rss_bytes": 2534227968,
+          "helper_cpu_percent": 41.1,
+          "helper_pid": 9512
+        },
+        "process_shutdown_seconds": 0.1760710000000003
+      },
+      {
+        "index": 2,
+        "ready_seconds": 1.2466389169999994,
+        "memory": {
+          "monotonic": 5.322932,
+          "pressure_level": 2,
+          "swap_used_mib": 20061.44,
+          "helper_rss_bytes": 2585739264,
+          "helper_cpu_percent": 52.1,
+          "helper_pid": 9529
+        },
+        "process_shutdown_seconds": 0.12738845800000043
+      },
+      {
+        "index": 3,
+        "ready_seconds": 1.2351337080000002,
+        "memory": {
+          "monotonic": 6.714610125,
+          "pressure_level": 2,
+          "swap_used_mib": 20251.44,
+          "helper_rss_bytes": 2561081344,
+          "helper_cpu_percent": 55.7,
+          "helper_pid": 9548
+        },
+        "process_shutdown_seconds": 0.12881425000000046
+      },
+      {
+        "index": 4,
+        "ready_seconds": 1.072517833,
+        "memory": {
+          "monotonic": 7.951751333,
+          "pressure_level": 2,
+          "swap_used_mib": 20251.44,
+          "helper_rss_bytes": 2602352640,
+          "helper_cpu_percent": 68.5,
+          "helper_pid": 9562
+        },
+        "process_shutdown_seconds": 0.08137379199999906
+      },
+      {
+        "index": 5,
+        "ready_seconds": 0.998676291999999,
+        "memory": {
+          "monotonic": 9.042946416,
+          "pressure_level": 2,
+          "swap_used_mib": 20243.44,
+          "helper_rss_bytes": 2612363264,
+          "helper_cpu_percent": 55.8,
+          "helper_pid": 9571
+        },
+        "process_shutdown_seconds": 0.07668904099999985
+      },
+      {
+        "index": 6,
+        "ready_seconds": 0.8415085419999997,
+        "memory": {
+          "monotonic": 9.973150375,
+          "pressure_level": 2,
+          "swap_used_mib": 20235.44,
+          "helper_rss_bytes": 2608005120,
+          "helper_cpu_percent": 66.7,
+          "helper_pid": 9578
+        },
+        "process_shutdown_seconds": 0.07334125000000036
+      },
+      {
+        "index": 7,
+        "ready_seconds": 0.9950808330000012,
+        "memory": {
+          "monotonic": 11.053463041,
+          "pressure_level": 2,
+          "swap_used_mib": 20219.44,
+          "helper_rss_bytes": 2597257216,
+          "helper_cpu_percent": 60.7,
+          "helper_pid": 9585
+        },
+        "process_shutdown_seconds": 0.07757162499999914
+      },
+      {
+        "index": 8,
+        "ready_seconds": 1.1551183750000007,
+        "memory": {
+          "monotonic": 12.301873166,
+          "pressure_level": 2,
+          "swap_used_mib": 20163.38,
+          "helper_rss_bytes": 2599632896,
+          "helper_cpu_percent": 49.9,
+          "helper_pid": 9593
+        },
+        "process_shutdown_seconds": 0.0752956660000006
+      },
+      {
+        "index": 9,
+        "ready_seconds": 2.319042166000001,
+        "memory": {
+          "monotonic": 14.71028275,
+          "pressure_level": 2,
+          "swap_used_mib": 20322.81,
+          "helper_rss_bytes": 2587082752,
+          "helper_cpu_percent": 42.9,
+          "helper_pid": 9602
+        },
+        "process_shutdown_seconds": 0.06948954100000115
+      },
+      {
+        "index": 10,
+        "ready_seconds": 1.7189404580000005,
+        "memory": {
+          "monotonic": 16.51400825,
+          "pressure_level": 2,
+          "swap_used_mib": 20288.75,
+          "helper_rss_bytes": 2564669440,
+          "helper_cpu_percent": 43.2,
+          "helper_pid": 9616
+        },
+        "process_shutdown_seconds": 0.12874487499999887
+      }
+    ],
+    "turns": [
+      {
+        "mode": "direct",
+        "source": "nl",
+        "target": "en",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 12,
+          "response.output_audio.delta": 43,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "The appointment is at half past four, not at four.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.4712668330000014,
+        "max_input_send_lateness_seconds": 0.013839791000002322,
+        "commit_monotonic": 20.809255958,
+        "first_text_seconds": 0.1285471249999972,
+        "first_audio_seconds": 0.29208887499999747,
+        "first_nonzero_pcm_seconds": 0.33206616699999714,
+        "response_status": "completed",
+        "text_response_done_seconds": 1.888349667,
+        "done_seconds": 1.888349667,
+        "socket_closed_seconds": 2.8948407080000003,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 80640,
+          "bytes": 161280,
+          "duration_seconds": 3.36,
+          "peak": 0.447418212890625,
+          "rms": 0.05604423130783599,
+          "sha256": "36f0f9cfab3052bfad17d75cb92b07002af7deda40e4ded3e4a92e1fab84efd1"
+        },
+        "audio_chunks": 43,
+        "audio_before_response_completion": true,
+        "index": 1,
+        "warm_elapsed_seconds": 5.445991166999999
+      },
+      {
+        "mode": "direct",
+        "source": "en",
+        "target": "nl",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 21,
+          "response.output_audio.delta": 53,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "Vul alstublieft twee zitplaatsen voor vrijdag, niet voor dondag.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.9701875,
+        "input_elapsed_seconds": 2.9722448330000013,
+        "max_input_send_lateness_seconds": 0.0033709999999977924,
+        "commit_monotonic": 26.686688958,
+        "first_text_seconds": 0.09274258299999971,
+        "first_audio_seconds": 0.2379695419999983,
+        "first_nonzero_pcm_seconds": 0.29962095799999844,
+        "response_status": "completed",
+        "text_response_done_seconds": 2.195266374999999,
+        "done_seconds": 2.195266374999999,
+        "socket_closed_seconds": 3.197527749999999,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 99840,
+          "bytes": 199680,
+          "duration_seconds": 4.16,
+          "peak": 0.5020751953125,
+          "rms": 0.056889125244503694,
+          "sha256": "f7a91592365e486c16ee8f79debd5356223e16c5b91e588aaff3c7c316352b46"
+        },
+        "audio_chunks": 53,
+        "audio_before_response_completion": true,
+        "index": 2,
+        "warm_elapsed_seconds": 11.625742041999999
+      },
+      {
+        "mode": "two-pass",
+        "source": "nl",
+        "target": "en",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 1,
+          "response.output_text.delta": 14,
+          "response.output_text.done": 1,
+          "response.content_part.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "The pickup is at half past four, not at four o'clock.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.472222417000001,
+        "max_input_send_lateness_seconds": 0.0031933749999986105,
+        "commit_monotonic": 32.36350825,
+        "first_text_seconds": 0.11099062499999945,
+        "response_status": "completed",
+        "text_response_done_seconds": 0.43410241599999466,
+        "done_seconds": 3.446682082999999,
+        "socket_closed_seconds": 1.4439887079999991,
+        "first_audio_seconds": 1.635520665999998,
+        "tts_request_first_audio_seconds": 0.1822596660000002,
+        "first_nonzero_pcm_seconds": 1.635520665999998,
+        "audio": {
+          "encoding": "float32",
+          "sample_rate": 24000,
+          "sample_count": 84480,
+          "bytes": 337920,
+          "duration_seconds": 3.52,
+          "peak": 0.46400585770606995,
+          "rms": 0.06337692835739443,
+          "sha256": "d49536d6bf3bf8744de51db34517f5ce3b92f3fe221bd66335b9ef00a22c21ca"
+        },
+        "audio_chunks": 45,
+        "tts_content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+        "audio_before_response_completion": true,
+        "index": 3,
+        "warm_elapsed_seconds": 17.552448959
+      },
+      {
+        "mode": "two-pass",
+        "source": "en",
+        "target": "nl",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 1,
+          "response.output_text.delta": 11,
+          "response.output_text.done": 1,
+          "response.content_part.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "Please book two seats for Friday, not for Thursday.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.9701875,
+        "input_elapsed_seconds": 2.9705091249999995,
+        "max_input_send_lateness_seconds": 0.004736957999995184,
+        "commit_monotonic": 38.798929875,
+        "first_text_seconds": 0.09318266600000413,
+        "response_status": "completed",
+        "text_response_done_seconds": 0.3219580000000022,
+        "done_seconds": 2.7614975830000006,
+        "socket_closed_seconds": 1.3287190830000029,
+        "first_audio_seconds": 1.5032163330000046,
+        "tts_request_first_audio_seconds": 0.17417654200000499,
+        "first_nonzero_pcm_seconds": 1.5032163330000046,
+        "audio": {
+          "encoding": "float32",
+          "sample_rate": 24000,
+          "sample_count": 82560,
+          "bytes": 330240,
+          "duration_seconds": 3.44,
+          "peak": 0.367973655462265,
+          "rms": 0.059708071207896216,
+          "sha256": "6ccba05163a8bbf35b92d6413ebd5073012e0245d44f8bb2c3a739973ddc17e1"
+        },
+        "audio_chunks": 44,
+        "tts_content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+        "audio_before_response_completion": true,
+        "index": 4,
+        "warm_elapsed_seconds": 23.302045084000003
+      },
+      {
+        "mode": "direct",
+        "source": "nl",
+        "target": "en",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 12,
+          "response.output_audio.delta": 47,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "The appointment is at half past four, not at four.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.4720384999999965,
+        "max_input_send_lateness_seconds": 0.0032300000000020646,
+        "commit_monotonic": 44.040222916,
+        "first_text_seconds": 0.09797491700000194,
+        "first_audio_seconds": 0.23952520899999996,
+        "first_nonzero_pcm_seconds": 0.2700440420000021,
+        "response_status": "completed",
+        "text_response_done_seconds": 1.850259125000001,
+        "done_seconds": 1.850259125000001,
+        "socket_closed_seconds": 2.852998625000005,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 88320,
+          "bytes": 176640,
+          "duration_seconds": 3.68,
+          "peak": 0.428314208984375,
+          "rms": 0.05684098668851598,
+          "sha256": "e76d284aeb663f41c2deb6f51643aef1d6c6b25ac21f53f7b532037b2682a766"
+        },
+        "audio_chunks": 47,
+        "audio_before_response_completion": true,
+        "index": 5,
+        "warm_elapsed_seconds": 28.634683458999998
+      },
+      {
+        "mode": "direct",
+        "source": "en",
+        "target": "nl",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 20,
+          "response.output_audio.delta": 47,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "Vul alstublieft twee zitjes voor vrijdag, niet voor dinsdag.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.9701875,
+        "input_elapsed_seconds": 2.970481124999999,
+        "max_input_send_lateness_seconds": 0.021079874999998083,
+        "commit_monotonic": 49.876715916,
+        "first_text_seconds": 0.10134591699999618,
+        "first_audio_seconds": 0.2549139589999996,
+        "first_nonzero_pcm_seconds": 0.33115224999999526,
+        "response_status": "completed",
+        "text_response_done_seconds": 2.302526583999999,
+        "done_seconds": 2.302526583999999,
+        "socket_closed_seconds": 3.3061132499999957,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 88320,
+          "bytes": 176640,
+          "duration_seconds": 3.68,
+          "peak": 0.4951171875,
+          "rms": 0.06258361662134307,
+          "sha256": "cea9c2d9294e9ec796fabc43c77bee2a6a5965275f0e782ea7e3876ac310755d"
+        },
+        "audio_chunks": 47,
+        "audio_before_response_completion": true,
+        "index": 6,
+        "warm_elapsed_seconds": 34.924350875
+      },
+      {
+        "mode": "two-pass",
+        "source": "nl",
+        "target": "en",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 1,
+          "response.output_text.delta": 14,
+          "response.output_text.done": 1,
+          "response.content_part.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "The pickup is at half past four, not at four o'clock.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.470237042000001,
+        "max_input_send_lateness_seconds": 0.0024225000000015484,
+        "commit_monotonic": 55.669862083,
+        "first_text_seconds": 0.09358504200000084,
+        "response_status": "completed",
+        "text_response_done_seconds": 0.3930106250000023,
+        "done_seconds": 2.980846625000005,
+        "socket_closed_seconds": 1.4026144580000022,
+        "first_audio_seconds": 1.5488213750000028,
+        "tts_request_first_audio_seconds": 0.14606658299999964,
+        "first_nonzero_pcm_seconds": 1.5488213750000028,
+        "audio": {
+          "encoding": "float32",
+          "sample_rate": 24000,
+          "sample_count": 96000,
+          "bytes": 384000,
+          "duration_seconds": 4.0,
+          "peak": 0.5563892722129822,
+          "rms": 0.0653898606987171,
+          "sha256": "6f17d23d1c32fb24f5474d107f0a406c2323d340000ccdb327ad145482062a09"
+        },
+        "audio_chunks": 51,
+        "tts_content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+        "audio_before_response_completion": true,
+        "index": 7,
+        "warm_elapsed_seconds": 40.392381
+      },
+      {
+        "mode": "two-pass",
+        "source": "en",
+        "target": "nl",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 1,
+          "response.output_text.delta": 11,
+          "response.output_text.done": 1,
+          "response.content_part.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "Please book two seats for Friday, not for Thursday.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.9701875,
+        "input_elapsed_seconds": 2.9709683750000053,
+        "max_input_send_lateness_seconds": 0.0038657499999956713,
+        "commit_monotonic": 61.629277833,
+        "first_text_seconds": 0.09149720799999983,
+        "response_status": "completed",
+        "text_response_done_seconds": 0.3145083749999955,
+        "done_seconds": 3.1461189580000024,
+        "socket_closed_seconds": 1.3184983749999972,
+        "first_audio_seconds": 1.4870069999999984,
+        "tts_request_first_audio_seconds": 0.16828250000000367,
+        "first_nonzero_pcm_seconds": 1.4870069999999984,
+        "audio": {
+          "encoding": "float32",
+          "sample_rate": 24000,
+          "sample_count": 80640,
+          "bytes": 322560,
+          "duration_seconds": 3.36,
+          "peak": 0.38041412830352783,
+          "rms": 0.05827552404030515,
+          "sha256": "e294ce833ccefc32e019e97d02b2f83a31c5d85125b44a02ecf8c7fe8ee4b083"
+        },
+        "audio_chunks": 43,
+        "tts_content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+        "audio_before_response_completion": true,
+        "index": 8,
+        "warm_elapsed_seconds": 46.523263
+      },
+      {
+        "mode": "direct",
+        "source": "nl",
+        "target": "en",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 12,
+          "response.output_audio.delta": 43,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "The appointment is at half past four, not at four.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.4720805829999932,
+        "max_input_send_lateness_seconds": 0.006283207999985052,
+        "commit_monotonic": 67.287057791,
+        "first_text_seconds": 0.1123952920000022,
+        "first_audio_seconds": 0.29928950000000043,
+        "first_nonzero_pcm_seconds": 0.36119837500000074,
+        "response_status": "completed",
+        "text_response_done_seconds": 2.5439708340000067,
+        "done_seconds": 2.5439708340000067,
+        "socket_closed_seconds": 3.51906575000001,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 80640,
+          "bytes": 161280,
+          "duration_seconds": 3.36,
+          "peak": 0.41455078125,
+          "rms": 0.060185795299614715,
+          "sha256": "7b61d0a0748469276b202d98b1f68750a91e1e504136c7a8c5e8e6b6e6263d90"
+        },
+        "audio_chunks": 43,
+        "audio_before_response_completion": true,
+        "index": 9,
+        "warm_elapsed_seconds": 52.54769
+      },
+      {
+        "mode": "direct",
+        "source": "en",
+        "target": "nl",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 21,
+          "response.output_audio.delta": 50,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "Vul alstublieft twee zitplaatsen voor vrijdag, niet voor dondag.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.9701875,
+        "input_elapsed_seconds": 2.9705748330000006,
+        "max_input_send_lateness_seconds": 0.0030490000000042983,
+        "commit_monotonic": 73.788256166,
+        "first_text_seconds": 0.10326129199999912,
+        "first_audio_seconds": 0.2543123749999978,
+        "first_nonzero_pcm_seconds": 0.32335037500000396,
+        "response_status": "completed",
+        "text_response_done_seconds": 3.2506740840000106,
+        "done_seconds": 3.2506740840000106,
+        "socket_closed_seconds": 4.206371000000004,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 94080,
+          "bytes": 188160,
+          "duration_seconds": 3.92,
+          "peak": 0.64404296875,
+          "rms": 0.06041840990352142,
+          "sha256": "4b8d7bc8c4a5cafbab5fb2d901aa054077e5a4e43b483c6f2b53892692e6439a"
+        },
+        "audio_chunks": 50,
+        "audio_before_response_completion": true,
+        "index": 10,
+        "warm_elapsed_seconds": 59.73601895899999
+      },
+      {
+        "mode": "two-pass",
+        "source": "nl",
+        "target": "en",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 1,
+          "response.output_text.delta": 14,
+          "response.output_text.done": 1,
+          "response.content_part.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "The pickup is at half past four, not at four o'clock.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.4709633749999966,
+        "max_input_send_lateness_seconds": 0.00981562500000166,
+        "commit_monotonic": 80.484499958,
+        "first_text_seconds": 0.12632424999999614,
+        "response_status": "completed",
+        "text_response_done_seconds": 0.5626759169999929,
+        "done_seconds": 7.0931605829999995,
+        "socket_closed_seconds": 1.5792662500000034,
+        "first_audio_seconds": 1.8575621250000012,
+        "tts_request_first_audio_seconds": 0.27724216699999715,
+        "first_nonzero_pcm_seconds": 1.8575621250000012,
+        "audio": {
+          "encoding": "float32",
+          "sample_rate": 24000,
+          "sample_count": 103680,
+          "bytes": 414720,
+          "duration_seconds": 4.32,
+          "peak": 0.4989258944988251,
+          "rms": 0.06265017300813883,
+          "sha256": "22f6930dd871a807a08cda81b0624ae50304834a78197179d1e359ee48ed2bca"
+        },
+        "audio_chunks": 55,
+        "tts_content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+        "audio_before_response_completion": true,
+        "index": 11,
+        "warm_elapsed_seconds": 69.348414709
+      },
+      {
+        "mode": "two-pass",
+        "source": "en",
+        "target": "nl",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 1,
+          "response.output_text.delta": 11,
+          "response.output_text.done": 1,
+          "response.content_part.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "Please book two seats for Friday, not for Thursday.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.9701875,
+        "input_elapsed_seconds": 3.0856132500000086,
+        "max_input_send_lateness_seconds": 0.19867308300000275,
+        "commit_monotonic": 90.830550958,
+        "first_text_seconds": 0.3068481669999983,
+        "response_status": "completed",
+        "text_response_done_seconds": 1.3694957080000023,
+        "done_seconds": 8.060121207999998,
+        "socket_closed_seconds": 2.224839916999997,
+        "first_audio_seconds": 2.4852880830000004,
+        "tts_request_first_audio_seconds": 0.25838383300001055,
+        "first_nonzero_pcm_seconds": 2.4852880830000004,
+        "audio": {
+          "encoding": "float32",
+          "sample_rate": 24000,
+          "sample_count": 80640,
+          "bytes": 322560,
+          "duration_seconds": 3.36,
+          "peak": 0.41046157479286194,
+          "rms": 0.05559213943182508,
+          "sha256": "ce7cd65321564a6c25adfd22bd4b08031c9a3b14a39f6daab01dd66285b41681"
+        },
+        "audio_chunks": 43,
+        "tts_content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+        "audio_before_response_completion": true,
+        "index": 12,
+        "warm_elapsed_seconds": 80.78807125
+      },
+      {
+        "mode": "direct",
+        "source": "nl",
+        "target": "en",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 12,
+          "response.output_audio.delta": 38,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "The appointment is at half past four, not at four.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.4734428750000035,
+        "max_input_send_lateness_seconds": 0.07838629199999048,
+        "commit_monotonic": 101.714293416,
+        "first_text_seconds": 0.20589983399999312,
+        "first_audio_seconds": 0.5848020419999926,
+        "first_nonzero_pcm_seconds": 0.7250242089999972,
+        "response_status": "completed",
+        "text_response_done_seconds": 5.619086374999995,
+        "done_seconds": 5.619086374999995,
+        "socket_closed_seconds": 6.797320541999994,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 71040,
+          "bytes": 142080,
+          "duration_seconds": 2.96,
+          "peak": 0.39453125,
+          "rms": 0.05595277937745723,
+          "sha256": "ef831a9c6f18fe50240bd22e8bdc39d8dd4614866db98791550752ccc0f2e8d3"
+        },
+        "audio_chunks": 38,
+        "audio_before_response_completion": true,
+        "index": 13,
+        "warm_elapsed_seconds": 90.298375792
+      },
+      {
+        "mode": "direct",
+        "source": "en",
+        "target": "nl",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 21,
+          "response.output_audio.delta": 52,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "Vul alstublieft twee zitplaatsen voor vrijdag, niet voor dondag.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.9701875,
+        "input_elapsed_seconds": 2.9746316670000112,
+        "max_input_send_lateness_seconds": 0.06341504200000259,
+        "commit_monotonic": 111.705251458,
+        "first_text_seconds": 0.7074142919999957,
+        "first_audio_seconds": 1.400759624999992,
+        "first_nonzero_pcm_seconds": 2.627287457999998,
+        "response_status": "completed",
+        "text_response_done_seconds": 9.495408832999999,
+        "done_seconds": 9.495408832999999,
+        "socket_closed_seconds": 10.563932874999992,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 97920,
+          "bytes": 195840,
+          "duration_seconds": 4.08,
+          "peak": 0.5245361328125,
+          "rms": 0.060537986270798816,
+          "sha256": "621bd27194f44474f2a3c26977c07f93dc3bdc184da3f2d724fa05a3bcbd14b9"
+        },
+        "audio_chunks": 52,
+        "audio_before_response_completion": true,
+        "index": 14,
+        "warm_elapsed_seconds": 104.045731042
+      },
+      {
+        "mode": "two-pass",
+        "source": "nl",
+        "target": "en",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 1,
+          "response.output_text.delta": 14,
+          "response.output_text.done": 1,
+          "response.content_part.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "The pickup is at half past four, not at four o'clock.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.4823240839999983,
+        "max_input_send_lateness_seconds": 0.052291041999993126,
+        "commit_monotonic": 125.007020625,
+        "first_text_seconds": 0.6748646660000048,
+        "response_status": "completed",
+        "text_response_done_seconds": 1.2016012079999996,
+        "done_seconds": 10.908915250000007,
+        "socket_closed_seconds": 2.236299333000005,
+        "first_audio_seconds": 2.8129022910000003,
+        "tts_request_first_audio_seconds": 0.5611165409999899,
+        "first_nonzero_pcm_seconds": 2.8129022910000003,
+        "audio": {
+          "encoding": "float32",
+          "sample_rate": 24000,
+          "sample_count": 92160,
+          "bytes": 368640,
+          "duration_seconds": 3.84,
+          "peak": 0.549024760723114,
+          "rms": 0.06896257323235146,
+          "sha256": "151d9cc24d9b736c0e1ed79385a05a9d21f7dd413e2d9d245eadca379fc5821a"
+        },
+        "audio_chunks": 49,
+        "tts_content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+        "audio_before_response_completion": true,
+        "index": 15,
+        "warm_elapsed_seconds": 117.80467825000001
+      },
+      {
+        "mode": "two-pass",
+        "source": "en",
+        "target": "nl",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 1,
+          "response.output_text.delta": 11,
+          "response.output_text.done": 1,
+          "response.content_part.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "Please book two seats for Friday, not for Thursday.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.9701875,
+        "input_elapsed_seconds": 2.988434957999999,
+        "max_input_send_lateness_seconds": 0.10156495799998311,
+        "commit_monotonic": 139.145479416,
+        "first_text_seconds": 0.28621079199999144,
+        "response_status": "completed",
+        "text_response_done_seconds": 0.8104156249999903,
+        "done_seconds": 10.277570416999993,
+        "socket_closed_seconds": 1.890849916999997,
+        "first_audio_seconds": 2.3206325419999985,
+        "tts_request_first_audio_seconds": 0.40472379199999864,
+        "first_nonzero_pcm_seconds": 2.3206325419999985,
+        "audio": {
+          "encoding": "float32",
+          "sample_rate": 24000,
+          "sample_count": 88320,
+          "bytes": 353280,
+          "duration_seconds": 3.68,
+          "peak": 0.4141051769256592,
+          "rms": 0.06525378473234654,
+          "sha256": "34a2a3d6eed626748b3f1de4ab5c9c3147945addb83c12b183906c34975896b6"
+        },
+        "audio_chunks": 47,
+        "tts_content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+        "audio_before_response_completion": true,
+        "index": 16,
+        "warm_elapsed_seconds": 131.237651709
+      },
+      {
+        "mode": "direct",
+        "source": "nl",
+        "target": "en",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 12,
+          "response.output_audio.delta": 39,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "The appointment is at half past four, not at four.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.4725236670000186,
+        "max_input_send_lateness_seconds": 0.11922020899999097,
+        "commit_monotonic": 152.405654958,
+        "first_text_seconds": 0.29368874999997274,
+        "first_audio_seconds": 0.7899812080000004,
+        "first_nonzero_pcm_seconds": 1.040790957999974,
+        "response_status": "completed",
+        "text_response_done_seconds": 8.330582207999981,
+        "done_seconds": 8.330582207999981,
+        "socket_closed_seconds": 9.710305999999974,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 72960,
+          "bytes": 145920,
+          "duration_seconds": 3.04,
+          "peak": 0.492034912109375,
+          "rms": 0.05356785322280961,
+          "sha256": "edabd475d29983cd5b35ae686f5466ff12f802fcd1550f8c589a3bf0d0e4560c"
+        },
+        "audio_chunks": 39,
+        "audio_before_response_completion": true,
+        "index": 17,
+        "warm_elapsed_seconds": 144.005392
+      },
+      {
+        "mode": "direct",
+        "source": "en",
+        "target": "nl",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 21,
+          "response.output_audio.delta": 66,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "Vul alstublieft twee zitplaatsen voor vrijdag, niet voor dinsdag.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.9701875,
+        "input_elapsed_seconds": 2.9868924169999786,
+        "max_input_send_lateness_seconds": 0.11127291699997954,
+        "commit_monotonic": 165.443532875,
+        "first_text_seconds": 0.31689033300000347,
+        "first_audio_seconds": 0.760764666,
+        "first_nonzero_pcm_seconds": 1.0773247910000237,
+        "response_status": "completed",
+        "text_response_done_seconds": 14.269524125000004,
+        "done_seconds": 14.269524125000004,
+        "socket_closed_seconds": 15.318815416000007,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 124800,
+          "bytes": 249600,
+          "duration_seconds": 5.2,
+          "peak": 0.502410888671875,
+          "rms": 0.060495276898409396,
+          "sha256": "04f3b99892f23c0cb0373ad72ea90379c5b665a064abc40cad94ba4d15a1a85f"
+        },
+        "audio_chunks": 66,
+        "audio_before_response_completion": true,
+        "index": 18,
+        "warm_elapsed_seconds": 162.508949959
+      },
+      {
+        "mode": "two-pass",
+        "source": "nl",
+        "target": "en",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 1,
+          "response.output_text.delta": 14,
+          "response.output_text.done": 1,
+          "response.content_part.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "The pickup is at half past four, not at four o'clock.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.4748344169999825,
+        "max_input_send_lateness_seconds": 0.12314712500000269,
+        "commit_monotonic": 183.383778875,
+        "first_text_seconds": 0.3435085830000162,
+        "response_status": "completed",
+        "text_response_done_seconds": 1.1052822500000161,
+        "done_seconds": 10.190351541000013,
+        "socket_closed_seconds": 2.240471458000002,
+        "first_audio_seconds": 2.684754416000004,
+        "tts_request_first_audio_seconds": 0.4320238749999987,
+        "first_nonzero_pcm_seconds": 2.684754416000004,
+        "audio": {
+          "encoding": "float32",
+          "sample_rate": 24000,
+          "sample_count": 97920,
+          "bytes": 391680,
+          "duration_seconds": 4.08,
+          "peak": 0.3914627134799957,
+          "rms": 0.05257322064449655,
+          "sha256": "734759796d4d1af057fcaae6b6e978f7b5c558841540c85b2566348eaaa756cd"
+        },
+        "audio_chunks": 52,
+        "tts_content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+        "audio_before_response_completion": true,
+        "index": 19,
+        "warm_elapsed_seconds": 175.31905695900002
+      },
+      {
+        "mode": "two-pass",
+        "source": "en",
+        "target": "nl",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 1,
+          "response.output_text.delta": 11,
+          "response.output_text.done": 1,
+          "response.content_part.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "Please book two seats for Friday, not for Thursday.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.9701875,
+        "input_elapsed_seconds": 2.9892358330000093,
+        "max_input_send_lateness_seconds": 0.1694172500000093,
+        "commit_monotonic": 196.723152916,
+        "first_text_seconds": 0.3034418750000043,
+        "response_status": "completed",
+        "text_response_done_seconds": 0.9349730840000063,
+        "done_seconds": 8.512812666999992,
+        "socket_closed_seconds": 1.983549791999991,
+        "first_audio_seconds": 2.2780957089999845,
+        "tts_request_first_audio_seconds": 0.2936507089999907,
+        "first_nonzero_pcm_seconds": 2.2780957089999845,
+        "audio": {
+          "encoding": "float32",
+          "sample_rate": 24000,
+          "sample_count": 80640,
+          "bytes": 322560,
+          "duration_seconds": 3.36,
+          "peak": 0.44224321842193604,
+          "rms": 0.06831143705620828,
+          "sha256": "6a040ee8544793088e84f530d0fe2db73a59915cbbf71ff231f422d3b22d08bd"
+        },
+        "audio_chunks": 43,
+        "tts_content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+        "audio_before_response_completion": true,
+        "index": 20,
+        "warm_elapsed_seconds": 187.08604595900002
+      },
+      {
+        "mode": "direct",
+        "source": "nl",
+        "target": "en",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 12,
+          "response.output_audio.delta": 43,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "The appointment is at half past four, not at four.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.4726958330000173,
+        "max_input_send_lateness_seconds": 0.08700912500000868,
+        "commit_monotonic": 207.963254166,
+        "first_text_seconds": 0.33322187499999245,
+        "first_audio_seconds": 0.8399060839999777,
+        "first_nonzero_pcm_seconds": 0.9251051249999875,
+        "response_status": "completed",
+        "text_response_done_seconds": 8.103206708999977,
+        "done_seconds": 8.103206708999977,
+        "socket_closed_seconds": 9.136149083999982,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 80640,
+          "bytes": 161280,
+          "duration_seconds": 3.36,
+          "peak": 0.57794189453125,
+          "rms": 0.06081128851628785,
+          "sha256": "2c04426c6554fce5fac11f9ce1f7ab22a1c159ef01b3e19985a9a8c497ec2a3f"
+        },
+        "audio_chunks": 43,
+        "audio_before_response_completion": true,
+        "index": 21,
+        "warm_elapsed_seconds": 198.849213834
+      },
+      {
+        "mode": "direct",
+        "source": "en",
+        "target": "nl",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 21,
+          "response.output_audio.delta": 53,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "Vul alstublieft twee zitplaatsen voor vrijdag, niet voor dondag.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.9701875,
+        "input_elapsed_seconds": 2.980135290999982,
+        "max_input_send_lateness_seconds": 0.11836345799997616,
+        "commit_monotonic": 220.544776666,
+        "first_text_seconds": 0.5305252920000214,
+        "first_audio_seconds": 1.4246247089999997,
+        "first_nonzero_pcm_seconds": 1.469303625000009,
+        "response_status": "completed",
+        "text_response_done_seconds": 15.730753084000014,
+        "done_seconds": 15.730753084000014,
+        "socket_closed_seconds": 16.665392459000003,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 99840,
+          "bytes": 199680,
+          "duration_seconds": 4.16,
+          "peak": 0.545013427734375,
+          "rms": 0.06961383564385935,
+          "sha256": "4f14b2f9ea6bc74496d3ce4c627d35854d6fdeb2463a501c3470fe5bcd7a4a8c"
+        },
+        "audio_chunks": 53,
+        "audio_before_response_completion": true,
+        "index": 22,
+        "warm_elapsed_seconds": 218.955002834
+      },
+      {
+        "mode": "two-pass",
+        "source": "nl",
+        "target": "en",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 1,
+          "response.output_text.delta": 14,
+          "response.output_text.done": 1,
+          "response.content_part.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "The pickup is at half past four, not at four o'clock.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.5097460830000102,
+        "max_input_send_lateness_seconds": 0.06259370800000852,
+        "commit_monotonic": 239.889933958,
+        "first_text_seconds": 0.5547629579999978,
+        "response_status": "completed",
+        "text_response_done_seconds": 1.063354457999992,
+        "done_seconds": 12.084368708,
+        "socket_closed_seconds": 2.1073439580000013,
+        "first_audio_seconds": 2.5633459580000135,
+        "tts_request_first_audio_seconds": 0.4498176660000013,
+        "first_nonzero_pcm_seconds": 2.5633459580000135,
+        "audio": {
+          "encoding": "float32",
+          "sample_rate": 24000,
+          "sample_count": 99840,
+          "bytes": 399360,
+          "duration_seconds": 4.16,
+          "peak": 0.4805516004562378,
+          "rms": 0.051146094230159485,
+          "sha256": "9a658ef54b5b83afa55081719d9fae28356bee9d1b68a1c610cb497b6102c606"
+        },
+        "audio_chunks": 53,
+        "tts_content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+        "audio_before_response_completion": true,
+        "index": 23,
+        "warm_elapsed_seconds": 233.778837417
+      },
+      {
+        "mode": "two-pass",
+        "source": "en",
+        "target": "nl",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 1,
+          "response.output_text.delta": 11,
+          "response.output_text.done": 1,
+          "response.content_part.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "Please book two seats for Friday, not for Thursday.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.9701875,
+        "input_elapsed_seconds": 2.970268874999988,
+        "max_input_send_lateness_seconds": 0.124708040999991,
+        "commit_monotonic": 255.326817375,
+        "first_text_seconds": 0.6950416660000371,
+        "response_status": "completed",
+        "text_response_done_seconds": 1.2619703329999936,
+        "done_seconds": 10.803830000000033,
+        "socket_closed_seconds": 2.389128333000002,
+        "first_audio_seconds": 2.934310750000037,
+        "tts_request_first_audio_seconds": 0.4967443750000484,
+        "first_nonzero_pcm_seconds": 2.934310750000037,
+        "audio": {
+          "encoding": "float32",
+          "sample_rate": 24000,
+          "sample_count": 86400,
+          "bytes": 345600,
+          "duration_seconds": 3.6,
+          "peak": 0.3861311674118042,
+          "rms": 0.0641049156429431,
+          "sha256": "dba864491a5e74d15c07a8cfffb20cb21df0630a21d861bd1ffdbec6a64a2242"
+        },
+        "audio_chunks": 46,
+        "tts_content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+        "audio_before_response_completion": true,
+        "index": 24,
+        "warm_elapsed_seconds": 248.02623054200004
+      },
+      {
+        "mode": "direct",
+        "source": "nl",
+        "target": "en",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 12,
+          "response.output_audio.delta": 42,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "The appointment is at half past four, not at four.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.4763789159999874,
+        "max_input_send_lateness_seconds": 0.11297233300001608,
+        "commit_monotonic": 268.917368041,
+        "first_text_seconds": 0.7011643750000189,
+        "first_audio_seconds": 1.3395875000000501,
+        "first_nonzero_pcm_seconds": 1.4746269999999981,
+        "response_status": "completed",
+        "text_response_done_seconds": 8.292138625000007,
+        "done_seconds": 8.292138625000007,
+        "socket_closed_seconds": 9.328889042000014,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 78720,
+          "bytes": 157440,
+          "duration_seconds": 3.28,
+          "peak": 0.45361328125,
+          "rms": 0.05807810022782221,
+          "sha256": "65449b34e967a31793621caf8b15cc2ceeaf182cff859281b3b71f3a0b1fee2e"
+        },
+        "audio_chunks": 42,
+        "audio_before_response_completion": true,
+        "index": 25,
+        "warm_elapsed_seconds": 259.99635945899996
+      },
+      {
+        "mode": "direct",
+        "source": "en",
+        "target": "nl",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 21,
+          "response.output_audio.delta": 51,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "Vul alstublieft twee zitjes voor vrijdag, niet voor donderdag.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.9701875,
+        "input_elapsed_seconds": 2.970855874999984,
+        "max_input_send_lateness_seconds": 0.1337145829999713,
+        "commit_monotonic": 281.5942105,
+        "first_text_seconds": 0.45402770800001235,
+        "first_audio_seconds": 0.9683697500000221,
+        "first_nonzero_pcm_seconds": 1.307878833000018,
+        "response_status": "completed",
+        "text_response_done_seconds": 13.253926875000047,
+        "done_seconds": 13.253926875000047,
+        "socket_closed_seconds": 14.741444666000007,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 96000,
+          "bytes": 192000,
+          "duration_seconds": 4.0,
+          "peak": 0.547088623046875,
+          "rms": 0.06759307918532767,
+          "sha256": "ef198f087eaa016292906e238c3bb370ccb4e5ad54045c4bb165e0854a3ac334"
+        },
+        "audio_chunks": 51,
+        "audio_before_response_completion": true,
+        "index": 26,
+        "warm_elapsed_seconds": 278.14512587499996
+      },
+      {
+        "mode": "two-pass",
+        "source": "nl",
+        "target": "en",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 1,
+          "response.output_text.delta": 14,
+          "response.output_text.done": 1,
+          "response.content_part.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "The pickup is at half past four, not at four o'clock.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.4853845840000304,
+        "max_input_send_lateness_seconds": 0.12363229200002479,
+        "commit_monotonic": 299.381857,
+        "first_text_seconds": 0.454320207999956,
+        "response_status": "completed",
+        "text_response_done_seconds": 1.543267749999984,
+        "done_seconds": 12.35689979099999,
+        "socket_closed_seconds": 2.5988125409999725,
+        "first_audio_seconds": 3.2720358329999613,
+        "tts_request_first_audio_seconds": 0.6476712079999629,
+        "first_nonzero_pcm_seconds": 3.2720358329999613,
+        "audio": {
+          "encoding": "float32",
+          "sample_rate": 24000,
+          "sample_count": 92160,
+          "bytes": 368640,
+          "duration_seconds": 3.84,
+          "peak": 0.5413274168968201,
+          "rms": 0.0638429609869213,
+          "sha256": "a1451ad504ae6af74df2bc6cc86795af8e3bdd0ea544b853b0d8e33597e36ba8"
+        },
+        "audio_chunks": 49,
+        "tts_content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+        "audio_before_response_completion": true,
+        "index": 27,
+        "warm_elapsed_seconds": 293.540432167
+      },
+      {
+        "mode": "two-pass",
+        "source": "en",
+        "target": "nl",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 1,
+          "response.output_text.delta": 11,
+          "response.output_text.done": 1,
+          "response.content_part.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "Please book two seats for Friday, not for Thursday.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.9701875,
+        "input_elapsed_seconds": 2.9783524170000533,
+        "max_input_send_lateness_seconds": 0.12649212500002704,
+        "commit_monotonic": 314.934522875,
+        "first_text_seconds": 0.1492342499999495,
+        "response_status": "completed",
+        "text_response_done_seconds": 0.7577793749999842,
+        "done_seconds": 9.516706999999997,
+        "socket_closed_seconds": 1.7920442909999679,
+        "first_audio_seconds": 2.24351412499999,
+        "tts_request_first_audio_seconds": 0.4389260000000377,
+        "first_nonzero_pcm_seconds": 2.24351412499999,
+        "audio": {
+          "encoding": "float32",
+          "sample_rate": 24000,
+          "sample_count": 80640,
+          "bytes": 322560,
+          "duration_seconds": 3.36,
+          "peak": 0.3637656271457672,
+          "rms": 0.062306781346826,
+          "sha256": "1b95077457c9013686ce6c14df27488b8fab5e30fc73ef9bee022b9a42873eb5"
+        },
+        "audio_chunks": 43,
+        "tts_content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+        "audio_before_response_completion": true,
+        "index": 28,
+        "warm_elapsed_seconds": 306.206618
+      },
+      {
+        "mode": "direct",
+        "source": "nl",
+        "target": "en",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 12,
+          "response.output_audio.delta": 43,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "The appointment is at half past four, not at four.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.4754122499999767,
+        "max_input_send_lateness_seconds": 0.2520334170000069,
+        "commit_monotonic": 327.183343041,
+        "first_text_seconds": 0.40639908399998603,
+        "first_audio_seconds": 0.758267208999996,
+        "first_nonzero_pcm_seconds": 0.825217667000004,
+        "response_status": "completed",
+        "text_response_done_seconds": 6.441687417000026,
+        "done_seconds": 6.441687417000026,
+        "socket_closed_seconds": 7.476528041999984,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 80640,
+          "bytes": 161280,
+          "duration_seconds": 3.36,
+          "peak": 0.359954833984375,
+          "rms": 0.05314478290723335,
+          "sha256": "6545110a4c210c6d0d46deff4e4c6074aa231a1dfd8db098c3feab2e32b93e46"
+        },
+        "audio_chunks": 43,
+        "audio_before_response_completion": true,
+        "index": 29,
+        "warm_elapsed_seconds": 316.41232570899996
+      },
+      {
+        "mode": "direct",
+        "source": "en",
+        "target": "nl",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 20,
+          "response.output_audio.delta": 52,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "Vul alstublieft twee zitjes voor vrijdag, niet voor dinsdag.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.9701875,
+        "input_elapsed_seconds": 2.972959166999999,
+        "max_input_send_lateness_seconds": 0.03887970900007076,
+        "commit_monotonic": 337.744884708,
+        "first_text_seconds": 0.14729933300003495,
+        "first_audio_seconds": 0.6258346670000492,
+        "first_nonzero_pcm_seconds": 0.908502833,
+        "response_status": "completed",
+        "text_response_done_seconds": 9.326938583000015,
+        "done_seconds": 9.326938583000015,
+        "socket_closed_seconds": 10.333284542000001,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 97920,
+          "bytes": 195840,
+          "duration_seconds": 4.08,
+          "peak": 0.523651123046875,
+          "rms": 0.05669118406254946,
+          "sha256": "df534c21cc91730a5e7bd3825c17df6c30488bd2166b1f67b7fb43414ceefb06"
+        },
+        "audio_chunks": 52,
+        "audio_before_response_completion": true,
+        "index": 30,
+        "warm_elapsed_seconds": 329.83921162499996
+      },
+      {
+        "mode": "two-pass",
+        "source": "nl",
+        "target": "en",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 1,
+          "response.output_text.delta": 14,
+          "response.output_text.done": 1,
+          "response.content_part.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "The pickup is at half past four, not at four o'clock.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.4724532079999904,
+        "max_input_send_lateness_seconds": 0.14616220799996427,
+        "commit_monotonic": 350.812314041,
+        "first_text_seconds": 0.7023449170000049,
+        "response_status": "completed",
+        "text_response_done_seconds": 1.1755884170000286,
+        "done_seconds": 9.050949625000044,
+        "socket_closed_seconds": 2.2104201250000415,
+        "first_audio_seconds": 2.5622330420000026,
+        "tts_request_first_audio_seconds": 0.3495157499999664,
+        "first_nonzero_pcm_seconds": 2.5622330420000026,
+        "audio": {
+          "encoding": "float32",
+          "sample_rate": 24000,
+          "sample_count": 97920,
+          "bytes": 391680,
+          "duration_seconds": 4.08,
+          "peak": 0.4646334648132324,
+          "rms": 0.056285231935730255,
+          "sha256": "3128708adefe2b26f9c0764cbb7ed3d6f8a55f09e4b461701c0277140b68d6a8"
+        },
+        "audio_chunks": 52,
+        "tts_content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+        "audio_before_response_completion": true,
+        "index": 31,
+        "warm_elapsed_seconds": 341.651087125
+      },
+      {
+        "mode": "two-pass",
+        "source": "en",
+        "target": "nl",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 1,
+          "response.output_text.delta": 11,
+          "response.output_text.done": 1,
+          "response.content_part.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "Please book two seats for Friday, not for Thursday.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.9701875,
+        "input_elapsed_seconds": 2.9714615409999965,
+        "max_input_send_lateness_seconds": 0.06792241600004445,
+        "commit_monotonic": 362.974238541,
+        "first_text_seconds": 0.1208119590000365,
+        "response_status": "completed",
+        "text_response_done_seconds": 0.5621955420000404,
+        "done_seconds": 5.354323834000013,
+        "socket_closed_seconds": 1.5866527919999953,
+        "first_audio_seconds": 1.9223824170000512,
+        "tts_request_first_audio_seconds": 0.3227860000000078,
+        "first_nonzero_pcm_seconds": 1.9223824170000512,
+        "audio": {
+          "encoding": "float32",
+          "sample_rate": 24000,
+          "sample_count": 84480,
+          "bytes": 337920,
+          "duration_seconds": 3.52,
+          "peak": 0.4664038419723511,
+          "rms": 0.061023883025886926,
+          "sha256": "0ed9c631aff77a47628a5d629546bf0b25ed73d8f534f697721bcc1685e55531"
+        },
+        "audio_chunks": 45,
+        "tts_content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+        "audio_before_response_completion": true,
+        "index": 32,
+        "warm_elapsed_seconds": 350.080425167
+      },
+      {
+        "mode": "direct",
+        "source": "nl",
+        "target": "en",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 12,
+          "response.output_audio.delta": 43,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "The appointment is at half past four, not at four.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.4712094170000114,
+        "max_input_send_lateness_seconds": 0.03468158300000823,
+        "commit_monotonic": 370.86662975,
+        "first_text_seconds": 0.15092979100001003,
+        "first_audio_seconds": 0.3567634159999784,
+        "first_nonzero_pcm_seconds": 0.4480088749999709,
+        "response_status": "completed",
+        "text_response_done_seconds": 5.1639893749999715,
+        "done_seconds": 5.1639893749999715,
+        "socket_closed_seconds": 6.175662457999977,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 80640,
+          "bytes": 161280,
+          "duration_seconds": 3.36,
+          "peak": 0.41748046875,
+          "rms": 0.05226476913152779,
+          "sha256": "f3c012d02e2ff7db572a7b5173e30fbb0557064d9c786e7604ecafe5ac08f0d0"
+        },
+        "audio_chunks": 43,
+        "audio_before_response_completion": true,
+        "index": 33,
+        "warm_elapsed_seconds": 358.786523167
+      },
+      {
+        "mode": "direct",
+        "source": "en",
+        "target": "nl",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 21,
+          "response.output_audio.delta": 65,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "Vul alstublieft twee zitplaatsen voor vrijdag, niet voor dinsdag.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.9701875,
+        "input_elapsed_seconds": 2.973653000000013,
+        "max_input_send_lateness_seconds": 0.07760550000000421,
+        "commit_monotonic": 380.125072916,
+        "first_text_seconds": 0.17274879199999305,
+        "first_audio_seconds": 0.608930083999951,
+        "first_nonzero_pcm_seconds": 0.7460713749999854,
+        "response_status": "completed",
+        "text_response_done_seconds": 8.519361666999998,
+        "done_seconds": 8.519361666999998,
+        "socket_closed_seconds": 9.556984124999985,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 122880,
+          "bytes": 245760,
+          "duration_seconds": 5.12,
+          "peak": 0.529022216796875,
+          "rms": 0.06869887014428554,
+          "sha256": "ef408bfef256711d9e6cd4b7130c16a317c93cdec40cc1fd00d11763d9e6d452"
+        },
+        "audio_chunks": 65,
+        "audio_before_response_completion": true,
+        "index": 34,
+        "warm_elapsed_seconds": 371.445521667
+      },
+      {
+        "mode": "two-pass",
+        "source": "nl",
+        "target": "en",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 1,
+          "response.output_text.delta": 14,
+          "response.output_text.done": 1,
+          "response.content_part.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "The pickup is at half past four, not at four o'clock.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.4726348340000186,
+        "max_input_send_lateness_seconds": 0.03493454200003043,
+        "commit_monotonic": 392.319091625,
+        "first_text_seconds": 0.17532575000001316,
+        "response_status": "completed",
+        "text_response_done_seconds": 0.7886816249999811,
+        "done_seconds": 7.459353666000027,
+        "socket_closed_seconds": 1.8046292910000261,
+        "first_audio_seconds": 2.1685071659999835,
+        "tts_request_first_audio_seconds": 0.3466423749999876,
+        "first_nonzero_pcm_seconds": 2.1685071659999835,
+        "audio": {
+          "encoding": "float32",
+          "sample_rate": 24000,
+          "sample_count": 88320,
+          "bytes": 353280,
+          "duration_seconds": 3.68,
+          "peak": 0.6044883131980896,
+          "rms": 0.06719993161559089,
+          "sha256": "30de087a9a57ad3c76b1d7db8bdae120088bd211cfa3740ae996c211bb5edac5"
+        },
+        "audio_chunks": 47,
+        "tts_content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+        "audio_before_response_completion": true,
+        "index": 35,
+        "warm_elapsed_seconds": 381.549721
+      },
+      {
+        "mode": "two-pass",
+        "source": "en",
+        "target": "nl",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 1,
+          "response.output_text.delta": 11,
+          "response.output_text.done": 1,
+          "response.content_part.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "Please book two seats for Friday, not for Thursday.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.9701875,
+        "input_elapsed_seconds": 2.973904833000006,
+        "max_input_send_lateness_seconds": 0.07545645799996237,
+        "commit_monotonic": 402.888861833,
+        "first_text_seconds": 0.21236412499996504,
+        "response_status": "completed",
+        "text_response_done_seconds": 0.5933640829999831,
+        "done_seconds": 6.505351458000007,
+        "socket_closed_seconds": 1.6015322920000017,
+        "first_audio_seconds": 1.9086894579999694,
+        "tts_request_first_audio_seconds": 0.3048717909999823,
+        "first_nonzero_pcm_seconds": 1.9086894579999694,
+        "audio": {
+          "encoding": "float32",
+          "sample_rate": 24000,
+          "sample_count": 76800,
+          "bytes": 307200,
+          "duration_seconds": 3.2,
+          "peak": 0.41255640983581543,
+          "rms": 0.05946622409073835,
+          "sha256": "e83d07431dc8eccf798d689913660311d1e4ed5847c0e6f827899d883783586a"
+        },
+        "audio_chunks": 41,
+        "tts_content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+        "audio_before_response_completion": true,
+        "index": 36,
+        "warm_elapsed_seconds": 391.16383654199996
+      },
+      {
+        "mode": "direct",
+        "source": "nl",
+        "target": "en",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 12,
+          "response.output_audio.delta": 44,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "The appointment is at half past four, not at four.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.5507872919999954,
+        "max_input_send_lateness_seconds": 0.1309724579999738,
+        "commit_monotonic": 412.106311375,
+        "first_text_seconds": 0.37344404099997064,
+        "first_audio_seconds": 1.0126693749999731,
+        "first_nonzero_pcm_seconds": 1.1843862499999886,
+        "response_status": "completed",
+        "text_response_done_seconds": 6.504647832999979,
+        "done_seconds": 6.504647832999979,
+        "socket_closed_seconds": 7.484543332999976,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 82560,
+          "bytes": 165120,
+          "duration_seconds": 3.44,
+          "peak": 0.39288330078125,
+          "rms": 0.051595014156652026,
+          "sha256": "58799d7a881902eca599f294ac9184a4872f626525bcdb302429e577d60e1c10"
+        },
+        "audio_chunks": 44,
+        "audio_before_response_completion": true,
+        "index": 37,
+        "warm_elapsed_seconds": 401.335001667
+      },
+      {
+        "mode": "direct",
+        "source": "en",
+        "target": "nl",
+        "status": "ok",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 21,
+          "response.output_audio.delta": 51,
+          "response.output_text.done": 1,
+          "response.content_part.done": 2,
+          "response.output_audio.done": 1,
+          "response.output_item.done": 1,
+          "response.done": 1
+        },
+        "text": "Vul alstublieft twee zitplaatsen voor vrijdag, niet voor dondag.",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.9701875,
+        "input_elapsed_seconds": 2.971616250000011,
+        "max_input_send_lateness_seconds": 0.024842665999983637,
+        "commit_monotonic": 422.60289475,
+        "first_text_seconds": 0.3579890409999962,
+        "first_audio_seconds": 0.6242875829999548,
+        "first_nonzero_pcm_seconds": 0.9152808329999971,
+        "response_status": "completed",
+        "text_response_done_seconds": 7.503311790999987,
+        "done_seconds": 7.503311790999987,
+        "socket_closed_seconds": 8.572309540999981,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 96000,
+          "bytes": 192000,
+          "duration_seconds": 4.0,
+          "peak": 0.50286865234375,
+          "rms": 0.06814210215146417,
+          "sha256": "b65090438b91b11be6371a6b9857e1cb03dc8be7b6fdf37436354f91c1b709fe"
+        },
+        "audio_chunks": 51,
+        "audio_before_response_completion": true,
+        "index": 38,
+        "warm_elapsed_seconds": 412.93600749999996
+      }
+    ],
+    "cancellations": [],
+    "abort": "system swap growth exceeded 2048 MiB",
+    "warm_duration_seconds": 412.96610062499997,
+    "aggregate": {
+      "attempts": 38,
+      "successful_turns": 38,
+      "errors": 0,
+      "cancelled": 0,
+      "by_mode": {
+        "direct": {
+          "attempts": 20,
+          "successful_turns": 20,
+          "errors": 0,
+          "audio": {
+            "count": 20,
+            "min_seconds": 0.2379695419999983,
+            "median_seconds": 0.625061125000002,
+            "max_seconds": 1.4246247089999997,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          },
+          "first_nonzero_pcm": {
+            "count": 20,
+            "min_seconds": 0.2700440420000021,
+            "median_seconds": 0.866860250000002,
+            "max_seconds": 2.627287457999998,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          },
+          "text": {
+            "count": 20,
+            "min_seconds": 0.09274258299999971,
+            "median_seconds": 0.24979429199998293,
+            "max_seconds": 0.7074142919999957,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          }
+        },
+        "two-pass": {
+          "attempts": 18,
+          "successful_turns": 18,
+          "errors": 0,
+          "audio": {
+            "count": 18,
+            "min_seconds": 1.4870069999999984,
+            "median_seconds": 2.2608049169999873,
+            "max_seconds": 3.2720358329999613,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          },
+          "first_nonzero_pcm": {
+            "count": 18,
+            "min_seconds": 1.4870069999999984,
+            "median_seconds": 2.2608049169999873,
+            "max_seconds": 3.2720358329999613,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          },
+          "text": {
+            "count": 18,
+            "min_seconds": 0.09149720799999983,
+            "median_seconds": 0.24928745849997824,
+            "max_seconds": 0.7023449170000049,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          }
+        }
+      },
+      "by_mode_and_direction": {
+        "direct:en-nl": {
+          "attempts": 10,
+          "successful_turns": 10,
+          "errors": 0,
+          "audio": {
+            "count": 10,
+            "min_seconds": 0.2379695419999983,
+            "median_seconds": 0.625061125000002,
+            "max_seconds": 1.4246247089999997,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          },
+          "first_nonzero_pcm": {
+            "count": 10,
+            "min_seconds": 0.29962095799999844,
+            "median_seconds": 0.9118918329999985,
+            "max_seconds": 2.627287457999998,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          },
+          "text": {
+            "count": 10,
+            "min_seconds": 0.09274258299999971,
+            "median_seconds": 0.24481956249999826,
+            "max_seconds": 0.7074142919999957,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          }
+        },
+        "direct:nl-en": {
+          "attempts": 10,
+          "successful_turns": 10,
+          "errors": 0,
+          "audio": {
+            "count": 10,
+            "min_seconds": 0.23952520899999996,
+            "median_seconds": 0.6715346254999943,
+            "max_seconds": 1.3395875000000501,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          },
+          "first_nonzero_pcm": {
+            "count": 10,
+            "min_seconds": 0.2700440420000021,
+            "median_seconds": 0.7751209380000006,
+            "max_seconds": 1.4746269999999981,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          },
+          "text": {
+            "count": 10,
+            "min_seconds": 0.09797491700000194,
+            "median_seconds": 0.24979429199998293,
+            "max_seconds": 0.7011643750000189,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          }
+        },
+        "two-pass:en-nl": {
+          "attempts": 9,
+          "successful_turns": 9,
+          "errors": 0,
+          "audio": {
+            "count": 9,
+            "min_seconds": 1.4870069999999984,
+            "median_seconds": 2.24351412499999,
+            "max_seconds": 2.934310750000037,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          },
+          "first_nonzero_pcm": {
+            "count": 9,
+            "min_seconds": 1.4870069999999984,
+            "median_seconds": 2.24351412499999,
+            "max_seconds": 2.934310750000037,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          },
+          "text": {
+            "count": 9,
+            "min_seconds": 0.09149720799999983,
+            "median_seconds": 0.21236412499996504,
+            "max_seconds": 0.6950416660000371,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          }
+        },
+        "two-pass:nl-en": {
+          "attempts": 9,
+          "successful_turns": 9,
+          "errors": 0,
+          "audio": {
+            "count": 9,
+            "min_seconds": 1.5488213750000028,
+            "median_seconds": 2.5622330420000026,
+            "max_seconds": 3.2720358329999613,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          },
+          "first_nonzero_pcm": {
+            "count": 9,
+            "min_seconds": 1.5488213750000028,
+            "median_seconds": 2.5622330420000026,
+            "max_seconds": 3.2720358329999613,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          },
+          "text": {
+            "count": 9,
+            "min_seconds": 0.09358504200000084,
+            "median_seconds": 0.3435085830000162,
+            "max_seconds": 0.7023449170000049,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          }
+        }
+      }
+    },
+    "memory_summary": {
+      "samples": 362,
+      "max_pressure_level": 2,
+      "peak_helper_rss_bytes": 2595225600,
+      "baseline_swap_mib": 18990.62,
+      "peak_swap_growth_mib": 2211.9400000000023,
+      "last_sample": {
+        "monotonic": 431.024387625,
+        "pressure_level": 2,
+        "swap_used_mib": 21202.56,
+        "helper_rss_bytes": 2432057344,
+        "helper_cpu_percent": 0.6,
+        "helper_pid": 9719,
+        "phase": "warm-turns"
+      }
+    },
+    "status": "aborted",
+    "warm_helper_ready_seconds": 1.5959777499999994,
+    "helper_arguments": [
+      "build/lfm-realtime/runtime/bin/llama-server",
+      "--model",
+      "build/lfm-realtime/models/LFM3-Omni-2B-Q8_0.gguf",
+      "--mmproj",
+      "build/lfm-realtime/models/mmproj-LFM3-Omni-2B-Q8_0.gguf",
+      "--host",
+      "127.0.0.1",
+      "--port",
+      "0",
+      "--parallel",
+      "1",
+      "--ctx-size",
+      "4096",
+      "--reasoning",
+      "off",
+      "--no-webui",
+      "--no-agent",
+      "--cors-origins",
+      "localhost",
+      "--no-cors-credentials"
+    ],
+    "final_process_shutdown_seconds": 1.1808024169999953,
+    "owned_helper_exit_code": -6,
+    "ended_utc": "2026-11-08T12:43:24Z"
+  },
+  "concurrent_activity_notes": [
+    {
+      "recorded_utc": "2026-11-08T12:41:30.927901+00:00",
+      "source": "Root agent observed process metadata, no contents inspected or unrelated processes changed",
+      "activity": "An independent Xcodebuild/Swift compiler from another workspace is active concurrently, in addition to the Nativ build and Python checks. These system-wide CPU/memory/swap effects must not be attributed wholly to Nativ."
+    }
+  ],
+  "observed_translation_variants": [
+    {
+      "mode": "direct",
+      "source": "nl",
+      "observed_text": "The appointment is at half past four, not at four.",
+      "count": 10
+    },
+    {
+      "mode": "direct",
+      "source": "en",
+      "observed_text": "Vul alstublieft twee zitplaatsen voor vrijdag, niet voor dondag.",
+      "count": 5
+    },
+    {
+      "mode": "direct",
+      "source": "en",
+      "observed_text": "Vul alstublieft twee zitjes voor vrijdag, niet voor dinsdag.",
+      "count": 2
+    },
+    {
+      "mode": "direct",
+      "source": "en",
+      "observed_text": "Vul alstublieft twee zitplaatsen voor vrijdag, niet voor dinsdag.",
+      "count": 2
+    },
+    {
+      "mode": "direct",
+      "source": "en",
+      "observed_text": "Vul alstublieft twee zitjes voor vrijdag, niet voor donderdag.",
+      "count": 1
+    },
+    {
+      "mode": "two-pass",
+      "source": "nl",
+      "observed_text": "The pickup is at half past four, not at four o'clock.",
+      "count": 9
+    },
+    {
+      "mode": "two-pass",
+      "source": "en",
+      "observed_text": "Please book two seats for Friday, not for Thursday.",
+      "count": 9
+    }
+  ],
+  "memory_series": {
+    "columns": [
+      "seconds_from_baseline",
+      "os_pressure_level",
+      "system_swap_used_mib",
+      "helper_rss_bytes",
+      "phase"
+    ],
+    "samples": [
+      [
+        0.0,
+        2,
+        18990.62,
+        0,
+        "baseline"
+      ],
+      [
+        1.096068334,
+        2,
+        18982.62,
+        1212186624,
+        "cold-start-1"
+      ],
+      [
+        2.116415209,
+        2,
+        19887.0,
+        2318450688,
+        "cold-start-1"
+      ],
+      [
+        3.155370042,
+        1,
+        20027.88,
+        798097408,
+        "cold-start-2"
+      ],
+      [
+        4.168375375,
+        2,
+        20141.56,
+        164642816,
+        "cold-start-3"
+      ],
+      [
+        5.18046775,
+        2,
+        20259.44,
+        2578399232,
+        "cold-start-3"
+      ],
+      [
+        6.231205375,
+        2,
+        20251.44,
+        2426568704,
+        "cold-start-4"
+      ],
+      [
+        7.258249417,
+        1,
+        20251.44,
+        2133016576,
+        "cold-start-5"
+      ],
+      [
+        8.274623542,
+        1,
+        20235.44,
+        2369421312,
+        "cold-start-6"
+      ],
+      [
+        9.291793209,
+        2,
+        20219.44,
+        2472132608,
+        "cold-start-7"
+      ],
+      [
+        10.309916625,
+        1,
+        20163.38,
+        2203713536,
+        "cold-start-8"
+      ],
+      [
+        11.368652042,
+        2,
+        19987.31,
+        170409984,
+        "cold-start-9"
+      ],
+      [
+        12.395526334,
+        2,
+        19931.31,
+        1970405376,
+        "cold-start-9"
+      ],
+      [
+        13.427919459,
+        2,
+        20320.75,
+        15450112,
+        "cold-start-10"
+      ],
+      [
+        14.49224375,
+        1,
+        20296.75,
+        2230239232,
+        "cold-start-10"
+      ],
+      [
+        15.542722125,
+        2,
+        20272.75,
+        146407424,
+        "warm-start"
+      ],
+      [
+        16.563955625,
+        2,
+        20439.31,
+        2338619392,
+        "warm-start"
+      ],
+      [
+        17.602601916999998,
+        2,
+        20557.25,
+        2595225600,
+        "warm-turns"
+      ],
+      [
+        18.635458999999997,
+        2,
+        20541.25,
+        2484256768,
+        "warm-turns"
+      ],
+      [
+        19.665285917,
+        2,
+        20517.25,
+        2495512576,
+        "warm-turns"
+      ],
+      [
+        20.688359042,
+        2,
+        20509.25,
+        2484011008,
+        "warm-turns"
+      ],
+      [
+        21.710861041999998,
+        2,
+        20493.25,
+        2474328064,
+        "warm-turns"
+      ],
+      [
+        22.751747166999998,
+        2,
+        20477.25,
+        2484977664,
+        "warm-turns"
+      ],
+      [
+        23.807557666999998,
+        2,
+        20461.25,
+        2447589376,
+        "warm-turns"
+      ],
+      [
+        24.828206291999997,
+        2,
+        20445.25,
+        2440986624,
+        "warm-turns"
+      ],
+      [
+        25.856356709,
+        2,
+        20445.25,
+        2454323200,
+        "warm-turns"
+      ],
+      [
+        26.878405792,
+        1,
+        20413.25,
+        2455322624,
+        "warm-turns"
+      ],
+      [
+        27.900773792,
+        1,
+        20413.25,
+        2455519232,
+        "warm-turns"
+      ],
+      [
+        28.92460475,
+        1,
+        20405.25,
+        2462908416,
+        "warm-turns"
+      ],
+      [
+        29.950027834,
+        1,
+        20405.25,
+        2463006720,
+        "warm-turns"
+      ],
+      [
+        30.979725458999997,
+        1,
+        20397.25,
+        2462334976,
+        "warm-turns"
+      ],
+      [
+        32.005830042,
+        1,
+        20365.25,
+        2463694848,
+        "warm-turns"
+      ],
+      [
+        33.029911334000005,
+        1,
+        20365.25,
+        2458124288,
+        "warm-turns"
+      ],
+      [
+        34.064611542,
+        1,
+        20269.19,
+        2445606912,
+        "warm-turns"
+      ],
+      [
+        35.120770959000005,
+        1,
+        20261.19,
+        2456584192,
+        "warm-turns"
+      ],
+      [
+        36.148515292,
+        1,
+        20261.19,
+        2456436736,
+        "warm-turns"
+      ],
+      [
+        37.163453917000005,
+        1,
+        20245.19,
+        2456371200,
+        "warm-turns"
+      ],
+      [
+        38.186435417000006,
+        1,
+        20245.19,
+        2452389888,
+        "warm-turns"
+      ],
+      [
+        39.203574334,
+        1,
+        20237.19,
+        2453438464,
+        "warm-turns"
+      ],
+      [
+        40.215796959,
+        1,
+        20221.19,
+        2459582464,
+        "warm-turns"
+      ],
+      [
+        41.228944792,
+        1,
+        20221.19,
+        2462072832,
+        "warm-turns"
+      ],
+      [
+        42.256153417,
+        1,
+        20221.19,
+        2462072832,
+        "warm-turns"
+      ],
+      [
+        43.286868459000004,
+        1,
+        20213.19,
+        2464088064,
+        "warm-turns"
+      ],
+      [
+        44.301241250000004,
+        1,
+        20205.19,
+        2461794304,
+        "warm-turns"
+      ],
+      [
+        45.316750875000004,
+        1,
+        20205.19,
+        2459041792,
+        "warm-turns"
+      ],
+      [
+        46.347786209,
+        1,
+        20197.19,
+        2461106176,
+        "warm-turns"
+      ],
+      [
+        47.373634834,
+        1,
+        20197.19,
+        2455306240,
+        "warm-turns"
+      ],
+      [
+        48.405169417,
+        1,
+        20197.19,
+        2450653184,
+        "warm-turns"
+      ],
+      [
+        49.452012167,
+        1,
+        20197.19,
+        2450997248,
+        "warm-turns"
+      ],
+      [
+        50.480458209000005,
+        1,
+        20197.19,
+        2450784256,
+        "warm-turns"
+      ],
+      [
+        51.505329709,
+        1,
+        20197.19,
+        2450964480,
+        "warm-turns"
+      ],
+      [
+        52.528741542,
+        1,
+        20189.19,
+        2461499392,
+        "warm-turns"
+      ],
+      [
+        53.553453959,
+        1,
+        20181.19,
+        2461483008,
+        "warm-turns"
+      ],
+      [
+        54.587026375,
+        1,
+        20181.19,
+        2459254784,
+        "warm-turns"
+      ],
+      [
+        55.60681375,
+        1,
+        20181.19,
+        2457141248,
+        "warm-turns"
+      ],
+      [
+        56.621762834,
+        1,
+        20181.19,
+        2453454848,
+        "warm-turns"
+      ],
+      [
+        57.647628542,
+        1,
+        20181.19,
+        2457796608,
+        "warm-turns"
+      ],
+      [
+        58.6651655,
+        1,
+        20165.19,
+        2457108480,
+        "warm-turns"
+      ],
+      [
+        59.688982417000005,
+        1,
+        20165.19,
+        2452750336,
+        "warm-turns"
+      ],
+      [
+        60.700574167,
+        1,
+        20149.19,
+        2456748032,
+        "warm-turns"
+      ],
+      [
+        61.718463167,
+        1,
+        20125.19,
+        2455240704,
+        "warm-turns"
+      ],
+      [
+        62.7342425,
+        1,
+        20125.19,
+        2455175168,
+        "warm-turns"
+      ],
+      [
+        63.853893334,
+        1,
+        20125.19,
+        2456715264,
+        "warm-turns"
+      ],
+      [
+        64.9002975,
+        1,
+        20117.19,
+        2452389888,
+        "warm-turns"
+      ],
+      [
+        65.92615566699999,
+        1,
+        20117.19,
+        2450423808,
+        "warm-turns"
+      ],
+      [
+        66.968472584,
+        1,
+        20109.19,
+        2452848640,
+        "warm-turns"
+      ],
+      [
+        68.05700775,
+        1,
+        20109.19,
+        2452897792,
+        "warm-turns"
+      ],
+      [
+        69.181008292,
+        1,
+        20109.19,
+        2444148736,
+        "warm-turns"
+      ],
+      [
+        70.226805417,
+        1,
+        20109.19,
+        2455420928,
+        "warm-turns"
+      ],
+      [
+        71.248462792,
+        1,
+        20109.19,
+        2455322624,
+        "warm-turns"
+      ],
+      [
+        72.268982125,
+        1,
+        20093.19,
+        2454913024,
+        "warm-turns"
+      ],
+      [
+        73.294962167,
+        1,
+        20093.19,
+        2451341312,
+        "warm-turns"
+      ],
+      [
+        74.32157612499999,
+        1,
+        20093.19,
+        2449162240,
+        "warm-turns"
+      ],
+      [
+        75.53362058399999,
+        1,
+        20093.19,
+        2445017088,
+        "warm-turns"
+      ],
+      [
+        76.633349584,
+        2,
+        20077.19,
+        2450178048,
+        "warm-turns"
+      ],
+      [
+        77.65829041699999,
+        2,
+        20077.19,
+        2449080320,
+        "warm-turns"
+      ],
+      [
+        78.677519292,
+        2,
+        20077.19,
+        2449047552,
+        "warm-turns"
+      ],
+      [
+        79.715019875,
+        2,
+        20069.19,
+        2447884288,
+        "warm-turns"
+      ],
+      [
+        80.819657667,
+        2,
+        20061.19,
+        2449620992,
+        "warm-turns"
+      ],
+      [
+        81.935826917,
+        2,
+        20045.19,
+        2441019392,
+        "warm-turns"
+      ],
+      [
+        83.052287792,
+        2,
+        20100.5,
+        2440986624,
+        "warm-turns"
+      ],
+      [
+        84.282835542,
+        2,
+        20177.75,
+        2441084928,
+        "warm-turns"
+      ],
+      [
+        85.372608625,
+        2,
+        20204.38,
+        2440921088,
+        "warm-turns"
+      ],
+      [
+        86.48916937499999,
+        2,
+        20204.38,
+        2449915904,
+        "warm-turns"
+      ],
+      [
+        87.58681791699999,
+        2,
+        20301.88,
+        2440577024,
+        "warm-turns"
+      ],
+      [
+        88.721073084,
+        2,
+        20311.62,
+        2440773632,
+        "warm-turns"
+      ],
+      [
+        90.55957137499999,
+        2,
+        20425.06,
+        2439315456,
+        "warm-turns"
+      ],
+      [
+        91.803887875,
+        2,
+        20377.06,
+        2449326080,
+        "warm-turns"
+      ],
+      [
+        92.911338917,
+        2,
+        20390.31,
+        2440691712,
+        "warm-turns"
+      ],
+      [
+        93.98739649999999,
+        2,
+        20396.31,
+        2440691712,
+        "warm-turns"
+      ],
+      [
+        95.085413834,
+        2,
+        20409.06,
+        2439938048,
+        "warm-turns"
+      ],
+      [
+        96.277798459,
+        2,
+        20393.06,
+        2439806976,
+        "warm-turns"
+      ],
+      [
+        97.49143041699999,
+        2,
+        20369.06,
+        2439004160,
+        "warm-turns"
+      ],
+      [
+        98.73708970899999,
+        2,
+        20345.06,
+        2441707520,
+        "warm-turns"
+      ],
+      [
+        99.898491792,
+        2,
+        20321.06,
+        2440511488,
+        "warm-turns"
+      ],
+      [
+        101.04145812499999,
+        2,
+        20321.06,
+        2447097856,
+        "warm-turns"
+      ],
+      [
+        102.265713334,
+        2,
+        20297.06,
+        2442313728,
+        "warm-turns"
+      ],
+      [
+        103.4304135,
+        2,
+        20289.06,
+        2439708672,
+        "warm-turns"
+      ],
+      [
+        104.50933587499999,
+        2,
+        20281.06,
+        2442018816,
+        "warm-turns"
+      ],
+      [
+        105.631037334,
+        2,
+        20265.06,
+        2440019968,
+        "warm-turns"
+      ],
+      [
+        106.7207445,
+        2,
+        20241.06,
+        2433236992,
+        "warm-turns"
+      ],
+      [
+        108.25301825,
+        2,
+        20343.69,
+        2441150464,
+        "warm-turns"
+      ],
+      [
+        109.45251345899999,
+        2,
+        20303.69,
+        2438217728,
+        "warm-turns"
+      ],
+      [
+        110.725366584,
+        2,
+        20355.19,
+        2447474688,
+        "warm-turns"
+      ],
+      [
+        111.96879899999999,
+        2,
+        20331.19,
+        2438152192,
+        "warm-turns"
+      ],
+      [
+        114.04782816699999,
+        2,
+        20283.19,
+        2441936896,
+        "warm-turns"
+      ],
+      [
+        115.142418667,
+        2,
+        20267.19,
+        2438152192,
+        "warm-turns"
+      ],
+      [
+        116.53046341699999,
+        2,
+        20251.12,
+        2441494528,
+        "warm-turns"
+      ],
+      [
+        117.677170875,
+        2,
+        20211.12,
+        2440609792,
+        "warm-turns"
+      ],
+      [
+        118.780111334,
+        2,
+        20211.12,
+        2437726208,
+        "warm-turns"
+      ],
+      [
+        120.069484959,
+        2,
+        20249.06,
+        2435416064,
+        "warm-turns"
+      ],
+      [
+        121.17846229199999,
+        2,
+        20233.06,
+        2445639680,
+        "warm-turns"
+      ],
+      [
+        122.298782584,
+        2,
+        20265.62,
+        2436972544,
+        "warm-turns"
+      ],
+      [
+        123.378404334,
+        2,
+        20257.62,
+        2439970816,
+        "warm-turns"
+      ],
+      [
+        124.56694125,
+        2,
+        20321.44,
+        2438594560,
+        "warm-turns"
+      ],
+      [
+        125.68781775,
+        2,
+        20320.19,
+        2430681088,
+        "warm-turns"
+      ],
+      [
+        126.8140165,
+        2,
+        20280.19,
+        2440642560,
+        "warm-turns"
+      ],
+      [
+        127.92687341699998,
+        2,
+        20248.19,
+        2440314880,
+        "warm-turns"
+      ],
+      [
+        129.1168825,
+        2,
+        20305.31,
+        2440134656,
+        "warm-turns"
+      ],
+      [
+        130.504136084,
+        2,
+        20273.31,
+        2439856128,
+        "warm-turns"
+      ],
+      [
+        131.6685855,
+        2,
+        20306.0,
+        2439888896,
+        "warm-turns"
+      ],
+      [
+        132.78254279200002,
+        2,
+        20298.0,
+        2440085504,
+        "warm-turns"
+      ],
+      [
+        134.039558209,
+        2,
+        20284.44,
+        2439348224,
+        "warm-turns"
+      ],
+      [
+        135.643607209,
+        2,
+        20348.38,
+        2441461760,
+        "warm-turns"
+      ],
+      [
+        136.80883133400002,
+        2,
+        20490.12,
+        2440069120,
+        "warm-turns"
+      ],
+      [
+        137.937781917,
+        2,
+        20418.12,
+        2445705216,
+        "warm-turns"
+      ],
+      [
+        139.041045375,
+        2,
+        20471.88,
+        2431680512,
+        "warm-turns"
+      ],
+      [
+        140.27687650000001,
+        2,
+        20445.06,
+        2448474112,
+        "warm-turns"
+      ],
+      [
+        141.46856475,
+        2,
+        20413.06,
+        2440396800,
+        "warm-turns"
+      ],
+      [
+        142.55290200000002,
+        2,
+        20389.06,
+        2440052736,
+        "warm-turns"
+      ],
+      [
+        143.79235645900002,
+        2,
+        20373.06,
+        2439905280,
+        "warm-turns"
+      ],
+      [
+        145.08665625,
+        2,
+        20427.19,
+        2440069120,
+        "warm-turns"
+      ],
+      [
+        146.401764417,
+        2,
+        20387.19,
+        2438152192,
+        "warm-turns"
+      ],
+      [
+        147.641990542,
+        2,
+        20379.19,
+        2439839744,
+        "warm-turns"
+      ],
+      [
+        148.86305387500002,
+        2,
+        20339.19,
+        2448719872,
+        "warm-turns"
+      ],
+      [
+        149.95847187500001,
+        2,
+        20468.12,
+        2439774208,
+        "warm-turns"
+      ],
+      [
+        151.298211334,
+        2,
+        20503.5,
+        2445164544,
+        "warm-turns"
+      ],
+      [
+        152.440217292,
+        2,
+        20486.12,
+        2438840320,
+        "warm-turns"
+      ],
+      [
+        153.685657792,
+        2,
+        20509.25,
+        2441510912,
+        "warm-turns"
+      ],
+      [
+        154.953638875,
+        2,
+        20604.12,
+        2438742016,
+        "warm-turns"
+      ],
+      [
+        156.427659084,
+        2,
+        20559.62,
+        2440462336,
+        "warm-turns"
+      ],
+      [
+        157.8124005,
+        2,
+        20527.62,
+        2438512640,
+        "warm-turns"
+      ],
+      [
+        159.018146459,
+        2,
+        20487.62,
+        2440282112,
+        "warm-turns"
+      ],
+      [
+        160.37196225,
+        2,
+        20517.56,
+        2428928000,
+        "warm-turns"
+      ],
+      [
+        161.956541292,
+        2,
+        20493.56,
+        2440134656,
+        "warm-turns"
+      ],
+      [
+        163.146056917,
+        2,
+        20461.56,
+        2438643712,
+        "warm-turns"
+      ],
+      [
+        164.48686550000002,
+        2,
+        20559.25,
+        2446360576,
+        "warm-turns"
+      ],
+      [
+        165.71846612500002,
+        2,
+        20542.56,
+        2438397952,
+        "warm-turns"
+      ],
+      [
+        167.077367834,
+        2,
+        20539.25,
+        2441003008,
+        "warm-turns"
+      ],
+      [
+        168.82922295900002,
+        2,
+        20726.69,
+        2438643712,
+        "warm-turns"
+      ],
+      [
+        170.085524209,
+        2,
+        20646.69,
+        2438807552,
+        "warm-turns"
+      ],
+      [
+        171.465862334,
+        2,
+        20622.69,
+        2437808128,
+        "warm-turns"
+      ],
+      [
+        172.971762334,
+        2,
+        20613.94,
+        2439823360,
+        "warm-turns"
+      ],
+      [
+        174.20720820900002,
+        2,
+        20591.12,
+        2437332992,
+        "warm-turns"
+      ],
+      [
+        175.637206209,
+        2,
+        20584.69,
+        2436317184,
+        "warm-turns"
+      ],
+      [
+        176.87444345900002,
+        2,
+        20585.81,
+        2437136384,
+        "warm-turns"
+      ],
+      [
+        178.142220167,
+        2,
+        20545.31,
+        2438709248,
+        "warm-turns"
+      ],
+      [
+        179.3288665,
+        2,
+        20658.75,
+        2431090688,
+        "warm-turns"
+      ],
+      [
+        180.453982,
+        2,
+        20626.38,
+        2441003008,
+        "warm-turns"
+      ],
+      [
+        181.75095833400002,
+        2,
+        20530.38,
+        2439938048,
+        "warm-turns"
+      ],
+      [
+        183.11546279200002,
+        2,
+        20474.38,
+        2442166272,
+        "warm-turns"
+      ],
+      [
+        184.207862,
+        2,
+        20434.38,
+        2444509184,
+        "warm-turns"
+      ],
+      [
+        185.41733354200002,
+        2,
+        20410.38,
+        2439938048,
+        "warm-turns"
+      ],
+      [
+        186.683864417,
+        2,
+        20394.38,
+        2440282112,
+        "warm-turns"
+      ],
+      [
+        187.930305292,
+        2,
+        20370.38,
+        2439593984,
+        "warm-turns"
+      ],
+      [
+        189.207972417,
+        2,
+        20354.38,
+        2439774208,
+        "warm-turns"
+      ],
+      [
+        190.423298834,
+        2,
+        20306.38,
+        2439675904,
+        "warm-turns"
+      ],
+      [
+        191.60635625,
+        2,
+        20282.38,
+        2439626752,
+        "warm-turns"
+      ],
+      [
+        193.049064125,
+        2,
+        20290.06,
+        2447785984,
+        "warm-turns"
+      ],
+      [
+        194.360090625,
+        2,
+        20242.06,
+        2440232960,
+        "warm-turns"
+      ],
+      [
+        195.642308292,
+        2,
+        20258.44,
+        2444328960,
+        "warm-turns"
+      ],
+      [
+        196.959299542,
+        2,
+        20469.44,
+        2430812160,
+        "warm-turns"
+      ],
+      [
+        198.21775587500002,
+        2,
+        20429.38,
+        2440347648,
+        "warm-turns"
+      ],
+      [
+        199.328270459,
+        2,
+        20381.38,
+        2440134656,
+        "warm-turns"
+      ],
+      [
+        200.566713042,
+        2,
+        20317.38,
+        2439987200,
+        "warm-turns"
+      ],
+      [
+        201.804665042,
+        2,
+        20301.38,
+        2439954432,
+        "warm-turns"
+      ],
+      [
+        203.15230975,
+        2,
+        20277.38,
+        2440036352,
+        "warm-turns"
+      ],
+      [
+        204.433270792,
+        2,
+        20301.56,
+        2448572416,
+        "warm-turns"
+      ],
+      [
+        205.56778879200002,
+        2,
+        20296.62,
+        2440691712,
+        "warm-turns"
+      ],
+      [
+        206.621731334,
+        2,
+        20296.62,
+        2444967936,
+        "warm-turns"
+      ],
+      [
+        207.835102334,
+        2,
+        20344.31,
+        2438332416,
+        "warm-turns"
+      ],
+      [
+        209.445538042,
+        2,
+        20432.38,
+        2439004160,
+        "warm-turns"
+      ],
+      [
+        210.7862015,
+        2,
+        20436.38,
+        2436775936,
+        "warm-turns"
+      ],
+      [
+        211.95775004200001,
+        2,
+        20380.38,
+        2437693440,
+        "warm-turns"
+      ],
+      [
+        213.245034709,
+        2,
+        20441.5,
+        2436759552,
+        "warm-turns"
+      ],
+      [
+        214.52751087500002,
+        2,
+        20531.94,
+        2438250496,
+        "warm-turns"
+      ],
+      [
+        215.675140375,
+        2,
+        20522.75,
+        2427977728,
+        "warm-turns"
+      ],
+      [
+        216.913997625,
+        2,
+        20463.94,
+        2441068544,
+        "warm-turns"
+      ],
+      [
+        218.024065584,
+        2,
+        20446.56,
+        2439512064,
+        "warm-turns"
+      ],
+      [
+        219.223170334,
+        2,
+        20526.19,
+        2443411456,
+        "warm-turns"
+      ],
+      [
+        220.45929533400002,
+        2,
+        20546.5,
+        2439708672,
+        "warm-turns"
+      ],
+      [
+        221.775805209,
+        2,
+        20761.62,
+        2436874240,
+        "warm-turns"
+      ],
+      [
+        223.111677167,
+        2,
+        20757.56,
+        2437627904,
+        "warm-turns"
+      ],
+      [
+        224.426665084,
+        2,
+        20597.56,
+        2435186688,
+        "warm-turns"
+      ],
+      [
+        226.562010542,
+        2,
+        20658.06,
+        2437120000,
+        "warm-turns"
+      ],
+      [
+        229.13242470900002,
+        2,
+        20764.62,
+        2435923968,
+        "warm-turns"
+      ],
+      [
+        230.366562084,
+        2,
+        20719.06,
+        2439135232,
+        "warm-turns"
+      ],
+      [
+        231.617552834,
+        2,
+        20658.62,
+        2434646016,
+        "warm-turns"
+      ],
+      [
+        232.99194258400001,
+        2,
+        20562.62,
+        2435252224,
+        "warm-turns"
+      ],
+      [
+        234.44547125,
+        2,
+        20697.62,
+        2437775360,
+        "warm-turns"
+      ],
+      [
+        235.870277042,
+        2,
+        20586.38,
+        2435366912,
+        "warm-turns"
+      ],
+      [
+        237.078636125,
+        2,
+        20578.94,
+        2440888320,
+        "warm-turns"
+      ],
+      [
+        238.445106584,
+        2,
+        20550.75,
+        2443804672,
+        "warm-turns"
+      ],
+      [
+        239.663757709,
+        2,
+        20633.69,
+        2436972544,
+        "warm-turns"
+      ],
+      [
+        240.92803700000002,
+        2,
+        20586.31,
+        2448932864,
+        "warm-turns"
+      ],
+      [
+        242.1841545,
+        2,
+        20554.06,
+        2438922240,
+        "warm-turns"
+      ],
+      [
+        243.46283595900002,
+        2,
+        20551.0,
+        2438955008,
+        "warm-turns"
+      ],
+      [
+        244.942977667,
+        2,
+        20670.69,
+        2439086080,
+        "warm-turns"
+      ],
+      [
+        246.185831959,
+        2,
+        20589.12,
+        2434940928,
+        "warm-turns"
+      ],
+      [
+        247.841557959,
+        2,
+        20595.5,
+        2437545984,
+        "warm-turns"
+      ],
+      [
+        249.09033075000002,
+        2,
+        20616.56,
+        2437464064,
+        "warm-turns"
+      ],
+      [
+        250.33131875,
+        2,
+        20544.56,
+        2437365760,
+        "warm-turns"
+      ],
+      [
+        251.526813709,
+        2,
+        20623.5,
+        2446770176,
+        "warm-turns"
+      ],
+      [
+        252.81001004200002,
+        2,
+        20560.19,
+        2439299072,
+        "warm-turns"
+      ],
+      [
+        254.10482387500002,
+        2,
+        20649.56,
+        2445869056,
+        "warm-turns"
+      ],
+      [
+        255.4025815,
+        2,
+        20625.38,
+        2435661824,
+        "warm-turns"
+      ],
+      [
+        256.64768570900003,
+        2,
+        20687.12,
+        2448048128,
+        "warm-turns"
+      ],
+      [
+        257.955885584,
+        2,
+        20633.69,
+        2439446528,
+        "warm-turns"
+      ],
+      [
+        259.304579709,
+        2,
+        20601.88,
+        2439380992,
+        "warm-turns"
+      ],
+      [
+        260.460279042,
+        2,
+        20620.88,
+        2439020544,
+        "warm-turns"
+      ],
+      [
+        261.909914042,
+        2,
+        20564.88,
+        2439380992,
+        "warm-turns"
+      ],
+      [
+        263.191594,
+        2,
+        20565.44,
+        2438742016,
+        "warm-turns"
+      ],
+      [
+        264.3955335,
+        2,
+        20586.19,
+        2437251072,
+        "warm-turns"
+      ],
+      [
+        265.634020167,
+        2,
+        20554.94,
+        2440757248,
+        "warm-turns"
+      ],
+      [
+        266.921263709,
+        2,
+        20606.69,
+        2439512064,
+        "warm-turns"
+      ],
+      [
+        268.18959712500003,
+        2,
+        20470.69,
+        2438496256,
+        "warm-turns"
+      ],
+      [
+        269.459211209,
+        2,
+        20470.19,
+        2437824512,
+        "warm-turns"
+      ],
+      [
+        270.823609875,
+        2,
+        20430.75,
+        2441003008,
+        "warm-turns"
+      ],
+      [
+        272.025018292,
+        2,
+        20374.75,
+        2438447104,
+        "warm-turns"
+      ],
+      [
+        273.224056584,
+        2,
+        20310.75,
+        2440855552,
+        "warm-turns"
+      ],
+      [
+        274.488678917,
+        2,
+        20270.75,
+        2437349376,
+        "warm-turns"
+      ],
+      [
+        275.64376025,
+        2,
+        20222.75,
+        2439020544,
+        "warm-turns"
+      ],
+      [
+        276.864139834,
+        2,
+        20158.75,
+        2429255680,
+        "warm-turns"
+      ],
+      [
+        278.128157042,
+        2,
+        20142.75,
+        2440757248,
+        "warm-turns"
+      ],
+      [
+        279.430011417,
+        2,
+        20126.75,
+        2439331840,
+        "warm-turns"
+      ],
+      [
+        280.74954575,
+        2,
+        20110.75,
+        2446000128,
+        "warm-turns"
+      ],
+      [
+        281.860185584,
+        2,
+        20078.75,
+        2438037504,
+        "warm-turns"
+      ],
+      [
+        283.107054334,
+        2,
+        20239.12,
+        2436349952,
+        "warm-turns"
+      ],
+      [
+        284.438726625,
+        2,
+        20231.56,
+        2438725632,
+        "warm-turns"
+      ],
+      [
+        285.91713525,
+        2,
+        20327.0,
+        2436382720,
+        "warm-turns"
+      ],
+      [
+        287.229570917,
+        2,
+        20376.44,
+        2436464640,
+        "warm-turns"
+      ],
+      [
+        288.5547925,
+        2,
+        20466.94,
+        2438217728,
+        "warm-turns"
+      ],
+      [
+        290.107688417,
+        2,
+        20418.94,
+        2437398528,
+        "warm-turns"
+      ],
+      [
+        291.32904125,
+        2,
+        20362.94,
+        2439708672,
+        "warm-turns"
+      ],
+      [
+        292.453992375,
+        2,
+        20338.94,
+        2437070848,
+        "warm-turns"
+      ],
+      [
+        293.58771575000003,
+        2,
+        20322.94,
+        2437906432,
+        "warm-turns"
+      ],
+      [
+        294.89158404200003,
+        2,
+        20242.94,
+        2428157952,
+        "warm-turns"
+      ],
+      [
+        296.17650437500004,
+        2,
+        20210.94,
+        2447917056,
+        "warm-turns"
+      ],
+      [
+        297.310855709,
+        2,
+        20182.0,
+        2438823936,
+        "warm-turns"
+      ],
+      [
+        298.571110375,
+        2,
+        20244.19,
+        2443444224,
+        "warm-turns"
+      ],
+      [
+        299.720082792,
+        2,
+        20341.12,
+        2437267456,
+        "warm-turns"
+      ],
+      [
+        300.936123167,
+        2,
+        20333.56,
+        2442936320,
+        "warm-turns"
+      ],
+      [
+        302.043101042,
+        2,
+        20383.69,
+        2439266304,
+        "warm-turns"
+      ],
+      [
+        303.265890167,
+        2,
+        20462.12,
+        2439168000,
+        "warm-turns"
+      ],
+      [
+        304.424431625,
+        2,
+        20374.12,
+        2438643712,
+        "warm-turns"
+      ],
+      [
+        305.93062841700004,
+        2,
+        20409.69,
+        2439217152,
+        "warm-turns"
+      ],
+      [
+        307.18463225,
+        2,
+        20353.69,
+        2438266880,
+        "warm-turns"
+      ],
+      [
+        308.395865375,
+        2,
+        20329.69,
+        2439315456,
+        "warm-turns"
+      ],
+      [
+        309.502289959,
+        2,
+        20355.75,
+        2439168000,
+        "warm-turns"
+      ],
+      [
+        310.686882959,
+        2,
+        20339.75,
+        2447278080,
+        "warm-turns"
+      ],
+      [
+        311.90018687500003,
+        2,
+        20291.75,
+        2439299072,
+        "warm-turns"
+      ],
+      [
+        313.10399712500003,
+        2,
+        20267.75,
+        2439790592,
+        "warm-turns"
+      ],
+      [
+        314.216752209,
+        2,
+        20301.06,
+        2443952128,
+        "warm-turns"
+      ],
+      [
+        315.352252292,
+        2,
+        20388.19,
+        2443902976,
+        "warm-turns"
+      ],
+      [
+        316.567728042,
+        2,
+        20388.5,
+        2439266304,
+        "warm-turns"
+      ],
+      [
+        317.741032125,
+        2,
+        20401.75,
+        2439036928,
+        "warm-turns"
+      ],
+      [
+        318.840448709,
+        2,
+        20377.75,
+        2439151616,
+        "warm-turns"
+      ],
+      [
+        319.97913525,
+        2,
+        20444.31,
+        2439249920,
+        "warm-turns"
+      ],
+      [
+        321.290221875,
+        2,
+        20396.31,
+        2438823936,
+        "warm-turns"
+      ],
+      [
+        322.59305195900004,
+        2,
+        20454.06,
+        2439135232,
+        "warm-turns"
+      ],
+      [
+        323.75011125000003,
+        2,
+        20382.06,
+        2440839168,
+        "warm-turns"
+      ],
+      [
+        325.223764334,
+        2,
+        20366.06,
+        2439348224,
+        "warm-turns"
+      ],
+      [
+        326.581041792,
+        2,
+        20342.06,
+        2448441344,
+        "warm-turns"
+      ],
+      [
+        327.66544062500003,
+        2,
+        20318.06,
+        2441003008,
+        "warm-turns"
+      ],
+      [
+        328.79661820900003,
+        2,
+        20278.06,
+        2438168576,
+        "warm-turns"
+      ],
+      [
+        330.12912245900003,
+        2,
+        20426.62,
+        2440921088,
+        "warm-turns"
+      ],
+      [
+        331.338525667,
+        2,
+        20375.06,
+        2437545984,
+        "warm-turns"
+      ],
+      [
+        332.582076917,
+        2,
+        20327.06,
+        2432729088,
+        "warm-turns"
+      ],
+      [
+        333.64724912500003,
+        2,
+        20311.06,
+        2446032896,
+        "warm-turns"
+      ],
+      [
+        334.702295542,
+        2,
+        20361.56,
+        2439266304,
+        "warm-turns"
+      ],
+      [
+        335.953817792,
+        2,
+        20321.56,
+        2439380992,
+        "warm-turns"
+      ],
+      [
+        337.085833917,
+        2,
+        20297.56,
+        2438479872,
+        "warm-turns"
+      ],
+      [
+        338.32811604200003,
+        2,
+        20265.56,
+        2439692288,
+        "warm-turns"
+      ],
+      [
+        339.47479787500004,
+        2,
+        20265.56,
+        2436579328,
+        "warm-turns"
+      ],
+      [
+        340.60406145900004,
+        2,
+        20193.56,
+        2439069696,
+        "warm-turns"
+      ],
+      [
+        342.107553709,
+        2,
+        20181.94,
+        2435940352,
+        "warm-turns"
+      ],
+      [
+        343.64170875,
+        2,
+        20202.19,
+        2439249920,
+        "warm-turns"
+      ],
+      [
+        344.732799709,
+        2,
+        20182.94,
+        2436481024,
+        "warm-turns"
+      ],
+      [
+        346.20962320900003,
+        2,
+        20172.0,
+        2428026880,
+        "warm-turns"
+      ],
+      [
+        347.56681554200003,
+        2,
+        20207.0,
+        2440478720,
+        "warm-turns"
+      ],
+      [
+        348.784888125,
+        2,
+        20216.44,
+        2438496256,
+        "warm-turns"
+      ],
+      [
+        349.918878834,
+        2,
+        20224.56,
+        2443935744,
+        "warm-turns"
+      ],
+      [
+        351.327556834,
+        2,
+        20216.12,
+        2430779392,
+        "warm-turns"
+      ],
+      [
+        352.543134292,
+        2,
+        20168.12,
+        2441412608,
+        "warm-turns"
+      ],
+      [
+        353.72653154200003,
+        2,
+        20152.12,
+        2439430144,
+        "warm-turns"
+      ],
+      [
+        354.88920862500004,
+        2,
+        20136.75,
+        2439102464,
+        "warm-turns"
+      ],
+      [
+        356.003645375,
+        2,
+        20155.5,
+        2439217152,
+        "warm-turns"
+      ],
+      [
+        357.111153375,
+        2,
+        20083.5,
+        2439315456,
+        "warm-turns"
+      ],
+      [
+        358.310855167,
+        2,
+        20144.88,
+        2439102464,
+        "warm-turns"
+      ],
+      [
+        359.378613625,
+        2,
+        20212.0,
+        2440953856,
+        "warm-turns"
+      ],
+      [
+        360.447657667,
+        2,
+        20258.81,
+        2439692288,
+        "warm-turns"
+      ],
+      [
+        361.50816625,
+        2,
+        20240.88,
+        2439806976,
+        "warm-turns"
+      ],
+      [
+        362.564711167,
+        2,
+        20188.5,
+        2434531328,
+        "warm-turns"
+      ],
+      [
+        363.682963959,
+        2,
+        20274.81,
+        2448424960,
+        "warm-turns"
+      ],
+      [
+        364.783805167,
+        2,
+        20346.38,
+        2439839744,
+        "warm-turns"
+      ],
+      [
+        365.88609675000004,
+        2,
+        20282.38,
+        2439872512,
+        "warm-turns"
+      ],
+      [
+        366.981345084,
+        2,
+        20234.38,
+        2450014208,
+        "warm-turns"
+      ],
+      [
+        368.038018334,
+        2,
+        20210.38,
+        2451718144,
+        "warm-turns"
+      ],
+      [
+        369.156596375,
+        2,
+        20178.38,
+        2440003584,
+        "warm-turns"
+      ],
+      [
+        370.222318542,
+        2,
+        20146.38,
+        2446147584,
+        "warm-turns"
+      ],
+      [
+        371.311571834,
+        2,
+        20122.38,
+        2441216000,
+        "warm-turns"
+      ],
+      [
+        372.398289959,
+        2,
+        20082.38,
+        2440740864,
+        "warm-turns"
+      ],
+      [
+        373.643529542,
+        2,
+        20126.25,
+        2438758400,
+        "warm-turns"
+      ],
+      [
+        374.769002125,
+        2,
+        20135.62,
+        2436857856,
+        "warm-turns"
+      ],
+      [
+        375.961308125,
+        2,
+        20047.56,
+        2445049856,
+        "warm-turns"
+      ],
+      [
+        377.151145625,
+        2,
+        20228.81,
+        2440609792,
+        "warm-turns"
+      ],
+      [
+        378.203921417,
+        2,
+        20164.81,
+        2437890048,
+        "warm-turns"
+      ],
+      [
+        379.340495917,
+        2,
+        20132.81,
+        2444066816,
+        "warm-turns"
+      ],
+      [
+        380.545507625,
+        2,
+        20116.81,
+        2440986624,
+        "warm-turns"
+      ],
+      [
+        381.630696084,
+        2,
+        20100.81,
+        2440986624,
+        "warm-turns"
+      ],
+      [
+        382.726456625,
+        2,
+        20092.81,
+        2437808128,
+        "warm-turns"
+      ],
+      [
+        383.870920167,
+        2,
+        20153.12,
+        2437529600,
+        "warm-turns"
+      ],
+      [
+        385.0666855,
+        2,
+        20177.0,
+        2436808704,
+        "warm-turns"
+      ],
+      [
+        386.290428792,
+        2,
+        20184.19,
+        2437513216,
+        "warm-turns"
+      ],
+      [
+        387.353782084,
+        2,
+        20200.56,
+        2437709824,
+        "warm-turns"
+      ],
+      [
+        388.431781209,
+        2,
+        20263.75,
+        2435465216,
+        "warm-turns"
+      ],
+      [
+        389.475792542,
+        2,
+        20332.5,
+        2440232960,
+        "warm-turns"
+      ],
+      [
+        390.56725475,
+        2,
+        20367.19,
+        2439184384,
+        "warm-turns"
+      ],
+      [
+        391.656037625,
+        2,
+        20303.19,
+        2437726208,
+        "warm-turns"
+      ],
+      [
+        392.763105834,
+        2,
+        20239.19,
+        2443886592,
+        "warm-turns"
+      ],
+      [
+        393.885912792,
+        2,
+        20339.88,
+        2439577600,
+        "warm-turns"
+      ],
+      [
+        395.092315792,
+        2,
+        20397.69,
+        2439200768,
+        "warm-turns"
+      ],
+      [
+        396.477896792,
+        2,
+        20373.69,
+        2439282688,
+        "warm-turns"
+      ],
+      [
+        397.569542667,
+        2,
+        20325.69,
+        2439348224,
+        "warm-turns"
+      ],
+      [
+        398.63685587500004,
+        2,
+        20277.69,
+        2448850944,
+        "warm-turns"
+      ],
+      [
+        399.742793459,
+        2,
+        20289.81,
+        2440445952,
+        "warm-turns"
+      ],
+      [
+        400.9342995,
+        2,
+        20327.19,
+        2438283264,
+        "warm-turns"
+      ],
+      [
+        402.053288292,
+        2,
+        20287.19,
+        2444017664,
+        "warm-turns"
+      ],
+      [
+        403.128866042,
+        2,
+        20342.5,
+        2443706368,
+        "warm-turns"
+      ],
+      [
+        404.222652625,
+        2,
+        20464.19,
+        2439544832,
+        "warm-turns"
+      ],
+      [
+        405.33217341700004,
+        2,
+        20416.19,
+        2439528448,
+        "warm-turns"
+      ],
+      [
+        406.45724275000003,
+        2,
+        20368.19,
+        2439544832,
+        "warm-turns"
+      ],
+      [
+        407.670964792,
+        2,
+        20443.06,
+        2439561216,
+        "warm-turns"
+      ],
+      [
+        408.80242470900004,
+        2,
+        20709.75,
+        2441150464,
+        "warm-turns"
+      ],
+      [
+        410.009416167,
+        2,
+        20627.69,
+        2439839744,
+        "warm-turns"
+      ],
+      [
+        411.3875255,
+        2,
+        20656.69,
+        2437529600,
+        "warm-turns"
+      ],
+      [
+        412.493303417,
+        2,
+        20578.12,
+        2438348800,
+        "warm-turns"
+      ],
+      [
+        413.65306325,
+        2,
+        20677.81,
+        2440151040,
+        "warm-turns"
+      ],
+      [
+        414.8255175,
+        2,
+        20637.81,
+        2440773632,
+        "warm-turns"
+      ],
+      [
+        416.012763209,
+        2,
+        20691.44,
+        2438266880,
+        "warm-turns"
+      ],
+      [
+        417.166462417,
+        2,
+        20667.44,
+        2437611520,
+        "warm-turns"
+      ],
+      [
+        418.317602,
+        2,
+        20689.94,
+        2445148160,
+        "warm-turns"
+      ],
+      [
+        419.377245125,
+        2,
+        20871.62,
+        2435514368,
+        "warm-turns"
+      ],
+      [
+        420.492994125,
+        2,
+        20898.5,
+        2439217152,
+        "warm-turns"
+      ],
+      [
+        421.580304542,
+        2,
+        20886.44,
+        2445983744,
+        "warm-turns"
+      ],
+      [
+        422.673982625,
+        2,
+        20903.0,
+        2438004736,
+        "warm-turns"
+      ],
+      [
+        423.838016875,
+        2,
+        20855.06,
+        2438250496,
+        "warm-turns"
+      ],
+      [
+        425.06685183400003,
+        2,
+        20980.56,
+        2440790016,
+        "warm-turns"
+      ],
+      [
+        426.17958325,
+        2,
+        20987.5,
+        2437349376,
+        "warm-turns"
+      ],
+      [
+        427.344395084,
+        2,
+        20977.81,
+        2438070272,
+        "warm-turns"
+      ],
+      [
+        428.478766709,
+        2,
+        20979.19,
+        2437480448,
+        "warm-turns"
+      ],
+      [
+        429.620534584,
+        2,
+        21202.56,
+        2432057344,
+        "warm-turns"
+      ]
+    ]
+  },
+  "source_artifacts": {
+    "summary.json": {
+      "path": "build/lfm-realtime/endurance/full-20261108-a/summary.json",
+      "sha256": "e3d1b25f566daf4859c628ee769f4cdda80ec3eb0b3749660f5988cf6d7cb6cc"
+    },
+    "turns.jsonl": {
+      "path": "build/lfm-realtime/endurance/full-20261108-a/turns.jsonl",
+      "sha256": "abcc96a15977c761dec2ae2f9a7e61d36414e9834c4a687813aa683e0a088b3c"
+    },
+    "cold-starts.jsonl": {
+      "path": "build/lfm-realtime/endurance/full-20261108-a/cold-starts.jsonl",
+      "sha256": "2fc16c3427746a7ad501025e5d1cf4cb235cb86deb1c8c2387b4f1278ecdb2ea"
+    },
+    "memory.jsonl": {
+      "path": "build/lfm-realtime/endurance/full-20261108-a/memory.jsonl",
+      "sha256": "ec92eee7b607fd9550a3632b99779e056f7170c086ec60948281bacb2eb5335b"
+    },
+    "concurrency-notes.json": {
+      "path": "build/lfm-realtime/endurance/full-20261108-a/concurrency-notes.json",
+      "sha256": "91d1cfab437813e999d111a1502d50d70070f6f5e4dc7914b4690ebe04993705"
+    },
+    "endurance-measured.py": {
+      "path": "build/lfm-realtime/endurance/full-20261108-a/endurance-measured.py",
+      "sha256": "d506ac91228d72267da1427883dffd3a164085926601d4aeb7baa59cc13b1d9a"
+    }
+  },
+  "smoke_run": {
+    "run_id": "67ec03e4-7417-4c23-8165-16eb8005cef8",
+    "harness_sha256": "d1c877ade941c7237ccfc3bab4a7ed0bffd4ea7ff372dac2a4f4a06ef4a83091",
+    "status": "technical-run-complete",
+    "warm_duration_seconds": 22.859405582999997,
+    "aggregate": {
+      "attempts": 4,
+      "successful_turns": 4,
+      "errors": 0,
+      "cancelled": 0,
+      "by_mode": {
+        "direct": {
+          "attempts": 2,
+          "successful_turns": 2,
+          "errors": 0,
+          "audio": {
+            "count": 2,
+            "min_seconds": 0.2662828750000008,
+            "median_seconds": 0.26723472900000056,
+            "max_seconds": 0.2681865830000003,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          },
+          "text": {
+            "count": 2,
+            "min_seconds": 0.1040070420000001,
+            "median_seconds": 0.10878172899999994,
+            "max_seconds": 0.11355641599999977,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          }
+        },
+        "two-pass": {
+          "attempts": 2,
+          "successful_turns": 2,
+          "errors": 0,
+          "audio": {
+            "count": 2,
+            "min_seconds": 1.4941075830000017,
+            "median_seconds": 1.5518128124999997,
+            "max_seconds": 1.6095180419999977,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          },
+          "text": {
+            "count": 2,
+            "min_seconds": 0.10936762500000086,
+            "median_seconds": 0.11038410449999958,
+            "max_seconds": 0.1114005839999983,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          }
+        }
+      },
+      "by_mode_and_direction": {
+        "direct:en-nl": {
+          "attempts": 1,
+          "successful_turns": 1,
+          "errors": 0,
+          "audio": {
+            "count": 1,
+            "min_seconds": 0.2681865830000003,
+            "median_seconds": 0.2681865830000003,
+            "max_seconds": 0.2681865830000003,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          },
+          "text": {
+            "count": 1,
+            "min_seconds": 0.11355641599999977,
+            "median_seconds": 0.11355641599999977,
+            "max_seconds": 0.11355641599999977,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          }
+        },
+        "direct:nl-en": {
+          "attempts": 1,
+          "successful_turns": 1,
+          "errors": 0,
+          "audio": {
+            "count": 1,
+            "min_seconds": 0.2662828750000008,
+            "median_seconds": 0.2662828750000008,
+            "max_seconds": 0.2662828750000008,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          },
+          "text": {
+            "count": 1,
+            "min_seconds": 0.1040070420000001,
+            "median_seconds": 0.1040070420000001,
+            "max_seconds": 0.1040070420000001,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          }
+        },
+        "two-pass:en-nl": {
+          "attempts": 1,
+          "successful_turns": 1,
+          "errors": 0,
+          "audio": {
+            "count": 1,
+            "min_seconds": 1.4941075830000017,
+            "median_seconds": 1.4941075830000017,
+            "max_seconds": 1.4941075830000017,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          },
+          "text": {
+            "count": 1,
+            "min_seconds": 0.10936762500000086,
+            "median_seconds": 0.10936762500000086,
+            "max_seconds": 0.10936762500000086,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          }
+        },
+        "two-pass:nl-en": {
+          "attempts": 1,
+          "successful_turns": 1,
+          "errors": 0,
+          "audio": {
+            "count": 1,
+            "min_seconds": 1.6095180419999977,
+            "median_seconds": 1.6095180419999977,
+            "max_seconds": 1.6095180419999977,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          },
+          "text": {
+            "count": 1,
+            "min_seconds": 0.1114005839999983,
+            "median_seconds": 0.1114005839999983,
+            "max_seconds": 0.1114005839999983,
+            "percentiles_withheld_reason": "Fewer than 100 successful observations in this group"
+          }
+        }
+      }
+    },
+    "memory_summary": {
+      "samples": 30,
+      "max_pressure_level": 2,
+      "peak_helper_rss_bytes": 2546204672,
+      "baseline_swap_mib": 17966.69,
+      "peak_swap_growth_mib": 1338.0600000000013,
+      "last_sample": {
+        "monotonic": 30.885234208,
+        "pressure_level": 2,
+        "swap_used_mib": 19222.69,
+        "helper_rss_bytes": 2450374656,
+        "helper_cpu_percent": 5.8,
+        "helper_pid": 8615,
+        "phase": "cancel-network-only"
+      }
+    },
+    "cancellations": [
+      {
+        "mode": "direct",
+        "source": "nl",
+        "target": "en",
+        "status": "cancelled",
+        "fresh_context": true,
+        "counts": {
+          "input_audio_buffer.committed": 1,
+          "conversation.item.added": 1,
+          "conversation.item.done": 1,
+          "response.created": 1,
+          "response.output_item.added": 1,
+          "response.content_part.added": 2,
+          "response.output_text.delta": 6,
+          "response.output_audio.delta": 1
+        },
+        "text": "The appointment is at half past",
+        "input_format": {
+          "type": "audio/pcm",
+          "rate": 16000
+        },
+        "output_format": {
+          "type": "audio/pcm",
+          "rate": 24000
+        },
+        "source_seconds": 2.47,
+        "input_elapsed_seconds": 2.4711222910000004,
+        "max_input_send_lateness_seconds": 0.004801290999999708,
+        "commit_monotonic": 29.993524041,
+        "first_text_seconds": 0.11159925000000115,
+        "first_audio_seconds": 0.26506787499999973,
+        "cancel_to_socket_closed_seconds": 1.0650273749999997,
+        "cancellation_measurement": "Local cancel send to WebSocket closure; not acoustic stop or model completion",
+        "socket_closed_seconds": 1.3308501669999977,
+        "audio": {
+          "encoding": "pcm16",
+          "sample_rate": 24000,
+          "sample_count": 1440,
+          "bytes": 2880,
+          "duration_seconds": 0.06,
+          "peak": 0,
+          "rms": 0.0,
+          "sha256": "39a68c2004ed4a20edb148b72e5aabd663f15cce54b30d2ea1c106e839761ed5"
+        },
+        "index": 1
+      }
+    ],
+    "note": "Separate 4-turn smoke + one process-cold start; not pooled into the 38-turn run. First-nonzero-PCM metric added after this smoke."
+  },
+  "teardown_diagnostic": {
+    "guard_requested_signal": "SIGTERM",
+    "owned_helper_pid": 9719,
+    "actual_exit_code": -6,
+    "diagnostic_report": "llama-server-2026-11-08-134422.ips",
+    "exception": "EXC_CRASH / SIGABRT",
+    "own_process_still_running_after_cleanup": false,
+    "triggered_stack": [
+      "abort",
+      "ggml_abort",
+      "ggml_metal_rsets_free",
+      "ggml_metal_device_free",
+      "exit",
+      "signal_handler(int) (.cold.1)",
+      "signal_handler(int)"
+    ],
+    "finding": "Guard and finally could send duplicate SIGTERM. Pinned upstream treats the second signal as forced exit; the own-process crash stack reached Metal cleanup through this branch.",
+    "fix": "Benchmark-only cleanup now sends at most one SIGTERM to each currently owned process. A deterministic guard-plus-finally regression passed. No post-fix model rerun yet; preserve this run as aborted, not clean shutdown."
+  },
+  "current_harness_sha256": "b6fc0c65a484acc2e1d0021f3fbd587264dd4a213a1ac731c3dd54e69906dc05",
+  "limits": [
+    "Two repeated original synthetic utterances, no human recordings or perceptual review",
+    "No microphone, audio playback, acoustic latency, stop-to-silence, VAD or app UI measurement",
+    "System-wide swap includes concurrent unrelated builds/apps; RSS does not cover all Metal/unified memory",
+    "No >=100 successful observations per mode; no p50/p95 reported",
+    "128 GB Mac not measured; results describe only this M5/16 GiB machine and recorded background load"
+  ]
+}
