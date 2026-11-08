@@ -31,3 +31,10 @@ De opnieuw gebouwde en diep geverifieerde Apple Development-preview met ingebedd
 De accessibility-tree toont nu **Enable Audio** en **Enable Translate** voor de extension-schakelaars. Een tweede venster werd met Command+Shift+N geopend; Translate toonde dezelfde inactieve instellingen. Een wissel naar Engels → Nederlands in dat venster verscheen ook in het eerste venster nadat het tweede was gesloten. Daarna is Nederlands → Engels hersteld. Dit bevestigt gedeelde instellingen in idle-vensters, niet audio-concurrency tijdens een actieve sessie.
 
 De eindtoestand is LFM3-Omni direct/Q8, microfoon als geselecteerde bron, speech + captions, experimentcheckbox uit, geen capture of model geladen. De bestaande algemene MLX-server is via **Stop Server** gestopt. Er is geen privacytoestemming via de UI aangevraagd of gewijzigd. De overige fysieke/audio-/VoiceOver-/overlaykwalificaties hierboven blijven open.
+
+
+## Vervolgpreview na subprocesscorrectie
+
+De nieuwe Make-build met ingebedde appcode `28cabb68f57e8ab5e01cb19eaf3c690d37c7349d` is geslaagd in `development-build-subprocess-final.log`. De Apple Development-signature is opnieuw deep/strict geverifieerd (`local-subprocess-final-signing.log`). De vorige eigen preview is netjes afgesloten; de nieuwe executable is gestart en de Translate-pagina is opnieuw zichtbaar waargenomen. `local-subprocess-final-launch.json` koppelt de executable, bundle-ID, revisie en controle aan elkaar.
+
+Deze aanvullende controle toont direct/Q8, Nederlands→Engels, een uitgevinkte experimentele opt-in, gepauzeerde input, geen generatie en stille output. De algemene appserver is via de app gestopt. Prepare en Start zijn niet gebruikt; de pagina toont de actuele 16-GB-geheugenwaarschuwing. De eerdere screenshots, toegankelijke labels en gedeelde idle-instellingen betreffen de ongewijzigde UI-bron van `e1cf3640`; zij worden niet opnieuw als hardware- of actieve audiokwalificatie geteld. De subprocesscorrectie wijzigt geen Translate-UI of modelroute.

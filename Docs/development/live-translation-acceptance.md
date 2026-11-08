@@ -4,6 +4,14 @@ Stand: 8 november 2026. Dit document vergelijkt de oorspronkelijke opdracht van 
 
 De aanvullingen van de eigenaar blijven leidend: lokale modellen als hoofdroute; evaluatievolgorde LFM3-Omni direct → dezelfde Omni in twee passes → expliciet gekozen alternatief; Apple uitsluitend een handmatige TTS-optie; taalondersteuning per taak; menselijke beoordeling van natuurlijkheid, prosodie en emotionele intentie; geen universele 16-GB-beperking.
 
+## Actuele developmentrevisie na CI-diagnose
+
+De nieuwste appcode is `28cabb68f57e8ab5e01cb19eaf3c690d37c7349d`. Een bestaande subprocessfout is na de eerste developmentvalidatie gereproduceerd en smal hersteld: reeds beëindigde shellprocessen konden ten onrechte als timeout worden gemeld. Alleen EOF-afmelding bleef vijf van twintig keer falen; completioncallback vóór launch plus EOF-afmelding slaagde honderd van honderd keer. De definitieve gerichte suite telt 21 geslaagde tests, nul skips/failures, met behoud van de drie-/tien-/dertig-secondenlimieten. Drie extra logische regressietests bewaken volledige uitvoerstaarten en een werkelijk doorlopend proces na gesloten pipes. Zie de [baselinevervolgreview](reviews/native-host.md).
+
+De nieuwe Make-build is geslaagd, alle 649 geselecteerde bron-/configuratiebestanden zijn gelijk aan de gebouwde snapshot, de eigen Apple Development-signature is geldig en de nieuwe Translate-pagina is zichtbaar geopend. [Bundlebewijs](development-bundle-evidence.json), [exacte gerichte resultaten](validation-results.json) en [UI-vervolgcontrole](live-translation-ui.md) leggen dit vast. De eerdere volledige lokale suite hieronder hoort bij appcode `e1cf3640`; zij wordt niet achteraf aan deze nieuwe correctie toegeschreven. Volledige exacte-head-validatie en de vereiste gate worden beoordeeld via de actuele [PR-checks](https://github.com/CharafChnioune/nativ/pull/1/checks).
+
+Geen modelpin, kwaliteitsclaim of open menselijke/hardware-/distributiegate is hierdoor veranderd. De onderstaande eerste volledige developmentvalidatie blijft historisch bewijs; bovenstaande revisie en de actuele PR-head zijn leidend voor de oplevering.
+
 ## Betekenis van de status
 
 - **Geïmplementeerd:** de beschreven productiecode is aanwezig. Dit is op zichzelf geen testuitslag.
@@ -110,7 +118,7 @@ Exacte Omni/runtime/VAD- en cascadepins staan in [LFMRealtime](../../ThirdParty/
 
 De technische duurproef `7f71bee6-4f46-4c18-82c0-9f419a8eb3aa` staat in `build/lfm-realtime/endurance/full-20261108-a/summary.json`, met afzonderlijke `concurrency-notes.json`. Er waren 38/38 technisch geslaagde warme turns en tien proceskoude starts, maar de run eindigde als `aborted` na 412,966 s. Systeemswap groeide 2211,94 MiB vanaf een reeds hoge 18.990,62 MiB; de hoogste gerapporteerde OS-pressure was 2. De guard greep in vanwege swapgroei, niet vanwege critical pressure 4. Piek helper-RSS was 2.595.225.600 bytes, exclusief volledige Metal/unified-memoryboekhouding. Meerdere builds, waaronder een andere workspace, liepen gelijktijdig; totale systeemswap kan niet aan alleen Nativ worden toegeschreven. De geregistreerde helper-exitcode was -6 en de afsluitduur 1,181 s; dit was geen normale procesexit. Crashrapport en harnessanalyse tonen een tweede SIGTERM van guard plus cleanup: upstream forceerde exit terwijl Metal-resources nog actief waren. De benchmarkharness gebruikt nu idempotente beëindiging met maximaal één SIGTERM; de regressietest is groen. De oorspronkelijke afgebroken run blijft ongewijzigd bewijs; een nieuwe echte duurproef na deze fix is niet uitgevoerd: de afzonderlijke 60-s-baseline werd afgewezen wegens aanhoudende warning-pressure en onvoldoende stabiele swap. Zie de [technische duurproef](technical-performance.md). Het harnas speelde geen audio af en opende geen microfoon. Per mode blijven percentielen bewust achterwege wegens minder dan 100 waarnemingen.
 
-## Eindcontrole van de developmentwijziging
+## Eerste volledige developmentvalidatie vóór de subprocesscorrectie
 
 | Laatste controle | Resultaat / exact bewijs |
 | --- | --- |

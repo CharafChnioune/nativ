@@ -260,3 +260,6 @@ cohort was not started because its independent baseline remained under warning
 pressure. See [measurements](technical-performance.md). Apple Development signing
 is not Developer ID signing, notarization, publication or a working Sparkle update.
 The owner/distribution setup above remains required.
+
+
+Native CI-artifacts gebruiken de bron-SHA én `github.run_attempt` in hun naam. Daardoor blijven uitkomsten van herhaalde runs ondubbelzinnig aan hun poging gekoppeld. Er wordt geen `overwrite` gebruikt: een eerdere mislukte poging blijft bewijs. Dit is een verbetering van bewijstoewijzing, geen claim dat GitHub dubbele artifactnamen bij reruns altijd afwijst.

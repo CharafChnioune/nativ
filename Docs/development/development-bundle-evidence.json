@@ -1,5 +1,5 @@
 {
-  "app_source_commit": "e1cf3640ef066cf3bd7e1f149701c6294bf5a0f9",
+  "app_source_commit": "28cabb68f57e8ab5e01cb19eaf3c690d37c7349d",
   "app_identifier": "io.github.charafchnioune.nativ",
   "frameworks": {
     "NativServerKit": "io.github.charafchnioune.nativ.NativServerKit",
@@ -13,19 +13,30 @@
   "helper": "arm64 bundled static native helper",
   "updates": "disabled: own Sparkle key is empty; no upstream fallback",
   "native_snapshot_compile_inputs_matching_canonical": 649,
-  "compile_inputs_sha256": "2b48dbd579c51cf760eca04fa33d056bf861775acc5317dd5fa5619781bd50e7",
-  "compile_inputs_scope": "Snapshot identity at the final app build, before the later test-only scroll fixture correction. App production sources and this bundle are unchanged; separate follow-up tests cover the corrected fixture.",
+  "compile_inputs_sha256": "84fabf85398af9729cbed3239eb512915e97cd6fe0d6759bb1e88cfd93790cdf",
+  "compile_inputs_scope": "SHA-256 of the UTF-8 native-subprocess-final-files.json manifest, including a final newline. It compares all 649 tracked files under Sources, Tests, ThirdParty, Configuration, PythonDistribution, Extensions plus Package.swift, Makefile, project.yml between canonical and build snapshot. External package artifacts are pinned separately.",
   "distribution_qualified": false,
   "local_signing": {
     "type": "Apple Development",
     "deep_strict_verification": "passed",
     "visible_final_launch": "observed",
-    "distribution_signing": false
+    "distribution_signing": false,
+    "log": "local-subprocess-final-signing.log",
+    "visible_launch_evidence": "local-subprocess-final-launch.json"
   },
   "ui": {
     "final_screenshot": "images/translate-final-native-dark.png",
     "extension_toggle_accessibility_labels": "observed",
     "second_window_shared_idle_language_direction": "observed",
-    "active_audio_multiwindow_qualification": false
+    "active_audio_multiwindow_qualification": false,
+    "screenshot_source_commit": "e1cf3640ef066cf3bd7e1f149701c6294bf5a0f9",
+    "latest_visible_launch_source_commit": "28cabb68f57e8ab5e01cb19eaf3c690d37c7349d",
+    "latest_visible_launch": "Translate page observed, Dutch to English, direct Q8, experimental opt-in unchecked, input paused and no generation; own app server stopped.",
+    "scope": "Earlier screenshots, extension-label and shared-idle-window observations cover unchanged UI source. The later subprocess fix was followed by a new signed visible launch, not another full UI qualification."
+  },
+  "previous_preview": {
+    "app_source_commit": "e1cf3640ef066cf3bd7e1f149701c6294bf5a0f9",
+    "compile_inputs_sha256": "2b48dbd579c51cf760eca04fa33d056bf861775acc5317dd5fa5619781bd50e7",
+    "note": "Historical preview before the subprocess completion fix; its UI source is unchanged by that fix."
   }
 }

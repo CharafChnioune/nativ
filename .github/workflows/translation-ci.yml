@@ -83,7 +83,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: native-validation-${{ needs.identity.outputs.head }}
+          name: native-validation-${{ needs.identity.outputs.head }}-attempt-${{ github.run_attempt }}
           path: build/TranslationTests.xcresult
           if-no-files-found: error
   gate:
