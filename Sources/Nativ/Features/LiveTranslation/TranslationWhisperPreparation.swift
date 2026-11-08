@@ -92,4 +92,3 @@ enum TranslationWhisperPreparation {
     }
     private static func failure(_ message: String) -> TranslationFailure { .init(code: .invalidConfiguration, message: message) }
 }
-
