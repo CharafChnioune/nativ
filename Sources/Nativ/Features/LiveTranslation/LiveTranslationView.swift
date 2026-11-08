@@ -450,7 +450,7 @@ struct LiveTranslationView: View {
             Divider()
             Text("Technically tested: Q8/Q4 loopback authentication, PCM16 realtime input/output, float32 TTS streaming, cancellation and fresh contexts. No bilingual pair or main voice is qualified.")
             Text("The Whisper large-v3-turbo → Gemma 4 E4B → LFM3-Omni Q8 cascade completed two synthetic NL/EN examples with correct target text and real audio. First received PCM took 7.2/6.8 seconds, including sequential loading. These are individual observations, not acoustic latency or quality qualification.")
-            Text("The Q8 endurance attempt completed 160 warm turns and ten process-cold starts, then stopped after 15 minutes 22 seconds at the system-swap guard. The 30-minute requirement was not met. Global swap also includes other applications.")
+            Text("The Q8 endurance attempt completed 160 warm turns and ten process-cold starts, then stopped after 15 minutes 22 seconds of warm-turn testing at the system-swap guard. The 30-minute requirement was not met. Global swap also includes other applications.")
             Text("Human meaning, naturalness, prosody and emotional intent still need structured review. Qualified warm/cold latency percentiles and acoustic stop-to-silence are unavailable. Other model combinations and Macs with 128 GB have not been measured.")
             if !coordinator.latestMetrics.isEmpty {
                 Text("Current session diagnostics (not acoustic latency)").legacyTextStyle(.supportingEmphasized)

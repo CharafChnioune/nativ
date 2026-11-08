@@ -32,7 +32,7 @@ public enum TranslationProviderCatalog {
       documentedRecognitionLanguages: [], technicallyVerifiedTransportLanguages: ["en", "nl"],
       technicallyVerifiedLanguages: [], qualifiedPairs: [], requiresExplicitSelection: true,
       limitation:
-        "Experimental: current Q8/Q4 probes streamed real audio in the requested language but changed a protected time and booking intent; Q4 also changed a day. Dutch is absent from the documented text-language list. No language pair or voice is qualified."
+        "Experimental: current Q8/Q4 probes produced text in the requested language and streamed real audio, but the text changed a protected time and booking intent; Q4 also changed a day. Dutch is absent from the documented text-language list. No language pair or voice is qualified."
     ),
     .init(
       id: .lfm3OmniTwoPass, displayName: "LFM3-Omni two-pass (experimental)",
