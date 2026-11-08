@@ -14,6 +14,7 @@
   "updates": "disabled: own Sparkle key is empty; no upstream fallback",
   "native_snapshot_compile_inputs_matching_canonical": 649,
   "compile_inputs_sha256": "2b48dbd579c51cf760eca04fa33d056bf861775acc5317dd5fa5619781bd50e7",
+  "compile_inputs_scope": "Snapshot identity at the final app build, before the later test-only scroll fixture correction. App production sources and this bundle are unchanged; separate follow-up tests cover the corrected fixture.",
   "distribution_qualified": false,
   "local_signing": {
     "type": "Apple Development",

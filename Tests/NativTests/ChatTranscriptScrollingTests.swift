@@ -132,7 +132,7 @@ final class ChatTranscriptScrollingTests: XCTestCase {
     func testJumpToUnattachedMessageAndSessionReset() async throws {
         try await withTranscript(historyCount: 40) { model, probe, host in
             model.target = model.rows[5].id
-            try await self.settle()
+            try await self.settleJumpRendering(host, probe: probe, targetID: model.rows[5].id)
             XCTAssertEqual(self.nativeSurfaceCount(in: host), 40)
             let view = try XCTUnwrap(probe.rows[model.rows[5].id]?.view)
             let clip = try XCTUnwrap(view.enclosingScrollView?.contentView)
@@ -450,6 +450,29 @@ final class ChatTranscriptScrollingTests: XCTestCase {
 
     private func settle() async throws {
         try await Task.sleep(for: .milliseconds(350))
+    }
+
+    private func settleJumpRendering(_ host: NSView, probe: ScrollTestProbe, targetID: UUID)
+        async throws
+    {
+        // A consumed scroll request and attached row can precede the clip view's
+        // displayed position. Drive the same bounded display passes used below;
+        // observing consecutive visible frames avoids relying on a fixed delay.
+        let bitmap = try XCTUnwrap(host.bitmapImageRepForCachingDisplay(in: host.bounds))
+        var visibleFrames = 0
+        for _ in 0 ..< 22 {
+            try await Task.sleep(for: .milliseconds(16))
+            host.cacheDisplay(in: host.bounds, to: bitmap)
+            guard let row = probe.rows[targetID]?.view,
+                  let clip = row.enclosingScrollView?.contentView else {
+                visibleFrames = 0
+                continue
+            }
+            let rect = row.convert(row.bounds, to: clip)
+            visibleFrames = !rect.isEmpty && rect.intersects(clip.bounds) ? visibleFrames + 1 : 0
+            if visibleFrames == 2 { return }
+        }
+        XCTFail("The requested row must become visible in rendered frames")
     }
 
     private func settleRendering(_ host: NSView, probe: ScrollTestProbe, rowID: UUID? = nil)

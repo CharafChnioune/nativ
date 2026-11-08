@@ -32,12 +32,22 @@
     ],
     "log_sha256": "9d86a80c7da076c54f19fbe141618e00e16ddd978b3fbfff4f5e5c1b03ee880f",
     "toolchain": "Xcode 27.2 / Swift 6.4.2 / macOS 26.6 / arm64",
-    "source_note": "Canonical source snapshot outside Desktop avoided TCC-blocked test startup. Full suite covered unchanged functional production code. A trailing EOF blank line was then removed from TranslationWhisperPreparation.swift; the final file was rebuilt and both deterministic tests rerun successfully. All final compiled inputs match the canonical repository.",
+    "source_note": "Canonical source snapshot outside Desktop avoided TCC-blocked test startup. Full suite covered unchanged functional production code. A trailing EOF blank line was then removed from TranslationWhisperPreparation.swift; the final file was rebuilt and both deterministic tests rerun successfully. A later test-only scroll fixture correction is covered by the separate follow-up below, not attributed to this earlier full-suite run.",
     "final_whisper_file_recheck": {
       "passed": 2,
       "skipped": 1,
       "failed": 0,
       "log": "native-whisper-final.log"
+    },
+    "scroll_fixture_follow_up": {
+      "production_code_changed": false,
+      "canonical_and_tested_source_sha256": "91d1a1505345fc63656d8782c3f7634eacd4e46f878fbc45985c5aa7878e194b",
+      "controlled_consumption_boundary_before": { "runs": 3, "failed": 2 },
+      "controlled_consumption_boundary_after": { "runs": 5, "failed": 0 },
+      "canonical_targeted_repetitions": { "passed": 10, "failed": 0 },
+      "full_scrolling_class": { "passed": 15, "skipped": 0, "failed": 0, "seconds": 47.415 },
+      "logs": ["scroll-consumption-diagnostic.log", "scroll-consumption-green.log", "scroll-jump-green.log", "scroll-class-green.log"],
+      "note": "Bounded display passes observe two consecutive visible frames without reissuing the scroll request. The controlled boundary reproduced transient geometry, not the exact original CI timing. Final full-suite CI must be evaluated on the PR's current head."
     }
   },
   "swiftpm": {
