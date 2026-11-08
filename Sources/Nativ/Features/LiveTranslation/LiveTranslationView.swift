@@ -14,6 +14,7 @@ struct LiveTranslationView: View {
     var openModels: () -> Void
     @State private var outputs: [TranslationOutputDevice] = []
     @State private var models: [LocalModel] = []
+    @State private var stageDescriptors: [String: TranslationStageCatalog.Descriptor] = [:]
     @State private var isRecordingShortcut = false
     @State private var modelScanError: String?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -22,7 +23,12 @@ struct LiveTranslationView: View {
         self.coordinator = coordinator; preferences = coordinator.settings; modelStore = coordinator.modelStore
         self.model = model; self.titleLeadingInset = titleLeadingInset; self.openModels = openModels
     }
-    private var languages: [String] { LFMLanguageSupport.documentedSpeechLanguages.union(LFMLanguageSupport.documentedTextLanguages).sorted { languageName($0) < languageName($1) } }
+    private var languages: [String] {
+        var candidates = LFMLanguageSupport.documentedSpeechLanguages.union(LFMLanguageSupport.documentedTextLanguages)
+        for descriptor in stageDescriptors.values { candidates.formUnion(descriptor.languages) }
+        candidates.formUnion([preferences.value.sourceLanguage, preferences.value.targetLanguage])
+        return candidates.sorted { languageName($0) < languageName($1) }
+    }
     private func languageName(_ code: String) -> String { Locale(identifier: "en").localizedString(forLanguageCode: code) ?? code }
 
     var body: some View {
@@ -114,6 +120,14 @@ struct LiveTranslationView: View {
                 Button("Retry retained turn (expires after 30 seconds)", action: coordinator.retryLastTurn)
                     .disabled(coordinator.isGenerating)
             }
+            if coordinator.canReplay {
+                HStack {
+                    Button("Retranslate last recording") { coordinator.replayLastTurn() }
+                    Button("Swap direction and retranslate") { coordinator.replayLastTurn(swappingDirection: true) }
+                }.disabled(coordinator.isGenerating)
+                Text("One recording is kept in memory for up to 30 seconds. Stop or changing settings clears it.")
+                    .legacyTextStyle(.metadata).foregroundStyle(.secondary)
+            }
             if !coordinator.incompleteIntervals.isEmpty {
                 Text("Incomplete input: \(coordinator.incompleteIntervals.count) interval(s). Repeat the affected speech; the transcript is not continuous.")
                     .legacyTextStyle(.supporting).foregroundStyle(.orange)
@@ -135,6 +149,7 @@ struct LiveTranslationView: View {
             switch value.speechProvider {
             case .omni: speech = "LFM3-Omni " + value.quantization
             case .chatterbox: speech = value.chatterboxModel
+            case .localModel: speech = value.speechModel + (value.speechVoice.isEmpty ? "" : " · " + value.speechVoice)
             case .apple: speech = AVSpeechSynthesisVoice(identifier: value.appleVoiceID)?.name ?? "Choose a system voice"
             }
         }
@@ -152,8 +167,24 @@ struct LiveTranslationView: View {
                 } label: { Image(systemName: "arrow.left.arrow.right") }.help("Swap language direction").accessibilityLabel("Swap language direction")
                 Picker("To", selection: $preferences.value.targetLanguage) { ForEach(languages, id: \.self) { Text(languageName($0)).tag($0) } }
             }
-            Text("Fixed direction. Automatic bilingual direction is unavailable until it passes recorded tests.")
-                .legacyTextStyle(.supporting).foregroundStyle(.secondary)
+            if preferences.value.provider == .localCascade {
+                Picker("Direction mode", selection: $preferences.value.directionMode) {
+                    Text("Fixed direction").tag(TranslationDirectionMode.fixed)
+                    Text("Automatic within this pair · experimental").tag(TranslationDirectionMode.automatic)
+                }
+                if preferences.value.directionMode == .automatic {
+                    Toggle("I accept unqualified automatic direction for this pair", isOn: $preferences.value.automaticDirectionAccepted)
+                    Text("Both languages must work in each selected model. Short, mixed or ambiguous input stops before speech; choose a direction and retranslate the retained recording. Detection scores are not translation-quality measurements.")
+                        .legacyTextStyle(.metadata).foregroundStyle(.secondary)
+                }
+            } else {
+                Text("LFM3-Omni uses the selected fixed direction. Automatic direction is available experimentally in the explicit local cascade.")
+                    .legacyTextStyle(.supporting).foregroundStyle(.secondary)
+            }
+            if let pair = coordinator.detectedDirection {
+                Text("Detected for this turn: " + languageName(pair.source) + " → " + languageName(pair.target) + " · experimental")
+                    .legacyTextStyle(.metadata).foregroundStyle(.secondary)
+            }
         }.padding(18).nativPanelStyle()
     }
     private var providerPanel: some View {
@@ -164,6 +195,9 @@ struct LiveTranslationView: View {
                 Text("LFM3-Omni · same model, two passes (experimental)").tag(TranslationProviderID.lfm3OmniTwoPass)
                 Text("Local cascade · choose each model").tag(TranslationProviderID.localCascade)
             }
+            .onChange(of: preferences.value.provider) { _, provider in
+                if provider != .localCascade { preferences.value.directionMode = .fixed }
+            }
             if preferences.value.provider == .localCascade { cascadeControls }
             if preferences.value.provider != .localCascade || preferences.value.speechProvider == .omni {
                 Picker("Omni precision", selection: $preferences.value.quantization) {
@@ -172,7 +206,7 @@ struct LiveTranslationView: View {
                 }
                 HStack {
                     Button("Prepare LFM3-Omni", action: coordinator.prepareModels)
-                        .disabled(coordinator.isPreparingModels || modelStore.isPreparing || coordinator.isPreparingRecognition || coordinator.state == .running || coordinator.state == .preparing)
+                        .disabled(coordinator.isPreparingModels || modelStore.isPreparing || coordinator.isPreparingRecognition || coordinator.isPreparingSpeech || coordinator.state == .running || coordinator.state == .preparing)
                     if coordinator.isPreparingModels { Button("Cancel preparation", action: coordinator.stop) }
                     Text(modelStore.message ?? "Official pinned model and matching Q8 audio projector.").legacyTextStyle(.metadata).foregroundStyle(.secondary)
                 }
@@ -192,6 +226,7 @@ struct LiveTranslationView: View {
     private var cascadeControls: some View {
         VStack(alignment: .leading, spacing: 10) {
             modelPicker("Recognition", selection: $preferences.value.recognitionModel, candidates: models.filter { $0.capabilities.contains(.speechToText) })
+            stageEvidence(preferences.value.recognitionModel, role: .recognition)
             HStack {
                 Button("Prepare Whisper tokenizer", action: coordinator.prepareRecognition)
                     .disabled(coordinator.isPreparingRecognition || coordinator.isPreparingModels || modelStore.isPreparing || coordinator.state == .running || coordinator.state == .preparing)
@@ -201,6 +236,13 @@ struct LiveTranslationView: View {
                 }
             }
             modelPicker("Translation", selection: $preferences.value.translationModel, candidates: models.filter(\.isEligibleForLanguageModelPicker))
+            stageEvidence(preferences.value.translationModel, role: .translation)
+            Picker("Model memory", selection: $preferences.value.cascadeMemoryStrategy) {
+                Text("Load each step separately · lower peak memory").tag(TranslationCascadeMemoryStrategy.sequential)
+                Text("Keep models resident · more memory, faster reuse").tag(TranslationCascadeMemoryStrategy.resident)
+            }
+            Text("Sequential mode is the initial choice, including on 16 GB Macs. Resident mode is an explicit option for Macs with more free memory, including 128 GB. Neither mode changes your models; measured capacity depends on other workloads.")
+                .legacyTextStyle(.metadata).foregroundStyle(.secondary)
             Picker("Speech", selection: $preferences.value.speechProvider) {
                 ForEach(LiveTranslationSettings.SpeechProvider.allCases, id: \.self) { Text($0.title).tag($0) }
             }
@@ -216,7 +258,17 @@ struct LiveTranslationView: View {
                     Text(preferences.value.chatterboxReferencePath.isEmpty ? "A permitted reference voice is required." : URL(fileURLWithPath: preferences.value.chatterboxReferencePath).lastPathComponent)
                         .legacyTextStyle(.metadata).lineLimit(1)
                 }
+                stockVoiceButton
+                stageEvidence(preferences.value.chatterboxModel, role: .speech)
                 Text("Playback starts after the complete phrase is generated. This is not streaming speech; long phrases may be refused.").legacyTextStyle(.metadata).foregroundStyle(.secondary)
+            }
+            if preferences.value.speechProvider == .localModel { localSpeechControls }
+            if preferences.value.speechProvider == .chatterbox || preferences.value.speechProvider == .localModel {
+                HStack {
+                    Button("Prepare selected speech assets", action: coordinator.prepareSpeech)
+                        .disabled(coordinator.isPreparingSpeech || coordinator.isPreparingRecognition || coordinator.isPreparingModels || modelStore.isPreparing || coordinator.state == .running || coordinator.state == .preparing)
+                    if coordinator.isPreparingSpeech { ProgressView().controlSize(.small); Button("Cancel", action: coordinator.stop) }
+                }
             }
             if preferences.value.speechProvider == .apple {
                 Picker("System voice", selection: $preferences.value.appleVoiceID) {
@@ -231,6 +283,65 @@ struct LiveTranslationView: View {
             if let modelScanError { Text(modelScanError).foregroundStyle(.orange) }
             Text("Initial evaluation profile: Whisper large-v3-turbo → Gemma 4 E4B → LFM3-Omni. Combined memory and voice quality need qualification on each Mac and workload.")
                 .legacyTextStyle(.supporting).foregroundStyle(.secondary)
+        }
+    }
+    private var localSpeechControls: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            modelPicker("Local speech model", selection: $preferences.value.speechModel, candidates: models.filter { $0.capabilities.contains(.textToSpeech) })
+            if let descriptor = stageDescriptors[descriptorKey(preferences.value.speechModel, .speech)] {
+                if !descriptor.voices.isEmpty {
+                    Picker("Voice", selection: $preferences.value.speechVoice) {
+                        Text("Choose a model voice").tag("")
+                        ForEach(descriptor.voices, id: \.self) { Text($0).tag($0) }
+                    }
+                }
+                if descriptor.requiresReference {
+                    HStack {
+                        Button("Choose voice recording…") {
+                            let panel = NSOpenPanel()
+                            panel.allowedContentTypes = [.audio]; panel.canChooseDirectories = false; panel.allowsMultipleSelection = false
+                            panel.message = "Choose a voice recording you have permission to use. It stays on this Mac."
+                            if panel.runModal() == .OK, let url = panel.url { preferences.value.speechReferencePath = url.path }
+                        }
+                        Text(preferences.value.speechReferencePath.isEmpty ? "A permitted local voice reference is required." : URL(fileURLWithPath: preferences.value.speechReferencePath).lastPathComponent)
+                            .legacyTextStyle(.metadata).lineLimit(1)
+                    }
+                }
+                if descriptor.requiresReference { stockVoiceButton }
+                if descriptor.requiresReferenceText {
+                    TextField("Exact transcript of the voice recording", text: $preferences.value.speechReferenceText, axis: .vertical)
+                        .lineLimit(2...4).textFieldStyle(.roundedBorder)
+                }
+            }
+            stageEvidence(preferences.value.speechModel, role: .speech)
+        }
+    }
+    private var stockVoiceButton: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Button("Prepare and choose Thorsten stock voice (German, CC0)", action: coordinator.prepareStockVoice)
+                .disabled(coordinator.isPreparingSpeech || coordinator.isPreparingRecognition || coordinator.isPreparingModels || modelStore.isPreparing || coordinator.state == .running || coordinator.state == .preparing)
+            Text("An original recording released by its speaker for TTS. Downloads under 350 KB; pronunciation, expression and cross-language quality still need your assessment.")
+                .legacyTextStyle(.metadata).foregroundStyle(.secondary)
+        }
+    }
+    private func descriptorKey(_ id: String, _ role: TranslationStageCatalog.Role) -> String { role.rawValue + ":" + id }
+    @ViewBuilder
+    private func stageEvidence(_ id: String, role: TranslationStageCatalog.Role) -> some View {
+        if let descriptor = stageDescriptors[descriptorKey(id, role)] {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(descriptor.supportStatus == .unsupported ? "Adapter unavailable" : "Experimental · not qualified")
+                    .legacyTextStyle(.metadata).foregroundStyle(descriptor.supportStatus == .unsupported ? .orange : .secondary)
+                if !descriptor.languages.isEmpty {
+                    Text((descriptor.languageEvidence == .documented ? "Documented languages: " : "Candidate languages: ") + descriptor.languages.sorted().map(languageName).joined(separator: ", "))
+                        .legacyTextStyle(.metadata).foregroundStyle(.secondary)
+                }
+                ForEach(descriptor.notes, id: \.self) { Text($0).legacyTextStyle(.metadata).foregroundStyle(.secondary) }
+                ForEach(descriptor.preparationIssues, id: \.self) { Text($0).legacyTextStyle(.metadata).foregroundStyle(.orange) }
+                if role == .speech, !descriptor.languages.contains(preferences.value.targetLanguage) {
+                    Text("This speech model does not support " + languageName(preferences.value.targetLanguage) + ". Choose another model or captions.")
+                        .legacyTextStyle(.metadata).foregroundStyle(.orange)
+                }
+            }
         }
     }
     private var resourcePanel: some View {
@@ -358,6 +469,13 @@ struct LiveTranslationView: View {
         do {
             models = try await LocalModelDiscovery.scan(searchPaths: .init(primary: model.settings.modelSearchPath,
                                                                           additional: model.settings.additionalModelSearchPaths))
+            var descriptors: [String: TranslationStageCatalog.Descriptor] = [:]
+            for installed in models {
+                for role in [TranslationStageCatalog.Role.recognition, .translation, .speech] {
+                    descriptors[descriptorKey(installed.repoID, role)] = TranslationStageCatalog.describe(model: installed, role: role)
+                }
+            }
+            stageDescriptors = descriptors
             modelScanError = nil
         } catch { modelScanError = "Could not scan installed models. Check the model cache in Settings." }
     }

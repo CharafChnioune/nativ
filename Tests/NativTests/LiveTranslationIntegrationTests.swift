@@ -65,6 +65,21 @@ final class LiveTranslationIntegrationTests: XCTestCase {
         XCTAssertEqual(defaults.persistentDomain(forName: suite)?.count, 1, "Only explicit preferences should persist")
     }
 
+    func testExistingPreferencesMigrateWithoutLosingExplicitSelections() throws {
+        let data = Data(#"{"sourceLanguage":"fr","targetLanguage":"de","speechProvider":"apple","appleVoiceID":"chosen","headphones":true,"experimentalAccepted":true}"#.utf8)
+        let value = try JSONDecoder().decode(LiveTranslationSettings.Value.self, from: data)
+        XCTAssertEqual(value.sourceLanguage, "fr")
+        XCTAssertEqual(value.targetLanguage, "de")
+        XCTAssertEqual(value.speechProvider, .apple)
+        XCTAssertEqual(value.appleVoiceID, "chosen")
+        XCTAssertTrue(value.headphones)
+        XCTAssertTrue(value.experimentalAccepted)
+        XCTAssertEqual(value.speechModel, "")
+        XCTAssertEqual(value.speechReferenceText, "")
+        XCTAssertEqual(value.directionMode, .fixed)
+        XCTAssertEqual(try JSONDecoder().decode(LiveTranslationSettings.Value.self, from: JSONEncoder().encode(value)), value)
+    }
+
     func testDirectionAndVoiceChangesInvalidateRetainedTurnButPresentationDoesNot() {
         let initial = LiveTranslationSettings.Value()
         var changed = initial

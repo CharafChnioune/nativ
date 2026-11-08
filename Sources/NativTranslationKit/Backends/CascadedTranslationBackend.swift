@@ -6,11 +6,15 @@ public actor CascadedTranslationBackend: TranslationBackend {
     private let recognizer: any TranslationSpeechRecognizer
     private let translator: any TranslationTextTranslator
     private let speech: any TranslationSpeechRenderer
+    private let contentGuard: TranslationContentGuard
+    private let languageDetector: any TranslationLanguageDetector
     private let responseTimeout: Duration
+    private let resources: (any TranslationCascadeResources)?
     private var configuration: TranslationConfiguration?
     private var sessionID: TranslationSessionID?
     private var generation = TranslationGeneration()
     private var incarnation = UUID()
+    private var operationID = UUID()
     private var turnID: TranslationTurnID?
     private var pcm = Data()
     private var seconds: Double = 0
@@ -21,17 +25,22 @@ public actor CascadedTranslationBackend: TranslationBackend {
     public static let inputFormat = TranslationPCMFormat(sampleRate: 16_000, channels: 1, encoding: .signedInt16LittleEndian)
 
     public init(recognizer: any TranslationSpeechRecognizer, translator: any TranslationTextTranslator,
-                speech: any TranslationSpeechRenderer, responseTimeout: Duration = .seconds(90)) {
+                speech: any TranslationSpeechRenderer, responseTimeout: Duration = .seconds(90),
+                resources: (any TranslationCascadeResources)? = nil, contentGuard: TranslationContentGuard = .init(),
+                languageDetector: any TranslationLanguageDetector = TranslationAutomaticLanguageDetector()) {
         self.recognizer = recognizer; self.translator = translator; self.speech = speech
-        self.responseTimeout = responseTimeout
+        self.responseTimeout = responseTimeout; self.resources = resources; self.contentGuard = contentGuard
+        self.languageDetector = languageDetector
     }
 
     public func prepare(configuration: TranslationConfiguration) async throws -> TranslationCapabilities {
-        await stop()
+        let operation = UUID(); operationID = operation
+        await stopCurrentSession()
+        guard operationID == operation, !Task.isCancelled else { throw CancellationError() }
         try configuration.buffering.validate()
-        guard configuration.provider == .localCascade, configuration.directionMode == .fixed,
+        guard configuration.provider == .localCascade,
               configuration.languagePair.source != configuration.languagePair.target else {
-            throw failure(.invalidConfiguration, "Choose a fixed direction with two different languages for the local cascade.")
+            throw failure(.invalidConfiguration, "Choose two different languages for the local cascade.")
         }
         let pair = configuration.languagePair
         guard recognizer.supportedLanguages.contains(pair.source), translator.supportedLanguages.contains(pair.source),
@@ -42,19 +51,39 @@ public actor CascadedTranslationBackend: TranslationBackend {
         guard !spoken || speech.supportedLanguages.contains(pair.target) else {
             throw failure(.unsupportedLanguage, "The selected speech model or voice does not support the target language. Choose a compatible voice or captions.")
         }
+        let automaticAvailable = recognizer.supportsAutomaticRecognition
+            && recognizer.supportedLanguages.contains(pair.target)
+            && (!spoken || speech.supportedLanguages.contains(pair.source))
+        if configuration.directionMode == .automatic {
+            guard configuration.allowExperimentalAutomaticDirection else {
+                throw failure(.invalidConfiguration, "Automatic direction is unqualified. Explicitly accept its experimental limits or choose a fixed direction.")
+            }
+            guard automaticAvailable else {
+                throw failure(.unsupportedLanguage, "Automatic direction requires unhinted recognition and compatible ASR, translation and speech for both directions. Choose different models or fixed direction explicitly.")
+            }
+        }
         self.configuration = configuration
         return .init(inputLanguages: recognizer.supportedLanguages.intersection(translator.supportedLanguages),
                      outputLanguages: spoken ? translator.supportedLanguages.intersection(speech.supportedLanguages) : translator.supportedLanguages,
                      qualifiedTranslationPairs: [], supportsTextOutput: true, supportsAudioOutput: spoken,
                      sourceTranscriptAvailable: true, inputStreaming: false, outputStreaming: spoken && speech.streamsAudio,
-                     interruptionBehavior: .freshContextRequired, trueDuplex: false, inputFormat: Self.inputFormat)
+                     interruptionBehavior: .freshContextRequired, trueDuplex: false, inputFormat: Self.inputFormat,
+                     automaticDirectionAvailable: automaticAvailable, retainsConversationContext: false)
     }
 
     public func start(sessionID: TranslationSessionID, generation: TranslationGeneration) async throws -> AsyncThrowingStream<TranslationEvent, Error> {
         guard configuration != nil else { throw failure(.invalidState, "Prepare the local cascade before starting.") }
-        await stop()
+        let operation = UUID(); operationID = operation
+        await stopCurrentSession()
+        guard operationID == operation, !Task.isCancelled else { throw CancellationError() }
         self.sessionID = sessionID; self.generation = generation
         let token = UUID(); incarnation = token
+        do { try await resources?.begin(generation: token) }
+        catch { if incarnation == token { await stop() }; throw error }
+        guard incarnation == token, operationID == operation, !Task.isCancelled else {
+            if incarnation == token { await stopCurrentSession() }
+            throw CancellationError()
+        }
         let pair = AsyncThrowingStream<TranslationEvent, Error>.makeStream(bufferingPolicy: .bufferingOldest(64))
         continuation = pair.continuation
         pair.continuation.onTermination = { [weak self] _ in
@@ -87,19 +116,42 @@ public actor CascadedTranslationBackend: TranslationBackend {
         let token = incarnation; let input = pcm
         pcm.removeAll(keepingCapacity: false); previousFrame = nil
         let started = ContinuousClock.now
-        producer = Task { [weak self, recognizer, translator, speech] in
+        producer = Task { [weak self, recognizer, translator, speech, resources, contentGuard, languageDetector] in
             do {
-                let source = try await recognizer.transcribe(pcm: input, format: Self.inputFormat, language: configuration.languagePair.source)
+                let source = try await Self.withStage(.recognition, resources: resources, generation: token) {
+                    if configuration.directionMode == .automatic {
+                        return try await recognizer.transcribeAutomatically(pcm: input, format: Self.inputFormat)
+                    }
+                    return try await recognizer.transcribe(pcm: input, format: Self.inputFormat, language: configuration.languagePair.source)
+                }
                 try Task.checkCancellation()
                 guard let self else { return }
                 try await self.emitText(source, source: true, token: token)
-                let target = try await translator.translate(text: source, sourceLanguage: configuration.languagePair.source,
-                                                            targetLanguage: configuration.languagePair.target)
+                let selectedPair: TranslationLanguagePair
+                if configuration.directionMode == .automatic {
+                    let candidates = Set([configuration.languagePair.source, configuration.languagePair.target])
+                    let detection = languageDetector.detect(text: source, candidates: candidates)
+                    let detectedCode = detection.language.map { TranslationAutomaticLanguageDetector.languageCode($0, candidates: candidates) }
+                    let words = TranslationAutomaticLanguageDetector.words(source)
+                    guard words.count >= 5, words.joined().count >= 24,
+                          let language = detectedCode, candidates.contains(language),
+                          detection.confidence.isFinite, (0.90...1).contains(detection.confidence) else {
+                        throw TranslationFailure(code: .ambiguousDirection, message: "The source language is unclear, too short or mixed. Check the recognized text, choose the direction explicitly, and replay within 30 seconds. No translation or speech was produced.")
+                    }
+                    selectedPair = .init(source: language, target: language == configuration.languagePair.source ? configuration.languagePair.target : configuration.languagePair.source)
+                    try await self.emit(.directionSelected(.init(pair: selectedPair, confidence: detection.confidence)), token: token)
+                } else { selectedPair = configuration.languagePair }
+                let target = try await Self.withStage(.translation, resources: resources, generation: token) {
+                    try await translator.translate(text: source, sourceLanguage: selectedPair.source,
+                                                   targetLanguage: selectedPair.target)
+                }
                 try Task.checkCancellation()
+                try contentGuard.validate(source: source, translation: target, sourceLanguage: selectedPair.source, targetLanguage: selectedPair.target)
                 try await self.emitText(target, source: false, token: token)
                 try await self.emit(.metrics(.init(name: .firstCaptionMilliseconds, value: Self.milliseconds(since: started))), token: token)
                 if configuration.outputMode == .speechAndCaptions {
-                    let stream = try await speech.synthesize(text: target, language: configuration.languagePair.target, budget: configuration.audioTransportBudget)
+                    try await Self.withStage(.speech, resources: resources, generation: token) {
+                    let stream = try await speech.synthesize(text: target, language: selectedPair.target, budget: configuration.audioTransportBudget)
                     var previous: UInt64?
                     for try await chunk in stream {
                         try Task.checkCancellation()
@@ -114,6 +166,7 @@ public actor CascadedTranslationBackend: TranslationBackend {
                         try await self.emit(.audio(try chunk.admitted(to: configuration.audioTransportBudget)), token: token)
                     }
                     guard previous != nil else { throw TranslationFailure(code: .incompleteTurn, message: "The speech model returned no playable audio.") }
+                    }
                 }
                 try await self.complete(token: token)
             } catch is CancellationError { }
@@ -129,10 +182,16 @@ public actor CascadedTranslationBackend: TranslationBackend {
         await stop()
     }
     public func stop() async {
+        operationID = UUID()
+        await stopCurrentSession()
+    }
+    private func stopCurrentSession() async {
+        let invalidated = incarnation
         incarnation = UUID()
         producer?.cancel(); producer = nil; watchdog?.cancel(); watchdog = nil
         continuation?.finish(); continuation = nil
         sessionID = nil; turnID = nil; pcm.removeAll(); seconds = 0; previousFrame = nil
+        await resources?.invalidate(generation: invalidated)
     }
     private func consumerEnded(token: UUID) async { if incarnation == token { await stop() } }
     private func emitText(_ text: String, source: Bool, token: UUID) throws {
@@ -155,14 +214,33 @@ public actor CascadedTranslationBackend: TranslationBackend {
         try emit(.turnCompleted, token: token)
         turnID = nil; seconds = 0; producer = nil; watchdog?.cancel(); watchdog = nil
     }
-    private func failed(_ error: Error, token: UUID) {
+    private func failed(_ error: Error, token: UUID) async {
         guard token == incarnation else { return }
         let error = (error as? TranslationFailure) ?? failure(.providerFailure, "A local cascade model failed. Check its installation and available memory, then retry.")
         incarnation = UUID(); continuation?.finish(throwing: error); continuation = nil
         producer?.cancel(); producer = nil; watchdog?.cancel(); watchdog = nil
         turnID = nil; pcm.removeAll(); previousFrame = nil; seconds = 0
+        await resources?.invalidate(generation: token)
     }
-    private func expired(token: UUID) { failed(failure(.providerFailure, "The local cascade exceeded its response time limit."), token: token) }
+    private func expired(token: UUID) async { await failed(failure(.providerFailure, "The local cascade exceeded its response time limit."), token: token) }
+    private nonisolated static func withStage<T: Sendable>(
+        _ stage: TranslationCascadeStage, resources: (any TranslationCascadeResources)?, generation: UUID,
+        operation: @Sendable () async throws -> T
+    ) async throws -> T {
+        try Task.checkCancellation()
+        let lease = try await resources?.acquire(stage, generation: generation)
+        var released = false
+        do {
+            try Task.checkCancellation()
+            let result = try await operation()
+            if let lease { await resources?.release(lease); released = true }
+            try Task.checkCancellation()
+            return result
+        } catch {
+            if let lease, !released { await resources?.release(lease) }
+            throw error
+        }
+    }
     private func failure(_ code: TranslationFailure.Code, _ message: String) -> TranslationFailure { .init(code: code, message: message) }
     private nonisolated static func milliseconds(since started: ContinuousClock.Instant) -> Double {
         let elapsed = started.duration(to: .now).components

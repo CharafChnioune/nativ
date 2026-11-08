@@ -13,6 +13,42 @@ spec.loader.exec_module(local)
 
 
 class TranslationLocalAssetsTests(unittest.TestCase):
+    def test_pinned_tokenizer_path_replaces_hub_main_only_within_request(self):
+        calls = []
+        def download(*args, **kwargs):
+            calls.append((args, kwargs))
+            return "ordinary-cache"
+        hub = SimpleNamespace(snapshot_download=download, hf_hub_download=download)
+        observations = []
+        def run(request):
+            observations.append(hub.snapshot_download("mlx-community/S3TokenizerV2"))
+            observations.append(hub.hf_hub_download("mlx-community/S3TokenizerV2", "config.json"))
+            observations.append(hub.snapshot_download("another/repo"))
+        audio = SimpleNamespace(_run_tts_request=run)
+        local.install_local_assets_policy(hub, audio)
+        with tempfile.TemporaryDirectory() as model, tempfile.TemporaryDirectory() as tokenizer:
+            for name in ("config.json", "model.safetensors"):
+                (Path(tokenizer) / name).write_bytes(b"fixture")
+            speech = SimpleNamespace(model=model, ref_audio=None, nativ_local_only=True, nativ_speech_tokenizer_path=tokenizer)
+            audio._run_tts_request(SimpleNamespace(payload=SimpleNamespace(request=speech)))
+            self.assertEqual(observations[:2], [tokenizer, str(Path(tokenizer) / "config.json")])
+        self.assertEqual(len(calls), 1)
+        self.assertTrue(calls[0][1]["local_files_only"])
+        hub.snapshot_download("mlx-community/S3TokenizerV2")
+        self.assertEqual(len(calls), 2)
+        self.assertNotIn("local_files_only", calls[-1][1])
+
+    def test_incomplete_pinned_tokenizer_is_rejected_before_inference(self):
+        hub = SimpleNamespace(snapshot_download=lambda *a, **k: None, hf_hub_download=lambda *a, **k: None)
+        calls = []
+        audio = SimpleNamespace(_run_tts_request=lambda request: calls.append(request))
+        local.install_local_assets_policy(hub, audio)
+        with tempfile.TemporaryDirectory() as model, tempfile.TemporaryDirectory() as tokenizer:
+            speech = SimpleNamespace(model=model, ref_audio=None, nativ_local_only=True, nativ_speech_tokenizer_path=tokenizer)
+            with self.assertRaises(ValueError):
+                audio._run_tts_request(SimpleNamespace(payload=SimpleNamespace(request=speech)))
+        self.assertFalse(calls)
+
     def test_hub_download_is_offline_only_inside_translation_request(self):
         calls = []
         def download(*args, **kwargs):
@@ -102,7 +138,7 @@ class TranslationLocalAssetsTests(unittest.TestCase):
             with TestClient(base.app) as client:
                 response = client.get("/nativ/translation-capabilities")
                 self.assertEqual(response.status_code, 200)
-                self.assertEqual(response.json(), {"local_speech_assets_policy": 1})
+                self.assertEqual(response.json(), {"local_speech_assets_policy": 1, "pinned_speech_assets_policy": 1})
             self.assertEqual(authorizations, ["/nativ/translation-capabilities"])
 
 

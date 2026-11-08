@@ -28,14 +28,24 @@ final class LiveTranslationCoordinator: ObservableObject {
     @Published private(set) var enabled = false
     @Published private(set) var shortcutMessage: String?
     @Published private(set) var canRetry = false
+    @Published private(set) var canReplay = false
+    @Published private(set) var detectedDirection: TranslationLanguagePair?
     @Published private(set) var isPreparingRecognition = false
     @Published private(set) var isPreparingModels = false
+    @Published private(set) var isPreparingSpeech = false
     @Published private(set) var resourceAssessment = TranslationResourceAssessment(hardware: .current(), selectedWeightBytes: nil)
 
     var configurationProvider: (@MainActor () -> VoiceTranscriptionConfiguration?)?
-    var cascadeBackendProvider: (@MainActor (LiveTranslationSettings.Value, LFMRuntimeEndpoint?) async throws -> any TranslationBackend)?
+    struct CascadeServices: Sendable {
+        let runtime: TranslationCascadeRuntime
+        let resources: any TranslationCascadeResources
+        let omniEndpoint: @Sendable () async throws -> LFMRuntimeEndpoint
+    }
+    var cascadeBackendProvider: (@MainActor (LiveTranslationSettings.Value, CascadeServices) async throws -> any TranslationBackend)?
     var recognitionPreparationProvider: (@MainActor (LiveTranslationSettings.Value) async throws -> Void)?
+    var speechPreparationProvider: (@MainActor (LiveTranslationSettings.Value) async throws -> String)?
     private let runtime = TranslationRuntimeController()
+    private let cascadeRuntime = TranslationCascadeRuntime()
     private let capture = TranslationAudioCapture()
     private let systemCapture = TranslationSystemAudioCapture()
     private let playback = TranslationAudioPlayback()
@@ -43,6 +53,7 @@ final class LiveTranslationCoordinator: ObservableObject {
     private var segmenter: TranslationSpeechSegmenter?
     private var runID = UUID()
     private var inputEpoch = UUID()
+    private var minimumOutputGeneration: TranslationGeneration?
     private let outputOperations = TranslationHostOperationGate()
     private let commandOperations = TranslationHostOperationGate()
     private let preparationOperations = TranslationHostOperationGate()
@@ -90,10 +101,10 @@ final class LiveTranslationCoordinator: ObservableObject {
         settingsObservation = settings.$value.dropFirst().removeDuplicates().sink { [weak self] value in
             // @Published emits before storage changes. Defer UI application until it contains the new value.
             Task { @MainActor [weak self] in
-                guard let self else { return }
+                guard let self, self.settings.value == value else { return }
                 let requiresReset = value.requiresFreshSession(comparedTo: self.observedSettings)
                 self.observedSettings = value
-                if requiresReset, [.running, .preparing, .paused].contains(self.state) || self.isPreparingModels || self.modelStore.isPreparing || self.isPreparingRecognition {
+                if requiresReset, [.running, .preparing, .paused].contains(self.state) || self.isPreparingModels || self.modelStore.isPreparing || self.isPreparingRecognition || self.isPreparingSpeech {
                     self.end(state: .paused, message: "Settings changed. Resume to start a fresh context.", unload: false)
                 }
                 self.installShortcut()
@@ -103,7 +114,7 @@ final class LiveTranslationCoordinator: ObservableObject {
         }
     }
 
-    var canStart: Bool { enabled && settings.value.experimentalAccepted && !isPreparingModels && !modelStore.isPreparing && !isPreparingRecognition && state != .preparing && state != .running }
+    var canStart: Bool { enabled && settings.value.experimentalAccepted && (settings.value.directionMode != .automatic || settings.value.automaticDirectionAccepted) && !isPreparingModels && !modelStore.isPreparing && !isPreparingRecognition && !isPreparingSpeech && state != .preparing && state != .running }
     var providerTitle: String {
         switch settings.value.provider {
         case .lfm3OmniDirect: "LFM3-Omni · direct"
@@ -161,7 +172,7 @@ final class LiveTranslationCoordinator: ObservableObject {
     }
 
     func prepareModels() {
-        guard enabled, state != .running, state != .preparing, !isPreparingModels, !modelStore.isPreparing, !isPreparingRecognition else { return }
+        guard enabled, state != .running, state != .preparing, !isPreparingModels, !modelStore.isPreparing, !isPreparingRecognition, !isPreparingSpeech else { return }
         errorMessage = nil
         operation?.cancel()
         let token = preparationOperations.invalidate()
@@ -183,7 +194,7 @@ final class LiveTranslationCoordinator: ObservableObject {
     }
 
     func prepareRecognition() {
-        guard enabled, state != .running, state != .preparing, !isPreparingRecognition, !isPreparingModels, !modelStore.isPreparing,
+        guard enabled, state != .running, state != .preparing, !isPreparingRecognition, !isPreparingModels, !isPreparingSpeech, !modelStore.isPreparing,
               let prepare = recognitionPreparationProvider else { return }
         operation?.cancel(); errorMessage = nil; isPreparingRecognition = true
         let token = preparationOperations.invalidate()
@@ -200,6 +211,66 @@ final class LiveTranslationCoordinator: ObservableObject {
         }
     }
 
+    func prepareSpeech() {
+        guard enabled, state != .running, state != .preparing, !isPreparingSpeech, !isPreparingRecognition,
+              !isPreparingModels, !modelStore.isPreparing, let prepare = speechPreparationProvider else { return }
+        operation?.cancel(); errorMessage = nil; isPreparingSpeech = true
+        let token = preparationOperations.invalidate()
+        let values = settings.value
+        status = "Preparing the selected local speech assets…"
+        operation = Task { [weak self] in
+            guard let self else { return }
+            defer { if self.preparationOperations.isCurrent(token) { self.isPreparingSpeech = false } }
+            do {
+                let message = try await self.preparationOperations.perform(token: token) { try await prepare(values) }
+                self.status = message
+            } catch is CancellationError { }
+            catch { if self.preparationOperations.isCurrent(token) { self.errorMessage = self.describe(error) } }
+        }
+    }
+
+    func prepareStockVoice() {
+        guard enabled, state != .running, state != .preparing, !isPreparingSpeech, !isPreparingRecognition,
+              !isPreparingModels, !modelStore.isPreparing,
+              settings.value.speechProvider == .chatterbox || settings.value.speechProvider == .localModel else { return }
+        operation?.cancel(); errorMessage = nil; isPreparingSpeech = true
+        let token = preparationOperations.invalidate()
+        let values = settings.value
+        let cache = cacheURL
+        status = "Preparing the CC0 Thorsten reference…"
+        operation = Task { [weak self] in
+            guard let self else { return }
+            defer { if self.preparationOperations.isCurrent(token) { self.isPreparingSpeech = false } }
+            do {
+                let prepared = try await self.preparationOperations.perform(token: token) {
+                    try await TranslationStockVoicePreparation.prepare(cache: cache)
+                }
+                var updated = self.settings.value
+                if values.speechProvider == .chatterbox { updated.chatterboxReferencePath = prepared.referenceURL.path }
+                else {
+                    updated.speechReferencePath = prepared.referenceURL.path
+                    updated.speechReferenceText = prepared.transcript
+                }
+                self.settings.value = updated
+                self.status = "Thorsten reference prepared (German, CC0). Cross-language voice quality is unqualified."
+            } catch is CancellationError { }
+            catch { if self.preparationOperations.isCurrent(token) { self.errorMessage = self.describe(error) } }
+        }
+    }
+
+    private func prepareOmniRuntime(values: LiveTranslationSettings.Value, id: UUID) async throws -> LFMRuntimeEndpoint {
+        try check(id)
+        let manifest = try TranslationModelStore.bundledManifest()
+        let installation = try await modelStore.prepare(manifest: manifest, cache: cacheURL,
+                                                         quantization: values.quantization, download: false)
+        try check(id)
+        status = "Loading LFM3-Omni…"
+        let endpoint = try await runtime.start(executable: TranslationRuntimeController.bundledExecutable(),
+            model: installation.modelURL, projector: installation.projectorURL, contextSize: 4096)
+        try check(id)
+        return endpoint
+    }
+
     func start() {
         guard canStart else { return }
         refreshResourceAssessment()
@@ -213,8 +284,9 @@ final class LiveTranslationCoordinator: ObservableObject {
         commandOperations.invalidate(); preparationOperations.invalidate(); outputOperations.invalidate(); inputOperations.invalidate()
         eventTask?.cancel(); eventTask = nil
         let previousSession = session; session = nil
-        canRetry = false
+        canRetry = false; canReplay = false
         let id = UUID(); runID = id
+        minimumOutputGeneration = nil; detectedDirection = nil
         state = .preparing; status = "Verifying model artifacts…"; errorMessage = nil
         interrupting = false; speakerPaused = false
         latestMetrics = [:]; capabilities = nil; sourceText = ""; translatedText = ""
@@ -234,29 +306,26 @@ final class LiveTranslationCoordinator: ObservableObject {
                 guard values.source != .systemAudio || values.output == .captions || values.headphones else {
                     throw TranslationFailure(code: .unsupportedOutput, message: "System audio speech requires the explicit headphones option. Captions remain available.")
                 }
-                var endpoint: LFMRuntimeEndpoint?
-                if values.provider != .localCascade || (values.output == .speechAndCaptions && values.speechProvider == .omni) {
-                    let manifest = try TranslationModelStore.bundledManifest()
-                    let installation = try await self.modelStore.prepare(manifest: manifest, cache: self.cacheURL,
-                                                                         quantization: values.quantization, download: false)
-                    try self.check(id)
-                    self.status = "Loading LFM3-Omni…"
-                    endpoint = try await self.runtime.start(executable: TranslationRuntimeController.bundledExecutable(),
-                                                            model: installation.modelURL, projector: installation.projectorURL,
-                                                            contextSize: 4096)
-                } else {
-                    // A previously paused Omni session must not consume memory in a route that does not use it.
-                    await self.runtime.stop()
-                }
-                try self.check(id)
                 let backend: any TranslationBackend
                 if values.provider == .localCascade {
+                    // Start prepares only the chosen route. Omni is loaded lazily at the speech stage.
+                    await self.runtime.stop()
                     guard let factory = self.cascadeBackendProvider else {
                         throw TranslationFailure(code: .invalidConfiguration, message: "The local cascade is not configured.")
                     }
-                    backend = try await factory(values, endpoint)
+                    let omni: @Sendable () async throws -> LFMRuntimeEndpoint = { [weak self] in
+                        guard let self else { throw CancellationError() }
+                        return try await self.prepareOmniRuntime(values: values, id: id)
+                    }
+                    let resources = ManagedTranslationCascadeResources(runtime: self.cascadeRuntime,
+                        strategy: values.cascadeMemoryStrategy,
+                        prepareSpeech: {
+                            if values.output == .speechAndCaptions && values.speechProvider == .omni { _ = try await omni() }
+                        }, stopSpeech: { [runtime = self.runtime] in await runtime.stop() })
+                    backend = try await factory(values, .init(runtime: self.cascadeRuntime, resources: resources, omniEndpoint: omni))
                 } else {
-                    guard let endpoint else { throw CancellationError() }
+                    await self.cascadeRuntime.stop()
+                    let endpoint = try await self.prepareOmniRuntime(values: values, id: id)
                     backend = LFM3RealtimeBackend(endpoint: endpoint, mode: values.provider == .lfm3OmniTwoPass ? .twoPass : .direct)
                 }
                 // The cascade factory can suspend while Stop/Disable changes the app owner.
@@ -295,7 +364,7 @@ final class LiveTranslationCoordinator: ObservableObject {
     }
 
     func pause(reason: String = "Paused. Resume when ready.", unload: Bool = false) {
-        guard state == .running || state == .preparing || state == .paused || isPreparingModels || modelStore.isPreparing || isPreparingRecognition else { return }
+        guard state == .running || state == .preparing || state == .paused || isPreparingModels || modelStore.isPreparing || isPreparingRecognition || isPreparingSpeech else { return }
         end(state: .paused, message: reason, unload: unload)
     }
     func stop() { end(state: .stopped, message: "Stopped", unload: true) }
@@ -313,19 +382,19 @@ final class LiveTranslationCoordinator: ObservableObject {
         eventTask?.cancel(); eventTask = nil
         resumeCaptureTask?.cancel(); resumeCaptureTask = nil
         modelStore.cancel()
-        isPreparingRecognition = false; isPreparingModels = false
+        isPreparingRecognition = false; isPreparingModels = false; isPreparingSpeech = false
         playback.stop() // Silence is synchronous, before any awaited teardown.
         isListening = false; isSpeaking = false; isGenerating = false
-        canRetry = false
+        canRetry = false; canReplay = false
         state = next; status = message
         let old = session; session = nil; segmenter = nil
         let previous = teardown
-        teardown = Task { [capture, systemCapture, runtime] in
+        teardown = Task { [capture, systemCapture, runtime, cascadeRuntime] in
             await previous?.value
             await capture.stopAndWait()
             await systemCapture.stopAndWait()
             await old?.stop()
-            if unload { await runtime.stop() }
+            if unload { await runtime.stop(); await cascadeRuntime.stop() }
         }
         updateOverlay()
     }
@@ -393,6 +462,56 @@ final class LiveTranslationCoordinator: ObservableObject {
                 try self.check(id)
                 if self.settings.value.source == .microphone && !self.settings.value.headphones && self.spokenOutputRequested && !self.isMuted {
                     self.beginSpeakerPause()
+                } else {
+                    self.speakerPaused = false
+                    try await self.commandOperations.perform(token: token) { try await self.startCapture(id: id) }
+                }
+            } catch is CancellationError { }
+            catch { if self.commandOperations.isCurrent(token) { self.fail(error, id: id) } }
+        }
+    }
+
+    func replayLastTurn(swappingDirection: Bool = false) {
+        guard canReplay, let session, state == .running || state == .paused, !isGenerating else { return }
+        let token = commandOperations.invalidate()
+        interruptionTask?.cancel(); interruptionTask = nil
+        resumeCaptureTask?.cancel(); resumeCaptureTask = nil
+        inputEpoch = UUID(); inputOperations.invalidate(); outputOperations.invalidate()
+        playback.stop(); interrupting = true; canReplay = false; canRetry = false
+        errorMessage = nil; isListening = false
+        var corrected = settings.value
+        if let detectedDirection {
+            corrected.sourceLanguage = detectedDirection.source; corrected.targetLanguage = detectedDirection.target
+        }
+        if swappingDirection {
+            (corrected.sourceLanguage, corrected.targetLanguage) = (corrected.targetLanguage, corrected.sourceLanguage)
+        }
+        corrected.directionMode = .fixed
+        // This explicit command owns the reset, avoiding the generic preference observer's stop.
+        observedSettings = corrected
+        settings.value = corrected
+        let pair = TranslationLanguagePair(source: corrected.sourceLanguage, target: corrected.targetLanguage)
+        let id = runID
+        operation = Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await self.commandOperations.perform(token: token) { await self.capture.stopAndWait() }
+                try await self.commandOperations.perform(token: token) { await self.systemCapture.stopAndWait() }
+                try await self.commandOperations.perform(token: token) { await self.segmenter?.reset() }
+                try self.check(id)
+                let previous = await session.snapshot()
+                try self.commandOperations.check(token)
+                self.minimumOutputGeneration = .init(previous.generation.rawValue &+ 1)
+                self.detectedDirection = nil
+                self.sourceText = ""; self.translatedText = ""; self.currentTextTurn = nil
+                self.sourceAccumulator = .init(); self.targetAccumulator = .init()
+                try await self.commandOperations.perform(token: token) { try await self.startPlaybackIfRequested(session: session, id: id) }
+                self.interrupting = false; self.state = .running; self.isGenerating = true
+                self.status = "Retranslating the retained recording in a fresh context…"
+                _ = try await self.commandOperations.perform(token: token) { try await session.replayLastTurn(languagePair: pair) }
+                try self.check(id)
+                if self.settings.value.source == .microphone && !self.settings.value.headphones && self.spokenOutputRequested && !self.isMuted {
+                    self.speakerPaused = false; self.beginSpeakerPause()
                 } else {
                     self.speakerPaused = false
                     try await self.commandOperations.perform(token: token) { try await self.startCapture(id: id) }
@@ -516,15 +635,20 @@ final class LiveTranslationCoordinator: ObservableObject {
         }
     }
 
+    private func acceptsOutput(generation: TranslationGeneration) -> Bool {
+        minimumOutputGeneration.map { generation.rawValue >= $0.rawValue } ?? true
+    }
+
     private func receive(_ event: TranslationEvent, session: TranslationSession, id: UUID) async throws {
         defer { event.acknowledgeAudioDelivery() }
         let outputToken = outputOperations.current
         let snapshot = await session.snapshot()
-        guard runID == id, !interrupting, event.sessionID == snapshot.sessionID, event.generation == snapshot.generation else { return }
+        guard runID == id, !interrupting, acceptsOutput(generation: event.generation), event.sessionID == snapshot.sessionID, event.generation == snapshot.generation else { return }
         incompleteIntervals = snapshot.incompleteIntervals
         canRetry = snapshot.canRetry
+        canReplay = snapshot.canReplay
         if let turnID = event.turnID, currentTextTurn != turnID {
-            currentTextTurn = turnID; sourceAccumulator = .init(); targetAccumulator = .init()
+            currentTextTurn = turnID; sourceAccumulator = .init(); targetAccumulator = .init(); detectedDirection = nil
             sourceText = ""; translatedText = ""
         }
         switch event.payload {
@@ -542,7 +666,7 @@ final class LiveTranslationCoordinator: ObservableObject {
                 }
                 try check(id)
                 let current = try await outputOperations.perform(token: outputToken) { await session.snapshot() }
-                guard !isMuted, !interrupting, current.state == .running,
+                guard !isMuted, !interrupting, acceptsOutput(generation: event.generation), current.state == .running,
                       event.generation == current.generation else { return }
                 try await outputOperations.perform(token: outputToken) { try await playback.enqueue(chunk) }
             } catch is CancellationError {
@@ -584,6 +708,7 @@ final class LiveTranslationCoordinator: ObservableObject {
                 status = "Incomplete input. Retry within 30 seconds or repeat after Resume."
                 await capture.stopAndWait(); await systemCapture.stopAndWait()
             } else { throw failure }
+        case .directionSelected(let selection): detectedDirection = selection.pair
         case .contextRolledOver: break
         }
     }

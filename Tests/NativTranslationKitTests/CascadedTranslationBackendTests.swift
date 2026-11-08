@@ -3,6 +3,92 @@ import XCTest
 @testable import NativTranslationKit
 
 final class CascadedTranslationBackendTests: XCTestCase {
+    func testStopDuringPendingStartCleanupCannotResurrectSession() async throws {
+        let gate = CascadeTestGate()
+        let resources = StallingCascadeResources(gate: gate)
+        let backend = CascadedTranslationBackend(recognizer: StubRecognizer(), translator: StubTranslator(), speech: StubSpeech(), resources: resources)
+        _ = try await backend.prepare(configuration: configuration())
+        let old = try await backend.start(sessionID: .init(), generation: .init(1))
+        let next = TranslationSessionID()
+        let restarting = Task { try await backend.start(sessionID: next, generation: .init(2)) }
+        try await waitUntil { await gate.isWaiting }
+        await backend.stop()
+        await gate.release()
+        do { _ = try await restarting.value; XCTFail("Start resumed after Stop") }
+        catch is CancellationError {}
+        do { try await backend.send(frame: frame(next, .init(2), .init())); XCTFail("Stopped session accepted input") }
+        catch let failure as TranslationFailure { XCTAssertEqual(failure.code, .staleInput) }
+        let begins = await resources.beginCount
+        XCTAssertEqual(begins, 1)
+        withExtendedLifetime(old) {}
+    }
+
+    func testNewerStartWinsWhenOlderStartIsWaitingForResourceCleanup() async throws {
+        let gate = CascadeTestGate()
+        let resources = StallingCascadeResources(gate: gate)
+        let backend = CascadedTranslationBackend(recognizer: StubRecognizer(), translator: StubTranslator(), speech: StubSpeech(), resources: resources)
+        _ = try await backend.prepare(configuration: configuration())
+        let original = try await backend.start(sessionID: .init(), generation: .init(1))
+        let delayed = Task { try await backend.start(sessionID: .init(), generation: .init(2)) }
+        try await waitUntil { await gate.isWaiting }
+        let newestSession = TranslationSessionID()
+        let newest = try await backend.start(sessionID: newestSession, generation: .init(3))
+        await gate.release()
+        do { _ = try await delayed.value; XCTFail("Older start replaced the newer session") }
+        catch is CancellationError {}
+        try await backend.send(frame: frame(newestSession, .init(3), .init()))
+        let begins = await resources.beginCount
+        XCTAssertEqual(begins, 2)
+        withExtendedLifetime((original, newest)) {}
+        await backend.stop()
+    }
+
+    func testStopInvalidatesPreparationWaitingForResourceCleanup() async throws {
+        let gate = CascadeTestGate()
+        let resources = StallingCascadeResources(gate: gate)
+        let backend = CascadedTranslationBackend(recognizer: StubRecognizer(), translator: StubTranslator(), speech: StubSpeech(), resources: resources)
+        _ = try await backend.prepare(configuration: configuration())
+        let original = try await backend.start(sessionID: .init(), generation: .init(1))
+        let changed = configuration(target: "nl", speech: false)
+        let preparing = Task { try await backend.prepare(configuration: changed) }
+        try await waitUntil { await gate.isWaiting }
+        await backend.stop()
+        await gate.release()
+        do { _ = try await preparing.value; XCTFail("Stopped preparation changed the configuration") }
+        catch is CancellationError {}
+        withExtendedLifetime(original) {}
+    }
+
+    func testStageLeasesReleaseRecognitionBeforeTranslationAndSpeech() async throws {
+        let resources = RecordingCascadeResources()
+        let backend = CascadedTranslationBackend(recognizer: StubRecognizer(), translator: StubTranslator(), speech: StubSpeech(), resources: resources)
+        _ = try await backend.prepare(configuration: configuration())
+        let session = TranslationSessionID(); let turn = TranslationTurnID()
+        let stream = try await backend.start(sessionID: session, generation: .init())
+        let collector = CascadeEventCollector()
+        let task = Task { for try await event in stream { await collector.append(event) } }
+        try await backend.send(frame: frame(session, .init(), turn))
+        try await backend.commit(turnID: turn)
+        try await waitUntil { await collector.events.contains { $0.payload == .turnCompleted } }
+        let operations = await resources.operations
+        XCTAssertEqual(operations, ["begin", "acquire recognition", "release recognition", "acquire translation", "release translation", "acquire speech", "release speech"])
+        await backend.stop(); _ = try? await task.value
+    }
+
+    func testRecognitionFailureReleasesStageAndInvalidatesResources() async throws {
+        let resources = RecordingCascadeResources()
+        let backend = CascadedTranslationBackend(recognizer: FailingRecognizer(), translator: StubTranslator(), speech: StubSpeech(), resources: resources)
+        _ = try await backend.prepare(configuration: configuration())
+        let session = TranslationSessionID(); let turn = TranslationTurnID()
+        let stream = try await backend.start(sessionID: session, generation: .init())
+        let task = Task { for try await _ in stream {} }
+        try await backend.send(frame: frame(session, .init(), turn)); try await backend.commit(turnID: turn)
+        do { try await task.value; XCTFail("Expected recognition failure") } catch {}
+        try await waitUntil { await resources.operations.contains("invalidate") }
+        let operations = await resources.operations
+        XCTAssertEqual(operations, ["begin", "acquire recognition", "release recognition", "invalidate"])
+        await backend.stop()
+    }
     func testIndependentTaskLanguagesRejectUnsupportedTargetSpeech() async throws {
         let backend = CascadedTranslationBackend(recognizer: StubRecognizer(), translator: StubTranslator(), speech: StubSpeech(languages: ["en"]))
         do {
@@ -129,6 +215,45 @@ final class CascadedTranslationBackendTests: XCTestCase {
     private func waitUntil(_ condition: @escaping @Sendable () async -> Bool) async throws {
         for _ in 0..<200 { if await condition() { return }; try await Task.sleep(for: .milliseconds(5)) }
         XCTFail("Timed out waiting for deterministic provider gate")
+    }
+}
+
+private actor RecordingCascadeResources: TranslationCascadeResources {
+    var operations: [String] = []
+    private var generation: UUID?
+    func begin(generation: UUID) { self.generation = generation; operations.append("begin") }
+    func acquire(_ stage: TranslationCascadeStage, generation: UUID) throws -> TranslationCascadeLease {
+        guard self.generation == generation else { throw CancellationError() }
+        operations.append("acquire \(stage.rawValue)")
+        return .init(generation: generation, stage: stage)
+    }
+    func release(_ lease: TranslationCascadeLease) { operations.append("release \(lease.stage.rawValue)") }
+    func invalidate(generation: UUID) { if self.generation == generation { operations.append("invalidate"); self.generation = nil } }
+}
+
+private actor StallingCascadeResources: TranslationCascadeResources {
+    let gate: CascadeTestGate
+    private var generation: UUID?
+    private var stall = true
+    private(set) var beginCount = 0
+    init(gate: CascadeTestGate) { self.gate = gate }
+    func begin(generation: UUID) { self.generation = generation; beginCount += 1 }
+    func acquire(_ stage: TranslationCascadeStage, generation: UUID) throws -> TranslationCascadeLease {
+        guard self.generation == generation else { throw CancellationError() }
+        return .init(generation: generation, stage: stage)
+    }
+    func release(_ lease: TranslationCascadeLease) {}
+    func invalidate(generation: UUID) async {
+        guard self.generation == generation else { return }
+        self.generation = nil
+        if stall { stall = false; await gate.wait() }
+    }
+}
+
+private struct FailingRecognizer: TranslationSpeechRecognizer {
+    let supportedLanguages: Set<String> = ["nl", "en"]
+    func transcribe(pcm: Data, format: TranslationPCMFormat, language: String) async throws -> String {
+        throw TranslationFailure(code: .providerFailure, message: "Recognition failed")
     }
 }
 

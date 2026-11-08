@@ -133,9 +133,11 @@ public final class NativAudioClient: Sendable {
         return transcription
     }
 
-    public func synthesize(text: String, model: String, language: String? = nil, referenceAudioPath: String? = nil) async throws -> Data {
-        if localOnly { try await verifyLocalSpeechIsolation() }
-        let request = try makeSpeechURLRequest(text: text, model: model, language: language, referenceAudioPath: referenceAudioPath)
+    public func synthesize(text: String, model: String, language: String? = nil, referenceAudioPath: String? = nil,
+                           voice: String? = nil, referenceText: String? = nil, speechTokenizerPath: String? = nil) async throws -> Data {
+        if localOnly { try await verifyLocalSpeechIsolation(requiresPinnedAssets: speechTokenizerPath != nil) }
+        let request = try makeSpeechURLRequest(text: text, model: model, language: language, referenceAudioPath: referenceAudioPath,
+                                              voice: voice, referenceText: referenceText, speechTokenizerPath: speechTokenizerPath)
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw NativAudioSpeechError.invalidResponse
@@ -153,7 +155,7 @@ public final class NativAudioClient: Sendable {
     }
 
     /// This read-only preflight sends no speech and fails closed for older runtimes.
-    public func verifyLocalSpeechIsolation() async throws {
+    public func verifyLocalSpeechIsolation(requiresPinnedAssets: Bool = false) async throws {
         try NativLoopbackEndpoint.validate(baseURL)
         var request = URLRequest(url: baseURL.appendingPathComponent("nativ/translation-capabilities"))
         request.timeoutInterval = min(timeout, 10)
@@ -162,13 +164,18 @@ public final class NativAudioClient: Sendable {
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse, http.statusCode == 200,
               let capabilities = try? JSONDecoder().decode(LocalSpeechCapabilities.self, from: data),
-              capabilities.local_speech_assets_policy == 1 else {
+              capabilities.local_speech_assets_policy == 1,
+              !requiresPinnedAssets || capabilities.pinned_speech_assets_policy == 1 else {
             throw NativAudioSpeechError.localSpeechIsolationUnavailable
         }
     }
-    private struct LocalSpeechCapabilities: Decodable { let local_speech_assets_policy: Int }
+    private struct LocalSpeechCapabilities: Decodable {
+        let local_speech_assets_policy: Int
+        let pinned_speech_assets_policy: Int?
+    }
 
-    func makeSpeechURLRequest(text: String, model: String, language: String? = nil, referenceAudioPath: String? = nil) throws -> URLRequest {
+    func makeSpeechURLRequest(text: String, model: String, language: String? = nil, referenceAudioPath: String? = nil,
+                              voice: String? = nil, referenceText: String? = nil, speechTokenizerPath: String? = nil) throws -> URLRequest {
         if localOnly { try NativLoopbackEndpoint.validate(baseURL) }
         var request = URLRequest(url: baseURL.appendingPathComponent("v1/audio/speech"))
         request.httpMethod = "POST"
@@ -177,7 +184,9 @@ public final class NativAudioClient: Sendable {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("audio/wav", forHTTPHeaderField: "Accept")
         NativServerAuthorization.authorize(&request, apiKey: apiKey)
-        request.httpBody = try JSONEncoder().encode(SpeechRequest(model: model, input: text, lang_code: language, ref_audio: referenceAudioPath, nativ_local_only: localOnly ? true : nil))
+        request.httpBody = try JSONEncoder().encode(SpeechRequest(model: model, input: text, lang_code: language,
+            ref_audio: referenceAudioPath, voice: voice, ref_text: referenceText,
+            nativ_speech_tokenizer_path: speechTokenizerPath, nativ_local_only: localOnly ? true : nil))
         return request
     }
 
@@ -186,6 +195,9 @@ public final class NativAudioClient: Sendable {
         let input: String
         let lang_code: String?
         let ref_audio: String?
+        let voice: String?
+        let ref_text: String?
+        let nativ_speech_tokenizer_path: String?
         let nativ_local_only: Bool?
         let response_format = "wav"
         let stream = false
@@ -234,8 +246,8 @@ public final class NativAudioClient: Sendable {
         if let language {
             let safeLanguage = language.filter { $0.isASCII && ($0.isLetter || $0 == "-") }
             body.appendUTF8("--\(boundary)\r\nContent-Disposition: form-data; name=\"language\"\r\n\r\n\(safeLanguage)\r\n")
-            body.appendUTF8("--\(boundary)\r\nContent-Disposition: form-data; name=\"task\"\r\n\r\ntranscribe\r\n")
         }
+        body.appendUTF8("--\(boundary)\r\nContent-Disposition: form-data; name=\"task\"\r\n\r\ntranscribe\r\n")
         body.appendUTF8("--\(boundary)\r\n")
         body.appendUTF8("Content-Disposition: form-data; name=\"response_format\"\r\n\r\n")
         body.appendUTF8("json\r\n")

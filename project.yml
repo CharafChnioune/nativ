@@ -283,6 +283,13 @@ targets:
       - path: Sources/Nativ/Features/LiveTranslation/TranslationResourceAssessment.swift
       - path: Sources/Nativ/Features/LiveTranslation/TranslationHostOperationGate.swift
       - path: Sources/Nativ/Features/LiveTranslation/TranslationRuntimeController.swift
+      - path: Sources/Nativ/Features/LiveTranslation/TranslationCascadeRuntime.swift
+      - path: Sources/Nativ/Features/LiveTranslation/ManagedTranslationCascadeResources.swift
+      - path: Sources/Nativ/Features/LiveTranslation/TranslationStageCatalog.swift
+      - path: Sources/Nativ/Features/LiveTranslation/TranslationSpeechPreparation.swift
+      - path: Sources/Nativ/Features/LiveTranslation/TranslationCascadeProviders.swift
+      - path: Sources/Nativ/Features/VoiceCapture/VoiceTranscriptionConfiguration.swift
+      - path: Sources/Nativ/Features/LiveTranslation/TranslationStockVoicePreparation.swift
       - path: Sources/Nativ/Features/LiveTranslation/LiveTranslationSettings.swift
       - path: Sources/Nativ/NativSettings.swift
       - path: Sources/Nativ/NativRuntimeSettingsController.swift

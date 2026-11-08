@@ -26,14 +26,18 @@ final class LiveTranslationExtension: NativHostExtension {
     }
     func activate(context: NativExtensionHostContext) {
         coordinator.configurationProvider = context.transcriptionConfiguration
-        coordinator.cascadeBackendProvider = { settings, endpoint in
+        coordinator.cascadeBackendProvider = { settings, services in
             guard let configuration = context.transcriptionConfiguration() else { throw CancellationError() }
-            return try await TranslationCascadeProviders.make(settings: settings, endpoint: endpoint,
-                                                               configuration: configuration, audioServer: context.audioServer)
+            return try await TranslationCascadeProviders.make(settings: settings, configuration: configuration,
+                runtime: services.runtime, resources: services.resources, omniEndpoint: services.omniEndpoint)
         }
         coordinator.recognitionPreparationProvider = { settings in
             guard let configuration = context.transcriptionConfiguration() else { throw CancellationError() }
             _ = try await TranslationCascadeProviders.prepareRecognition(settings: settings, configuration: configuration)
+        }
+        coordinator.speechPreparationProvider = { settings in
+            guard let configuration = context.transcriptionConfiguration() else { throw CancellationError() }
+            return try await TranslationCascadeProviders.prepareSpeech(settings: settings, configuration: configuration)
         }
         coordinator.activate()
     }
@@ -42,6 +46,7 @@ final class LiveTranslationExtension: NativHostExtension {
         coordinator.configurationProvider = nil
         coordinator.cascadeBackendProvider = nil
         coordinator.recognitionPreparationProvider = nil
+        coordinator.speechPreparationProvider = nil
     }
     func makePage(id: String, context: NativExtensionPageContext) -> AnyView? {
         guard id == Self.pageID else { return nil }

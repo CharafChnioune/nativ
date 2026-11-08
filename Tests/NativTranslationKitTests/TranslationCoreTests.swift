@@ -13,8 +13,10 @@ actor ControlledBackend: TranslationBackend {
   var heldStop = false
   var stopGate: CheckedContinuation<Void, Never>?
   var stopped = false
+  var preparations: [TranslationConfiguration] = []
   func prepare(configuration: TranslationConfiguration) async throws -> TranslationCapabilities {
-    .init(
+    preparations.append(configuration)
+    return .init(
       inputLanguages: ["en", "nl"], outputLanguages: ["en", "nl"], supportsAudioOutput: true)
   }
   func start(sessionID: TranslationSessionID, generation: TranslationGeneration) async throws
@@ -861,6 +863,158 @@ private actor ControlledTranslationClock: TranslationClock {
   await settle()
   #expect(!(await core.snapshot().canRetry))
   await #expect(throws: TranslationFailure.self) { try await core.retryLastTurn() }
+  await core.stop()
+}
+
+private func completeForReplay(_ core: TranslationSession, backend: ControlledBackend,
+                               turn: TranslationTurnID, snapshot: TranslationSessionSnapshot) async -> Bool {
+  await backend.emit(.init(sessionID: snapshot.sessionID, turnID: turn, generation: snapshot.generation,
+                           payload: .metrics(.init(name: .contextTokens, value: 1))))
+  await backend.emit(.init(sessionID: snapshot.sessionID, turnID: turn, generation: snapshot.generation,
+                           payload: .translationText(.init(text: "first translation", stability: .final))))
+  await backend.emit(.init(sessionID: snapshot.sessionID, turnID: turn, generation: snapshot.generation, payload: .turnCompleted))
+  let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+  repeat {
+    if await core.snapshot().canReplay { return true }
+    await Task.yield()
+  } while ContinuousClock.now < deadline
+  return false
+}
+
+@Test func completedTurnReplaysCorrectedDirectionWithFreshGenerationAndSameProvider() async throws {
+  let backend = ControlledBackend()
+  let core = TranslationSession(backend: backend)
+  let originalConfiguration = configuration()
+  _ = try await core.prepare(configuration: originalConfiguration)
+  let stream = try await core.start()
+  defer { withExtendedLifetime(stream) {} }
+  let snapshot = await core.snapshot()
+  let turn = TranslationTurnID()
+  let input = frame(snapshot, turn: turn, seconds: 12)
+  try await core.accept(frame: input)
+  try await core.commit(turnID: turn)
+  #expect(await completeForReplay(core, backend: backend, turn: turn, snapshot: snapshot))
+  #expect(!(await core.snapshot().canRetry))
+  await #expect(throws: TranslationFailure.self) { try await core.retryLastTurn() }
+  let replay = try await core.replayLastTurn(languagePair: .init(source: "nl", target: "en"))
+  let after = await core.snapshot()
+  #expect(replay != turn)
+  #expect(after.activeTurnID == replay)
+  #expect(after.generation != snapshot.generation)
+  #expect(!after.canReplay && !after.canRetry)
+  let frames = await backend.frames
+  #expect(frames.count == 2)
+  #expect(frames.last?.bytes == input.bytes)
+  #expect(frames.last?.turnID == replay)
+  #expect(frames.last?.generation == after.generation)
+  #expect(await backend.starts == 2)
+  let preparations = await backend.preparations
+  #expect(preparations.count == 2)
+  #expect(preparations.last?.languagePair == .init(source: "nl", target: "en"))
+  #expect(preparations.last?.directionMode == .fixed)
+  #expect(preparations.last?.provider == originalConfiguration.provider)
+  #expect(preparations.last?.outputMode == originalConfiguration.outputMode)
+  #expect(preparations.last?.source == originalConfiguration.source)
+  #expect(after.transcript.turns.count == 1)
+  #expect(after.transcript.turns.first?.turnID == turn)
+  await core.stop()
+}
+
+@Test func replayExpiryIsThirtySecondsAndFailedRetryHasSeparateAvailability() async throws {
+  let clock = ControlledTranslationClock()
+  let backend = ControlledBackend()
+  let core = TranslationSession(backend: backend, clock: clock)
+  _ = try await core.prepare(configuration: configuration())
+  let stream = try await core.start()
+  defer { withExtendedLifetime(stream) {} }
+  let snapshot = await core.snapshot()
+  let turn = TranslationTurnID()
+  try await core.accept(frame: frame(snapshot, turn: turn))
+  try await core.commit(turnID: turn)
+  #expect(await completeForReplay(core, backend: backend, turn: turn, snapshot: snapshot))
+  for _ in 0..<10_000 { if await clock.isWaiting { break }; await Task.yield() }
+  #expect(await clock.requestedSeconds == 30)
+  #expect(!(await core.snapshot().canRetry))
+  await clock.advance()
+  await settle()
+  #expect(!(await core.snapshot().canReplay))
+  await #expect(throws: TranslationFailure.self) { try await core.replayLastTurn(languagePair: .init(source: "nl", target: "en")) }
+  await core.stop()
+}
+
+@Test func replayInvalidatesBeforeBlockedReleaseAndStopCancelsReprepare() async throws {
+  let backend = ControlledBackend()
+  let core = TranslationSession(backend: backend)
+  _ = try await core.prepare(configuration: configuration())
+  let stream = try await core.start()
+  defer { withExtendedLifetime(stream) {} }
+  let snapshot = await core.snapshot()
+  let turn = TranslationTurnID()
+  try await core.accept(frame: frame(snapshot, turn: turn))
+  try await core.commit(turnID: turn)
+  #expect(await completeForReplay(core, backend: backend, turn: turn, snapshot: snapshot))
+  let oldProvider = await backend.continuation
+  await backend.holdStop()
+  let replay = Task { try await core.replayLastTurn(languagePair: .init(source: "nl", target: "en")) }
+  for _ in 0..<10_000 { if await backend.isHoldingStop() { break }; await Task.yield() }
+  #expect(await backend.isHoldingStop())
+  let during = await core.snapshot()
+  #expect(during.generation != snapshot.generation)
+  #expect(!during.activity.acceptingInput && !during.activity.generating)
+  oldProvider?.yield(.init(sessionID: snapshot.sessionID, turnID: turn, generation: snapshot.generation,
+                          payload: .translationText(.init(text: "late wrong output", stability: .final))))
+  let stop = Task { await core.stop() }
+  await settle()
+  await backend.releaseStop()
+  await stop.value
+  await #expect(throws: CancellationError.self) { try await replay.value }
+  #expect(await backend.preparations.count == 1)
+  #expect(await backend.frames.count == 1)
+  #expect(await core.snapshot().state == .stopped)
+  #expect(!(await core.snapshot().canReplay))
+  #expect(await core.snapshot().transcript.turns.first?.translatedText == "first translation")
+}
+
+@Test func unsupportedReplayDirectionDoesNotSendAudioOrChooseAnotherProvider() async throws {
+  let backend = ControlledBackend()
+  let core = TranslationSession(backend: backend)
+  _ = try await core.prepare(configuration: configuration())
+  let stream = try await core.start()
+  defer { withExtendedLifetime(stream) {} }
+  let snapshot = await core.snapshot()
+  let turn = TranslationTurnID()
+  try await core.accept(frame: frame(snapshot, turn: turn))
+  try await core.commit(turnID: turn)
+  #expect(await completeForReplay(core, backend: backend, turn: turn, snapshot: snapshot))
+  await #expect(throws: TranslationFailure.self) { try await core.replayLastTurn(languagePair: .init(source: "nl", target: "fr")) }
+  #expect(await backend.frames.count == 1)
+  #expect(await backend.starts == 1)
+  #expect(await core.snapshot().lastFailure?.code == .unsupportedLanguage)
+  #expect(!(await core.snapshot().canReplay))
+  await core.stop()
+}
+
+@Test func failedTurnReplacesReplaySlotInsteadOfRetainingTwoRecordings() async throws {
+  let backend = ControlledBackend()
+  let core = TranslationSession(backend: backend)
+  _ = try await core.prepare(configuration: configuration())
+  let stream = try await core.start()
+  defer { withExtendedLifetime(stream) {} }
+  let snapshot = await core.snapshot()
+  let completed = TranslationTurnID()
+  try await core.accept(frame: frame(snapshot, turn: completed))
+  try await core.commit(turnID: completed)
+  #expect(await completeForReplay(core, backend: backend, turn: completed, snapshot: snapshot))
+  let failed = TranslationTurnID()
+  try await core.accept(frame: frame(snapshot, turn: failed, sequence: 1))
+  try await core.commit(turnID: failed)
+  await backend.emit(.init(sessionID: snapshot.sessionID, turnID: failed, generation: snapshot.generation,
+                          payload: .failure(.init(code: .providerFailure, message: "fixture"))))
+  await settle()
+  #expect(await core.snapshot().canRetry)
+  #expect(await core.snapshot().canReplay)
+  _ = try await core.replayLastTurn(languagePair: .init(source: "nl", target: "en"))
+  #expect(await backend.frames.last?.sequence == 1)
   await core.stop()
 }
 

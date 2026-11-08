@@ -13,7 +13,11 @@ public actor TranslationSession {
   private var capabilities: TranslationCapabilities?
   private var active: TranslationSegment?
   private var waiting: TranslationSegment?
-  private var retry: TranslationSegment?
+  private enum RetentionPurpose { case failedRetry, completedReplay }
+  // One bounded PCM retention slot, shared by retry and corrected-direction
+  // replay. Transcript history never owns the audio.
+  private var retained: TranslationSegment?
+  private var retentionPurpose: RetentionPurpose?
   private var retryExpiry: Task<Void, Never>?
   private var incomplete: Set<TranslationTurnID> = []
   private var incompleteIntervals: [TranslationIncompleteInterval] = []
@@ -78,7 +82,9 @@ public actor TranslationSession {
       activeTurnID: active?.id, waitingTurnID: waiting?.id, incompleteTurns: incomplete,
       incompleteIntervals: incompleteIntervals,
       transcript: history, lastFailure: lastFailure,
-      canRetry: retry != nil && active == nil && !resettingContext
+      canRetry: retained != nil && retentionPurpose == .failedRetry && active == nil && !resettingContext
+        && (state == .running || state == .paused),
+      canReplay: retained != nil && active == nil && waiting == nil && !resettingContext
         && (state == .running || state == .paused))
   }
   public func prepare(configuration: TranslationConfiguration) async throws
@@ -117,11 +123,12 @@ public actor TranslationSession {
           message: "This runtime does not provide speech output.")
       }
       guard configuration.directionMode != .automatic || result.automaticDirectionQualified
+        || (configuration.allowExperimentalAutomaticDirection && result.automaticDirectionAvailable)
       else {
         throw TranslationFailure(
           code: .invalidConfiguration,
           message:
-            "Automatic direction requires measured bilingual qualification; choose a fixed direction."
+            "Automatic direction requires measured qualification or an available adapter with explicit experimental consent; choose fixed direction otherwise."
         )
       }
       self.capabilities = result
@@ -201,7 +208,7 @@ public actor TranslationSession {
         guard !Task.isCancelled else { return }
         await self?.providerStreamEnded(
           epoch: epoch, streamID: streamID,
-          failure: .init(
+          failure: (error as? TranslationFailure) ?? .init(
             code: .providerFailure,
             message: "Translation runtime failed; repeat the incomplete turn."))
       }
@@ -394,12 +401,11 @@ public actor TranslationSession {
     }
   }
   public func retryLastTurn() async throws {
-    guard state == .running || state == .paused, !resettingContext, active == nil, let retry else {
+    guard state == .running || state == .paused, !resettingContext, active == nil,
+      retentionPurpose == .failedRetry, let retry = retained else {
       throw invalidState()
     }
-    self.retry = nil
-    retryExpiry?.cancel()
-    retryExpiry = nil
+    clearAudio()
     var replacement = TranslationSegment(id: .init())
     replacement.frames = retry.frames.map { retag($0, turn: replacement.id) }
     replacement.duration = retry.duration
@@ -420,6 +426,66 @@ public actor TranslationSession {
       }
     }
     try await promote(replacement, epoch: generation)
+  }
+  /// Explicitly retranslate the last completed source recording in a corrected
+  /// fixed direction. The host first stops capture and flushes playback. Its
+  /// existing event stream remains open; old-generation callbacks are rejected.
+  /// No model, provider, source, output mode or buffer policy is substituted.
+  @discardableResult
+  public func replayLastTurn(languagePair: TranslationLanguagePair) async throws -> TranslationTurnID {
+    guard state == .running || state == .paused, !resettingContext,
+      active == nil, waiting == nil,
+      let retained, var corrected = configuration else { throw invalidState() }
+    guard !languagePair.source.isEmpty, !languagePair.target.isEmpty,
+      languagePair.source != languagePair.target else {
+      throw TranslationFailure(code: .invalidConfiguration, message: "Choose two different languages for corrected-direction replay.")
+    }
+    corrected.languagePair = languagePair
+    corrected.directionMode = .fixed
+    try corrected.buffering.validate()
+    clearAudio()
+    invalidate()
+    let epoch = generation
+    resettingContext = true
+    state = .paused
+    activity = .init()
+    lastInput = nil
+    publishState()
+    guard epoch == generation else { throw lastFailure ?? invalidState() }
+    let backend = backend
+    let preparedConfiguration = corrected
+    do {
+      let result = try await enqueue {
+        await backend.stop()
+        try Task.checkCancellation()
+        return try await backend.prepare(configuration: preparedConfiguration)
+      }.value
+      guard generation == epoch, !Task.isCancelled else { throw CancellationError() }
+      guard result.inputLanguages.contains(languagePair.source), result.outputLanguages.contains(languagePair.target),
+        corrected.outputMode != .speechAndCaptions || result.supportsAudioOutput else {
+        throw TranslationFailure(code: .unsupportedLanguage, message: "The selected models or voice do not support this corrected direction. Choose a compatible route explicitly and repeat the turn.")
+      }
+      if let format = result.inputFormat, retained.frames.contains(where: { $0.format != format }) {
+        throw TranslationFailure(code: .invalidAudio, message: "The corrected route requires a different input format. Repeat the turn.")
+      }
+      configuration = corrected
+      capabilities = result
+      try await restart(epoch: epoch)
+      guard generation == epoch, !Task.isCancelled else { throw CancellationError() }
+      resettingContext = false
+      var replacement = TranslationSegment(id: .init())
+      replacement.frames = retained.frames.map { retag($0, turn: replacement.id) }
+      replacement.duration = retained.duration
+      replacement.committed = true
+      try await promote(replacement, epoch: epoch)
+      return replacement.id
+    } catch {
+      if generation == epoch {
+        resettingContext = false
+        await streamEnded(epoch: epoch, failure: (error as? TranslationFailure) ?? providerFailure())
+      }
+      throw error
+    }
   }
   private func restart(epoch: TranslationGeneration) async throws {
     let backend = backend
@@ -500,6 +566,17 @@ public actor TranslationSession {
         case .translationText(let update):
           _ = try active?.target.apply(update)
           emit(event)
+        case .directionSelected(let selection):
+          guard configuration?.directionMode == .automatic,
+            capabilities?.automaticDirectionAvailable == true || capabilities?.automaticDirectionQualified == true,
+            let configured = configuration?.languagePair,
+            Set([selection.pair.source, selection.pair.target]) == Set([configured.source, configured.target]),
+            selection.pair.source != selection.pair.target,
+            selection.confidence.isFinite, (0...1).contains(selection.confidence),
+            !selection.qualified || capabilities?.automaticDirectionQualified == true else {
+            throw TranslationFailure(code: .invalidEvent, message: "The provider emitted an invalid language direction.")
+          }
+          emit(event)
         case .audio(let chunk):
           guard chunk.committed, capabilities?.supportsAudioOutput == true,
             configuration?.outputMode == .speechAndCaptions
@@ -545,13 +622,13 @@ public actor TranslationSession {
                 ? completed.source.text : nil,
               translatedText: completed.target.text,
               incomplete: false))
-          retainRetry(completed)
+          retain(completed, purpose: .completedReplay)
           active = nil
           activity.generating = false
           emit(event)
           let pending = waiting
           waiting = nil
-          if let configuration,
+          if let configuration, capabilities?.retainsConversationContext != false,
             !contextUsageKnown
               || contextTokens >= Double(configuration.buffering.contextTokenLimit)
                 * configuration.buffering.contextRolloverFraction
@@ -599,10 +676,19 @@ public actor TranslationSession {
       }
     }
   }
-  private func retainRetry(_ segment: TranslationSegment) {
+  private func retain(_ segment: TranslationSegment, purpose: RetentionPurpose) {
     retryExpiry?.cancel()
-    retry = segment
+    retained = nil
+    retentionPurpose = nil
     let seconds = configuration?.buffering.retryRetentionSeconds ?? 0
+    guard seconds > 0, segment.committed, !segment.frames.isEmpty, segment.duration <= 12.000001 else { return }
+    // Only PCM and source boundaries are needed, not output buffers or text.
+    var input = TranslationSegment(id: segment.id)
+    input.frames = segment.frames
+    input.duration = segment.duration
+    input.committed = true
+    retained = input
+    retentionPurpose = purpose
     let id = segment.id
     let clock = clock
     retryExpiry = Task { [weak self] in
@@ -613,8 +699,9 @@ public actor TranslationSession {
     }
   }
   private func expireRetry(_ id: TranslationTurnID) {
-    if retry?.id == id {
-      retry = nil
+    if retained?.id == id {
+      retained = nil
+      retentionPurpose = nil
       retryExpiry = nil
       publishState()
     }
@@ -655,9 +742,10 @@ public actor TranslationSession {
     if let id = waiting?.id { markIncomplete(id) }
     // Retain only a complete source segment for an explicit retry. Partial input must be repeated.
     let failedInput = failure.recoverable && active?.committed == true ? active : nil
+    let recognized = capabilities?.sourceTranscriptAvailable == true ? active?.source.text : nil
     invalidate()
     clearAudio()
-    if let failedInput { retainRetry(failedInput) }
+    if let failedInput { retain(failedInput, purpose: .failedRetry) }
     resettingContext = false
     active = nil
     waiting = nil
@@ -665,6 +753,12 @@ public actor TranslationSession {
     lastFailure = failure
     state = .paused
     activity = .init()
+    // The previous generation may already be queued at the host. Preserve only
+    // the source actually supplied by ASR under the failure's new generation.
+    if let recognized, !recognized.isEmpty {
+      emit(.init(sessionID: sessionID, turnID: id, generation: generation,
+                 payload: .sourceText(.init(text: recognized, stability: .final))))
+    }
     emit(
       .init(sessionID: sessionID, turnID: id, generation: generation, payload: .failure(failure)))
     publishState()
@@ -703,7 +797,8 @@ public actor TranslationSession {
   private func clearAudio() {
     retryExpiry?.cancel()
     retryExpiry = nil
-    retry = nil
+    retained = nil
+    retentionPurpose = nil
   }
   private func publishState() {
     emit(.init(sessionID: sessionID, generation: generation, payload: .state(state, activity)))

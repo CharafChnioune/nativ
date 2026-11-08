@@ -61,6 +61,7 @@ public struct TranslationConfiguration: Equatable, Sendable {
   public var source: TranslationSource
   public var outputMode: TranslationOutputMode
   public var provider: TranslationProviderID
+  public var allowExperimentalAutomaticDirection: Bool
   public var buffering: TranslationBufferingPolicy
   /// One duration budget shared by every output transport stage in this session.
   public var audioTransportBudget: TranslationAudioTransportBudget
@@ -68,13 +69,15 @@ public struct TranslationConfiguration: Equatable, Sendable {
     languagePair: TranslationLanguagePair, directionMode: TranslationDirectionMode = .fixed,
     source: TranslationSource = .microphone, outputMode: TranslationOutputMode = .captions,
     provider: TranslationProviderID, buffering: TranslationBufferingPolicy = .init(),
-    audioTransportBudget: TranslationAudioTransportBudget = .init()
+    audioTransportBudget: TranslationAudioTransportBudget = .init(),
+    allowExperimentalAutomaticDirection: Bool = false
   ) {
     self.languagePair = languagePair
     self.directionMode = directionMode
     self.source = source
     self.outputMode = outputMode
     self.provider = provider
+    self.allowExperimentalAutomaticDirection = allowExperimentalAutomaticDirection
     self.buffering = buffering
     self.audioTransportBudget = audioTransportBudget
   }
@@ -93,6 +96,8 @@ public struct TranslationCapabilities: Equatable, Sendable {
   public var outputStreaming: Bool
   public var interruptionBehavior: TranslationInterruptionBehavior
   public var automaticDirectionQualified: Bool
+  public var automaticDirectionAvailable: Bool
+  public var retainsConversationContext: Bool
   public var trueDuplex: Bool
   public var inputFormat: TranslationPCMFormat?
   public init(
@@ -103,7 +108,8 @@ public struct TranslationCapabilities: Equatable, Sendable {
     inputStreaming: Bool = false, outputStreaming: Bool = false,
     interruptionBehavior: TranslationInterruptionBehavior = .freshContextRequired,
     automaticDirectionQualified: Bool = false, trueDuplex: Bool = false,
-    inputFormat: TranslationPCMFormat? = nil
+    inputFormat: TranslationPCMFormat? = nil,
+    automaticDirectionAvailable: Bool = false, retainsConversationContext: Bool = true
   ) {
     self.inputLanguages = inputLanguages
     self.outputLanguages = outputLanguages
@@ -115,6 +121,8 @@ public struct TranslationCapabilities: Equatable, Sendable {
     self.outputStreaming = outputStreaming
     self.interruptionBehavior = interruptionBehavior
     self.automaticDirectionQualified = automaticDirectionQualified
+    self.automaticDirectionAvailable = automaticDirectionAvailable
+    self.retainsConversationContext = retainsConversationContext
     self.trueDuplex = trueDuplex
     self.inputFormat = inputFormat
   }
@@ -293,7 +301,7 @@ public struct TranslationFailure: Error, Equatable, Sendable {
   public enum Code: String, Sendable {
     case invalidConfiguration, invalidState, invalidAudio, staleInput, overload, incompleteTurn,
       providerFailure, unsupportedLanguage, unsupportedOutput, consumerOverload,
-      unexpectedStreamEnd, invalidEvent
+      unexpectedStreamEnd, invalidEvent, ambiguousDirection
   }
   public let code: Code
   public let message: String
@@ -314,6 +322,7 @@ public struct TranslationEvent: Equatable, Sendable {
     case metrics(TranslationMetric)
     case failure(TranslationFailure)
     case contextRolledOver
+    case directionSelected(TranslationDirectionSelection)
   }
   public let sessionID: TranslationSessionID
   public let turnID: TranslationTurnID?
@@ -352,4 +361,5 @@ public struct TranslationSessionSnapshot: Sendable {
   public let transcript: TranslationTranscriptBuffer
   public let lastFailure: TranslationFailure?
   public let canRetry: Bool
+  public let canReplay: Bool
 }
