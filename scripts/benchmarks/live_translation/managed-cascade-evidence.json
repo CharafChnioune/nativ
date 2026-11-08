@@ -1,0 +1,75 @@
+{
+  "date": "2026-11-08",
+  "hardware": "Apple M5, 16 GiB unified memory",
+  "qualified": false,
+  "built_runtime": {
+    "python": "3.12.13",
+    "mlx": "0.32.4",
+    "mlx-vlm": "0.7.12",
+    "mlx-audio": "0.6.4",
+    "transformers": "5.15.1"
+  },
+  "method": "Original development prototype of managed_cascade_probe.py; actual nativ_server HTTP /v1/audio/transcriptions with planned /unload between stages.",
+  "prototype_sha256": "2fe9523c7206d90610084fe49c06cf7f3c64eb42511c55ba7535b023725a1135",
+  "whisper_revision": "a4aaeec0636e6fef84abdcbe3544cb2bf7e9f6fb",
+  "processor_revision": "41f01f3fe87f28c78e2fbf8b568835947dd65ed9",
+  "planned_not_loaded": {
+    "gemma_revision": "475b9088d29754a3379866cf5aeb6b41acd313c2",
+    "omni_revision": "d508b88f08a5b4286f2d2805a6a8d69a0ff44c72",
+    "omni_quantization": "Q8_0",
+    "helper_commit": "cd959bae99ff4bed22bef2604f45241c09bbb8c8"
+  },
+  "runs": [
+    {
+      "status": "failed",
+      "strategy": "sequential-managed-http",
+      "initial_pressure": 2,
+      "initial_swap_mib": 18184.94,
+      "maximum_pressure": 2,
+      "peak_rss_bytes": 535674880,
+      "peak_swap_growth_mib": 1759.6800000000003,
+      "seconds": 21.483935457999998,
+      "final_pressure": 2,
+      "final_swap_mib": 20212.0,
+      "error": "bounded swap-growth guard",
+      "overlay_sha256": {
+        "nativ_translation_local.py": "52d38421b4b6ff39c80e93286db17908071fdddce3142f1333867f7f872abe0f",
+        "nativ_server.py": "2cb68e17e87b2dee18c260b28a6352d316235923de12a3d8d8d3f59a83eceb42"
+      },
+      "run": "managed-sequential-e4b-20261108-1",
+      "completed_turns": 0,
+      "completed_transcripts": 0,
+      "translation_started": false,
+      "speech_started": false,
+      "owned_processes_stopped": true,
+      "server_ready_seconds": 15.745713875000002,
+      "max_swap_growth_mib": 1024
+    },
+    {
+      "status": "failed",
+      "strategy": "sequential-managed-http",
+      "initial_pressure": 1,
+      "initial_swap_mib": 18549.25,
+      "maximum_pressure": 2,
+      "peak_rss_bytes": 361185280,
+      "peak_swap_growth_mib": 1123.8100000000013,
+      "seconds": 17.675043708,
+      "final_pressure": 1,
+      "final_swap_mib": 19855.31,
+      "error": "bounded swap-growth guard",
+      "overlay_sha256": {
+        "nativ_translation_local.py": "6112996db6a50a047f255434dcf377bd56f7ba99c4f9c15097ec5bb153e68911",
+        "nativ_server.py": "2cb68e17e87b2dee18c260b28a6352d316235923de12a3d8d8d3f59a83eceb42"
+      },
+      "run": "managed-sequential-e4b-20261108-normal",
+      "completed_turns": 0,
+      "completed_transcripts": 0,
+      "translation_started": false,
+      "speech_started": false,
+      "owned_processes_stopped": true,
+      "server_ready_seconds": 2.4598840419999997,
+      "max_swap_growth_mib": 1024
+    }
+  ],
+  "interpretation": "The managed server became ready. Both runs stopped during their first Whisper request because the bounded global swap-growth guard fired. Neither completed recognition, loaded Gemma, or requested TTS. They do not prove the sequential cascade works or fails to fit on otherwise idle 16-GiB hardware. RSS is sampled separately from global unified memory; global swap changes cannot be attributed to the probe alone. No latency/fidelity or 128-GiB claim."
+}

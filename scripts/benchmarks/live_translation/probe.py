@@ -11,6 +11,8 @@ import asyncio
 import base64
 import collections
 import json
+import hashlib
+import subprocess
 import math
 import pathlib
 import statistics
@@ -82,6 +84,14 @@ async def websocket_probe(args, text_only=False, cancel=False, reset=False):
         if source in ('nl','en'):
             names = {'nl':'Dutch','en':'English'}
             prompt += ' Input is ' + names[source] + '. Translate only to ' + names['en' if source == 'nl' else 'nl'] + '.'
+        contract = getattr(args, 'contract', None)
+        if contract:
+            if source not in ('nl', 'en'):
+                raise ValueError('Production prompt contract requires an explicit fixed source language')
+            target = 'en' if source == 'nl' else 'nl'
+            prompts = json.loads(subprocess.check_output([str(contract), 'prompt', source, target], text=True, timeout=10))
+            prompt = prompts['text' if text_only else 'speech']
+            result['contract_sha256'] = hashlib.sha256(pathlib.Path(contract).read_bytes()).hexdigest()
         result['instructions'] = prompt
         await ws.send(json.dumps({'type': 'session.update', 'session': {'type': 'realtime', 'instructions': prompt, 'output_modalities': ['text'] if text_only else ['text', 'audio'], 'tools': [], 'tool_choice': 'none', 'max_output_tokens': 256}}))
         updated = json.loads(await asyncio.wait_for(ws.recv(), 20))
@@ -175,6 +185,20 @@ def tts_probe(args, text=None):
         result['errors'].append({'http_status': error.code, 'body': error.read(8192).decode(errors='replace')})
     return result
 
+def output_guard(args, text):
+    contract = getattr(args, 'contract', None)
+    if not contract:
+        return {'unrun': 'legacy probe without production output guard'}
+    source = args.source_language
+    if source not in ('nl', 'en'):
+        raise ValueError('Production output guard requires an explicit fixed source language')
+    target = 'en' if source == 'nl' else 'nl'
+    result = json.loads(subprocess.check_output([str(contract), 'validate-output', source, target],
+        input=json.dumps({'translation': text}), text=True, timeout=10))
+    if not isinstance(result, dict) or type(result.get('accepted')) is not bool or result.get('qualified') is not False:
+        raise ValueError('Production output guard returned an invalid result')
+    return result
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--url', default='http://127.0.0.1:8097')
@@ -182,7 +206,8 @@ def main():
     parser.add_argument('--wav', type=pathlib.Path)
     parser.add_argument('--mode', choices=['direct', 'text', 'two-pass', 'tts', 'cancel', 'reset'], default='direct')
     parser.add_argument('--source-language', choices=['nl', 'en'], help='Fixed direction; omitted means automatic pair direction')
-    parser.add_argument('--lang', choices=['nl', 'en'], default='en')
+    parser.add_argument('--contract', type=pathlib.Path, help='Use the compiled production prompt/guard driver for a fixed direction')
+    parser.add_argument('--lang', choices=['nl', 'en'], help='TTS language; fixed two-pass derives its target from --source-language')
     parser.add_argument('--text', default='The appointment is at half past three, not at four.')
     parser.add_argument('--timeout', type=float, default=90)
     parser.add_argument('--retain-content', action='store_true')
@@ -192,6 +217,15 @@ def main():
         parser.error('Probe accepts explicit IPv4 loopback only')
     if not 1 <= args.timeout <= 180:
         parser.error('Timeout must be 1–180 seconds')
+    if args.contract and args.mode != 'tts' and args.source_language is None:
+        parser.error('The production contract requires an explicit --source-language')
+    if args.mode == 'two-pass' and args.source_language:
+        target = 'en' if args.source_language == 'nl' else 'nl'
+        if args.lang is not None and args.lang != target:
+            parser.error('--lang conflicts with the fixed translation target')
+        args.lang = target
+    elif args.lang is None:
+        args.lang = 'en'
     args.output.parent.mkdir(parents=True, exist_ok=True)
     try:
         if args.mode == 'tts':
@@ -203,7 +237,13 @@ def main():
                 if not args.retain_content or not result.get('text'):
                     result['two_pass_tts'] = {'unrun': 'requires --retain-content and a real translated text result'}
                 else:
-                    result['two_pass_tts'] = tts_probe(args, result['text'])
+                    result['output_guard'] = output_guard(args, result['text'])
+                    if result['output_guard'].get('accepted', True):
+                        result['two_pass_tts'] = tts_probe(args, result['text'])
+                    else:
+                        result['two_pass_tts'] = {'unrun': 'production output guard rejected target language'}
+                        result['failure'] = 'TranslationOutputRejected'
+                        result['message'] = 'Production output guard rejected the turn before speech; no quality qualification.'
     except Exception as error:
         result = getattr(args, '_partial', {})
         result.update(failure=type(error).__name__, message=str(error))

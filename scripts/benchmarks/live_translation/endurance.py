@@ -87,6 +87,12 @@ def parse_swap_mib(value):
 
 
 def memory_violation(sample, baseline_swap, maximum_growth):
+    pressure, swap = sample.get('pressure_level'), sample.get('swap_used_mib')
+    if type(pressure) is not int or pressure not in (1, 2, 4):
+        raise ValueError('Unknown or missing OS pressure telemetry')
+    if any(type(value) not in (int, float) or not math.isfinite(value) or value < 0
+           for value in (swap, baseline_swap, maximum_growth)):
+        raise ValueError('Invalid or missing swap telemetry/guard bound')
     if sample['pressure_level'] >= 4:
         return 'critical OS memory pressure (kern.memorystatus_vm_pressure_level >= 4)'
     if sample['swap_used_mib'] - baseline_swap > maximum_growth:
@@ -152,6 +158,7 @@ def system_sample(pid=None):
               'pressure_level': int(command(['sysctl', '-n', 'kern.memorystatus_vm_pressure_level'])),
               'swap_used_mib': parse_swap_mib(command(['sysctl', '-n', 'vm.swapusage'])),
               'helper_rss_bytes': 0, 'helper_cpu_percent': 0}
+    memory_violation(result, result['swap_used_mib'], 0)
     if pid:
         try:
             rss, cpu = command(['ps', '-p', str(pid), '-o', 'rss=,pcpu=']).split()
@@ -177,30 +184,66 @@ class Guard:
     def __init__(self, output, maximum_growth):
         self.output, self.maximum_growth = output, maximum_growth
         self.process = None
-        self.baseline = system_sample()
-        self.samples = [self.baseline]
-        self.abort = memory_violation(self.baseline, self.baseline['swap_used_mib'], maximum_growth)
+        self.baseline = None
+        self.samples = []
+        self.abort = None
+        self.telemetry_errors = []
         self.phase = 'baseline'
         self.termination_requests = set()
         self.termination_lock = threading.Lock()
         self.done = threading.Event()
         self.thread = threading.Thread(target=self._sample, daemon=True)
+        try:
+            baseline = system_sample()
+            self.abort = memory_violation(baseline, baseline.get('swap_used_mib'), maximum_growth)
+            self.baseline = baseline
+            self.samples.append(baseline)
+        except Exception as error:
+            self.telemetry_failure(error, 'baseline')
+
+    def telemetry_failure(self, error, phase):
+        # Retain an explicit gap and the first abort reason. A later valid sample
+        # cannot turn an unmonitored interval into a successful experiment.
+        self.telemetry_errors.append({'phase': phase, 'error': type(error).__name__})
+        self.abort = self.abort or 'memory guard unavailable during ' + phase + ': ' + type(error).__name__
+
+    def final_sample(self):
+        try:
+            sample = system_sample()
+            baseline_swap = self.baseline['swap_used_mib'] if self.baseline else sample.get('swap_used_mib')
+            violation = memory_violation(sample, baseline_swap, self.maximum_growth)
+            self.abort = self.abort or violation
+            self.samples.append(dict(sample, phase='final'))
+            return sample
+        except Exception as error:
+            self.telemetry_failure(error, 'final')
+            return None
+
+    def summary(self):
+        samples = self.samples[:]
+        baseline_swap = self.baseline['swap_used_mib'] if self.baseline else None
+        return {'samples': len(samples),
+                'max_pressure_level': max((s['pressure_level'] for s in samples), default=None),
+                'peak_helper_rss_bytes': max((s['helper_rss_bytes'] for s in samples), default=None),
+                'baseline_swap_mib': baseline_swap,
+                'peak_swap_growth_mib': max(s['swap_used_mib'] for s in samples) - baseline_swap if samples and baseline_swap is not None else None,
+                'last_sample': samples[-1] if samples else None}
 
     def _sample(self):
         while not self.done.wait(1):
             try:
                 process = self.process
                 sample = system_sample(process.pid if process and process.poll() is None else None)
+                violation = memory_violation(sample, self.baseline['swap_used_mib'], self.maximum_growth)
                 sample['phase'] = self.phase
                 self.samples.append(sample)
                 append_json(self.output / 'memory.jsonl', sample)
-                violation = memory_violation(sample, self.baseline['swap_used_mib'], self.maximum_growth)
                 if violation:
                     self.abort = violation
                     self.request_termination(process)
                     return
             except Exception as error:
-                self.abort = 'memory guard unavailable: ' + type(error).__name__
+                self.telemetry_failure(error, self.phase)
                 self.request_termination(self.process)
                 return
 
@@ -225,7 +268,9 @@ class Guard:
     def close(self):
         self.done.set()
         if self.thread.is_alive():
-            self.thread.join(timeout=5)
+            self.thread.join(timeout=10)
+            if self.thread.is_alive():
+                self.telemetry_failure(TimeoutError(), 'monitor-shutdown')
 
 
 class Helper:
@@ -322,6 +367,26 @@ def interpreter_prompt(source, mode):
             + ('Respond with interleaved text and audio in ' + target + '.' if mode == 'direct' else 'Output only the translation in ' + target + ' text.'))
 
 
+def production_prompt(contract, source, mode):
+    target = 'en' if source == 'nl' else 'nl'
+    prompts = json.loads(subprocess.check_output([str(contract), 'prompt', source, target], text=True, timeout=10))
+    prompt = prompts.get('speech' if mode == 'direct' else 'text') if isinstance(prompts, dict) else None
+    if not isinstance(prompt, str) or not prompt.strip():
+        raise ValueError('Production prompt contract returned invalid instructions')
+    return prompt
+
+
+def output_guard(contract, source, text):
+    if not contract:
+        return {'unrun': 'legacy endurance without production output guard'}
+    target = 'en' if source == 'nl' else 'nl'
+    result = json.loads(subprocess.check_output([str(contract), 'validate-output', source, target],
+        input=json.dumps({'translation': text}), text=True, timeout=10))
+    if not isinstance(result, dict) or type(result.get('accepted')) is not bool or result.get('qualified') is not False:
+        raise ValueError('Production output guard returned an invalid result')
+    return result
+
+
 def tts(helper, text, language, commit, timeout, result):
     deadline = time.monotonic() + timeout
     started = time.monotonic()
@@ -356,11 +421,20 @@ def tts(helper, text, language, commit, timeout, result):
 async def turn(helper, args, source, mode, cancel=False):
     from websockets.asyncio.client import connect
     result = {'mode': mode, 'source': source, 'target': 'en' if source == 'nl' else 'nl',
-              'status': 'error', 'fresh_context': True, 'counts': {}, 'text': ''}
+              'status': 'error', 'fresh_context': True, 'counts': {}, 'text': '', 'tts_started': False}
     counts = collections.Counter()
     meter = None
     commit = None
     try:
+        contract = getattr(args, 'contract', None)
+        if contract:
+            result['contract_sha256'] = sha256(contract)
+            if result['contract_sha256'] != getattr(args, 'contract_sha256', result['contract_sha256']):
+                raise ValueError('Production contract changed after run preflight')
+            instructions = production_prompt(contract, source, mode)
+        else:
+            instructions = interpreter_prompt(source, mode)
+        result['instructions'] = instructions
         uri = helper.url.replace('http://', 'ws://') + '/v1/realtime'
         async with connect(uri, additional_headers={'Authorization': 'Bearer ' + helper.key},
                            open_timeout=10, close_timeout=2, max_size=1024 * 1024, max_queue=1) as ws:
@@ -377,7 +451,7 @@ async def turn(helper, args, source, mode, cancel=False):
             result.update(input_format=input_format, output_format=output_format)
             meter = PCMMeter('pcm16', output_rate)
             await ws.send(json.dumps({'type': 'session.update', 'session': {'type': 'realtime',
-                'instructions': interpreter_prompt(source, mode), 'output_modalities': ['text', 'audio'] if mode == 'direct' else ['text'],
+                'instructions': instructions, 'output_modalities': ['text', 'audio'] if mode == 'direct' else ['text'],
                 'tools': [], 'tool_choice': 'none', 'max_output_tokens': 512}}))
             updated = json.loads(await asyncio.wait_for(ws.recv(), 15))
             if updated['type'] != 'session.updated':
@@ -444,15 +518,31 @@ async def turn(helper, args, source, mode, cancel=False):
         result['socket_closed_seconds'] = None if commit is None else time.monotonic() - commit
         if result['status'] == 'cancelled':
             result['audio'] = meter.finish()
+            result['output_guard'] = {'unrun': 'Cancellation trial has no completed translation'}
             return result
         if not result['text'].strip():
             raise ValueError('Response contained no translation text')
-        if mode == 'two-pass':
-            # Single slot: never open /tts before the realtime socket has closed.
-            await asyncio.to_thread(tts, helper, result['text'], result['target'], commit, args.turn_timeout, result)
-        else:
+        if mode == 'direct':
+            # Preserve actual received audio even if the later output check fails.
             result['audio'] = meter.finish()
             result['audio_chunks'] = counts['response.output_audio.delta']
+        result['output_guard_phase'] = 'before-two-pass-tts' if mode == 'two-pass' else 'after-direct-audio-received'
+        result['output_guard_limit'] = ('No source transcript: output-language validation does not establish meaning, numbers or negation. '
+            + ('Direct validation is post-hoc and cannot undo already received audio.' if mode == 'direct'
+               else 'Two-pass validation precedes /tts; it does not qualify the voice or translation.'))
+        guard_started = time.monotonic()
+        if contract and sha256(contract) != result['contract_sha256']:
+            raise ValueError('Production contract changed during the turn')
+        result['output_guard'] = output_guard(contract, source, result['text'])
+        result['output_guard_seconds'] = time.monotonic() - guard_started
+        if result['output_guard'].get('accepted') is False:
+            raise ValueError('Production output guard rejected translation')
+        if contract:
+            result['validated_text_seconds'] = time.monotonic() - commit
+        if mode == 'two-pass':
+            # Single slot: never open /tts before the realtime socket has closed.
+            result['tts_started'] = True
+            await asyncio.to_thread(tts, helper, result['text'], result['target'], commit, args.turn_timeout, result)
         if not result['audio']['sample_count']:
             raise ValueError('Response contained no audio')
         result['audio_before_response_completion'] = result['first_audio_seconds'] < result['done_seconds']
@@ -491,6 +581,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--runtime-root', type=Path, default=ROOT / 'build/lfm-realtime')
     parser.add_argument('--fixtures', type=Path, default=ROOT / 'build/lfm-realtime/probes/q8-fixed')
+    parser.add_argument('--contract', type=Path, help='Compiled production prompt/output-guard driver; omitted preserves the legacy protocol')
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--duration', type=float, default=1800)
     parser.add_argument('--min-turns', type=int, default=100)
@@ -501,11 +592,24 @@ def main():
     parser.add_argument('--max-swap-growth-mib', type=float, default=2048)
     parser.add_argument('--concurrent-activity', required=True)
     args = parser.parse_args()
-    if min(args.duration, args.min_turns, args.cold_starts, args.cancel_turns) < 0 or args.turn_timeout <= 0:
+    if (not all(math.isfinite(value) for value in (args.duration, args.turn_timeout, args.start_timeout, args.max_swap_growth_mib))
+            or min(args.duration, args.min_turns, args.cold_starts, args.cancel_turns) < 0
+            or min(args.turn_timeout, args.start_timeout, args.max_swap_growth_mib) <= 0):
         parser.error('Counts/duration must be nonnegative and timeouts positive')
+    if args.contract:
+        args.contract = args.contract.resolve()
+        if not args.contract.is_file() or not os.access(args.contract, os.X_OK):
+            parser.error('--contract must identify an executable production driver')
+        args.contract_sha256 = sha256(args.contract)
+        # Invalid driver/prompt must be discovered before any helper/model launch.
+        for source in NAMES:
+            for mode in ('direct', 'two-pass'):
+                production_prompt(args.contract, source, mode)
     args.output.mkdir(parents=True, exist_ok=False)
     args.fixtures_pcm = {source: fixture(args.fixtures / ('synthetic-' + source + '.wav')) for source in NAMES}
     identity = integrity(args)
+    if args.contract:
+        identity['contract_sha256'] = args.contract_sha256
     guard = Guard(args.output, args.max_swap_growth_mib)
     run = {'schema_version': 1, 'run_id': str(uuid.uuid4()), 'started_utc': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
         'measurement': 'Synthetic fixture end-input commit to received loopback text/PCM; excludes capture, VAD endpointing, playback, acoustic output and human interpretation quality',
@@ -520,6 +624,9 @@ def main():
                      'context': 'fresh WebSocket per turn, same resident single-slot helper', 'ctx_size':4096,
                      'tools': [], 'reasoning':'off', 'max_output_tokens':512, 'tts_n_predict':512,
                      'outputs': 'PCM16 realtime; FLOAT32 /tts using actual received format metadata',
+                     'prompt_source': 'production-contract' if args.contract else 'legacy-endurance',
+                     'output_validation': 'Production validate-output before two-pass /tts; direct post-hoc after received audio, cannot undo audio; no source transcript or semantic guarantee' if args.contract else 'Legacy protocol without production output guard',
+                     'timing_semantics': 'first_text_seconds is an unvalidated network delta; validated_text_seconds follows the contract check; first_audio_seconds is network receipt from input commit, includes contract-process time for two-pass but not direct post-hoc validation; no acoustic measurement',
                      'first_nonzero_pcm_threshold': 'First received block with any normalized PCM sample >0.0001 in absolute value; still not acoustic onset',
                      'audio_retained':False, 'no_microphone_or_playback':True, 'network':'authenticated 127.0.0.1 only, no proxies'},
         'fixtures': {source: {'path': str(args.fixtures / ('synthetic-' + source + '.wav')),
@@ -534,12 +641,9 @@ def main():
     warm_started = None
     def snapshot():
         run['aggregate'] = aggregate(run['turns'])
-        samples = guard.samples[:]
-        run['memory_summary'] = {'samples':len(samples), 'max_pressure_level':max(s['pressure_level'] for s in samples),
-            'peak_helper_rss_bytes':max(s['helper_rss_bytes'] for s in samples),
-            'baseline_swap_mib':guard.baseline['swap_used_mib'],
-            'peak_swap_growth_mib':max(s['swap_used_mib'] for s in samples)-guard.baseline['swap_used_mib'],
-            'last_sample':samples[-1]}
+        run['memory_summary'] = guard.summary()
+        run['telemetry_errors'] = guard.telemetry_errors[:]
+        run['abort'] = guard.abort or run['abort']
         run['status'] = run_outcome(len(run['turns']), run['warm_duration_seconds'], len(run['cold_starts']),
             run['aggregate']['errors'] + sum(c['status'] == 'error' for c in run['cancellations']),
             run['abort'], args.min_turns, args.duration, args.cold_starts)
@@ -607,6 +711,8 @@ def main():
             run['final_process_shutdown_seconds'] = helper.close()
             run['owned_helper_exit_code'] = helper.process.returncode if helper.process else None
         guard.close()
+        run['owned_helper_stopped'] = not helper or not helper.process or helper.process.poll() is not None
+        run['final_memory'] = guard.final_sample()
         run['ended_utc'] = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
         snapshot()
         print(json.dumps({'final_status':run['status'], 'abort':run['abort'], 'warm_turns':len(run['turns']),
