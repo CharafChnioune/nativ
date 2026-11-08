@@ -32,7 +32,7 @@ public enum TranslationProviderCatalog {
       documentedRecognitionLanguages: [], technicallyVerifiedTransportLanguages: ["en", "nl"],
       technicallyVerifiedLanguages: [], qualifiedPairs: [], requiresExplicitSelection: true,
       limitation:
-        "Experimental: Q8/Q4 probes streamed real audio but mistranslated a protected time and repeated English instead of Dutch. Speech languages and text languages differ; Dutch is absent from the documented text-language list. No language pair or voice is qualified."
+        "Experimental: current Q8/Q4 probes streamed real audio in the requested language but changed a protected time and booking intent; Q4 also changed a day. Dutch is absent from the documented text-language list. No language pair or voice is qualified."
     ),
     .init(
       id: .lfm3OmniTwoPass, displayName: "LFM3-Omni two-pass (experimental)",
@@ -43,7 +43,7 @@ public enum TranslationProviderCatalog {
       documentedRecognitionLanguages: [], technicallyVerifiedTransportLanguages: ["en", "nl"],
       technicallyVerifiedLanguages: [], qualifiedPairs: [], requiresExplicitSelection: true,
       limitation:
-        "Experimental: same-model text then streaming speech works technically after releasing the single socket slot. The tested text pass still failed EN→NL and Q4 changed a protected time. Voice naturalness, target-language fidelity and end-to-end latency remain unqualified."
+        "Experimental: same-model text then streaming speech works after releasing the single socket slot. Current Q8/Q4 text passes used the requested language but changed a protected time and booking intent; Q4 also changed a day. Voice quality, meaning and end-to-end latency remain unqualified."
     ),
     .init(
       id: .localCascade, displayName: "Local cascade (explicit selection)",

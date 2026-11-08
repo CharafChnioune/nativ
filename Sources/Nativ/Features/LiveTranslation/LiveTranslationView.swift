@@ -218,7 +218,7 @@ struct LiveTranslationView: View {
                         .legacyTextStyle(.metadataNumeric)
                 }
             }
-            Text("No route has passed interpreting and voice qualification. Q8 and Q4 trials changed a critical time and failed English → Dutch direction. Two passes did not reliably resolve this.")
+            Text("No route has passed interpreting and voice qualification. Current Q8/Q4 trials used the requested language but changed a critical time and booking intent; Q4 also changed a day. Two passes did not resolve these meaning errors.")
                 .legacyTextStyle(.supporting).foregroundStyle(.secondary)
             Toggle("I explicitly choose this experimental local route", isOn: $preferences.value.experimentalAccepted)
             Text("No automatic provider, cloud or Apple fallback. New languages need separate testing.")
@@ -449,7 +449,9 @@ struct LiveTranslationView: View {
             Text("Dutch is in the speech list, but not the published text-language list. Dutch translation remains experimental. Unsupported speech targets are refused.")
             Divider()
             Text("Technically tested: Q8/Q4 loopback authentication, PCM16 realtime input/output, float32 TTS streaming, cancellation and fresh contexts. No bilingual pair or main voice is qualified.")
-            Text("Human meaning, naturalness, prosody and emotional intent still need review. Warm/cold latency percentiles, a 30-minute endurance run and acoustic stop-to-silence are not measured.")
+            Text("The Whisper large-v3-turbo → Gemma 4 E4B → LFM3-Omni Q8 cascade completed two synthetic NL/EN examples with correct target text and real audio. First received PCM took 7.2/6.8 seconds, including sequential loading. These are individual observations, not acoustic latency or quality qualification.")
+            Text("The Q8 endurance attempt completed 160 warm turns and ten process-cold starts, then stopped after 15 minutes 22 seconds at the system-swap guard. The 30-minute requirement was not met. Global swap also includes other applications.")
+            Text("Human meaning, naturalness, prosody and emotional intent still need structured review. Qualified warm/cold latency percentiles and acoustic stop-to-silence are unavailable. Other model combinations and Macs with 128 GB have not been measured.")
             if !coordinator.latestMetrics.isEmpty {
                 Text("Current session diagnostics (not acoustic latency)").legacyTextStyle(.supportingEmphasized)
                 ForEach(coordinator.latestMetrics.keys.sorted { $0.rawValue < $1.rawValue }, id: \.self) { key in
