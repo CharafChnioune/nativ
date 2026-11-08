@@ -4,6 +4,16 @@ Het beknopte [Nederlandse eindrapport](live-translation-delivery.md) vat de ople
 
 Stand: 8 november 2026. Dit document vergelijkt de oorspronkelijke opdracht van de eigenaar (lokaal opdrachtbestand, niet gepubliceerd), het goedgekeurde uitvoeringsplan en de huidige implementatie met daadwerkelijk beschikbaar bewijs. **De volledige productacceptatie is nog niet behaald.** De implementatie bevat echte lokale transports en native adapters, maar geen gekwalificeerde hoofdprovider of hoofdstem. Een technische test, code-inspectie of screenshot vervangt geen echte gesprekssessie.
 
+Aanvullende testcorrectie: de volledige CI op `ce2a838f` gaf één bestaande
+Swift Testing-race in de PR-run (1872 totaal, 1861 geslaagd, één failure,
+tien skips), terwijl de onafhankelijke branch-run op dezelfde commit slaagde.
+Alle achttien verplichte klassen en twaalf kritieke cases slaagden in beide.
+De betrokken rollover-/audiobudgettest is deterministisch gereproduceerd en
+gecorrigeerd met echte voortgangsmijlpalen, zonder productiewijziging of ruimere
+budgetten. Volledige SwiftPM- en native Kit-validatie slagen; zie
+[het exacte bewijs](translation-core-test-synchronization-evidence.json).
+De actuele PR-head wordt afzonderlijk door de volledige CI en gate beoordeeld.
+
 De aanvullingen van de eigenaar blijven leidend: lokale modellen als hoofdroute; evaluatievolgorde LFM3-Omni direct → dezelfde Omni in twee passes → expliciet gekozen alternatief; Apple uitsluitend een handmatige TTS-optie; taalondersteuning per taak; menselijke beoordeling van natuurlijkheid, prosodie en emotionele intentie; geen universele 16-GB-beperking.
 
 ## Vervolgimplementatie: onafhankelijke modellen en eigen updates

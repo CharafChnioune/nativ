@@ -748,40 +748,69 @@ actor SendingBackend: TranslationBackend {
   _ = try await core.prepare(configuration: config)
   let stream = try await core.start()
   defer { withExtendedLifetime(stream) {} }
-  let snapshot = await core.snapshot()
-  let first = TranslationTurnID()
-  try await core.accept(frame: frame(snapshot, turn: first))
-  try await core.commit(turnID: first)
-  await backend.emit(
-    .init(
-      sessionID: snapshot.sessionID, turnID: first, generation: snapshot.generation,
-      payload: .audio(
-        .init(
-          bytes: Data(repeating: 0, count: 57_600),
-          format: .init(sampleRate: 16000, channels: 1, encoding: .signedInt16LittleEndian),
-          sequence: 0))))
-  await backend.emit(
-    .init(
-      sessionID: snapshot.sessionID, turnID: first, generation: snapshot.generation,
-      payload: .turnCompleted))
-  await settle()
-  #expect(budget.reservedSeconds == 1.8)
-  let next = await core.snapshot()
-  let second = TranslationTurnID()
-  try await core.accept(frame: frame(next, turn: second, sequence: 1))
-  try await core.commit(turnID: second)
-  await backend.emit(
-    .init(
-      sessionID: next.sessionID, turnID: second, generation: next.generation,
-      payload: .audio(
-        .init(
-          bytes: Data(repeating: 0, count: 12_800),
-          format: .init(sampleRate: 16000, channels: 1, encoding: .signedInt16LittleEndian),
-          sequence: 0))))
-  await settle()
-  #expect(await core.snapshot().lastFailure?.code == .consumerOverload)
-  #expect(budget.reservedSeconds <= 2)
+  do {
+    let snapshot = await core.snapshot()
+    let first = TranslationTurnID()
+    try await core.accept(frame: frame(snapshot, turn: first))
+    try await core.commit(turnID: first)
+    await backend.holdStop()
+    await backend.emit(
+      .init(
+        sessionID: snapshot.sessionID, turnID: first, generation: snapshot.generation,
+        payload: .audio(
+          .init(
+            bytes: Data(repeating: 0, count: 57_600),
+            format: .init(sampleRate: 16000, channels: 1, encoding: .signedInt16LittleEndian),
+            sequence: 0))))
+    try #require(await waitForCoreMilestone { budget.reservedSeconds == 1.8 })
+    await backend.emit(
+      .init(
+        sessionID: snapshot.sessionID, turnID: first, generation: snapshot.generation,
+        payload: .turnCompleted))
+    try #require(await waitForCoreMilestone { await backend.isHoldingStop() })
+    #expect(budget.reservedSeconds == 1.8)
+    let next = await core.snapshot()
+    let second = TranslationTurnID()
+    try await core.accept(frame: frame(next, turn: second, sequence: 1))
+    try await core.commit(turnID: second)
+    #expect(await backend.commits == [first])
+    // A committed waiting turn has not reached the backend while rollover is
+    // stopping it. Only emit provider audio once restart and promotion finish.
+    await backend.releaseStop()
+    try #require(await backend.waitForCommitCount(2))
+    #expect(await backend.starts == 2)
+    #expect(budget.reservedSeconds == 1.8)
+    await backend.emit(
+      .init(
+        sessionID: next.sessionID, turnID: second, generation: next.generation,
+        payload: .audio(
+          .init(
+            bytes: Data(repeating: 0, count: 12_800),
+            format: .init(sampleRate: 16000, channels: 1, encoding: .signedInt16LittleEndian),
+            sequence: 0))))
+    try #require(await waitForCoreMilestone {
+      await core.snapshot().lastFailure?.code == .consumerOverload
+    })
+    let failed = await core.snapshot()
+    #expect(failed.lastFailure?.code == .consumerOverload)
+    #expect(failed.state == .paused)
+    #expect(budget.reservedSeconds <= 2)
+  } catch {
+    await backend.releaseStop()
+    await core.stop()
+    throw error
+  }
+  await backend.releaseStop()
   await core.stop()
+}
+
+private func waitForCoreMilestone(_ condition: @Sendable () async -> Bool) async -> Bool {
+  let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+  repeat {
+    if await condition() { return true }
+    await Task.yield()
+  } while ContinuousClock.now < deadline
+  return await condition()
 }
 
 @Test func completeFailedInputCanBeRetriedOnceWithFreshContext() async throws {

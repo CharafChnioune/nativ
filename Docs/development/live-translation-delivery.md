@@ -42,6 +42,14 @@ actieve capture of chatserver en met experimentele toestemming uitgeschakeld.
   **172 totaal, 171 geslaagd, één expliciete opt-in skip**. De CI-gate vereist
   achttien klassen en twaalf kritieke cases.
 
+Een aanvullende CI-run op `ce2a838f` onthulde een timingrace in de bestaande
+test voor audiobudget na contextrollover: de PR-run faalde één case terwijl
+de onafhankelijke branch-run op dezelfde commit slaagde. De test wacht nu op
+werkelijke backend-/sessiemijlpalen en forceert de rollover-tussentoestand.
+De productiecode en budgetgrenzen zijn niet gewijzigd. De deterministische
+RED/GREEN-proef en volledige SwiftPM- en native Kit-tests zijn vastgelegd in
+[het synchronisatiebewijs](translation-core-test-synchronization-evidence.json).
+
 De cascadeproef is op een M5 met 16 GiB uitgevoerd. Sequentiële en resident-modus
 zijn expliciete keuzes; geen vaste limiet sluit 16- of 128-GB-Macs uit. Een
 128-GB-Mac en andere modelcombinaties zijn niet doorgemeten. Per taak en concrete

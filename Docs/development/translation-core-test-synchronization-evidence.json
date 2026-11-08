@@ -1,0 +1,115 @@
+{
+  "schema": 1,
+  "date": "2026-11-08",
+  "scope": "Test synchronization only. TranslationSession, buffering limits, providers and signed FinalReviewed app are unchanged.",
+  "base_commit": "ce2a838f3c5a5c3a72856a1870fd8d7b669ddef9",
+  "production_app_source": "029258629ea8f91ee843734bc2e2bb776274e48b",
+  "test_file": "Tests/NativTranslationKitTests/TranslationCoreTests.swift",
+  "tested_source_sha256": "b9499d4e3f0cf61a4acebe833668717d17c344d761c41f115552087051f2d5b7",
+  "production_source_sha256": "18c7c13bbcd9d40ba9970a28e7b6845cf89afaa15ef95ed4a5d2bcc2deb2a240",
+  "observed_ci": {
+    "pull_request": {
+      "run": 42510160841,
+      "native_job": 128821318361,
+      "gate_job": 128827432602,
+      "result": "failure",
+      "total": 1872,
+      "passed": 1861,
+      "failed": 1,
+      "skipped": 10,
+      "failure": "oldQueuedAudioStillCountsAfterContextRollover(): lastFailure?.code was not consumerOverload",
+      "required_classes_passed": 18,
+      "required_cases_passed": 12,
+      "artifact_id": 13630280218,
+      "artifact_sha256": "0d4f8859acae0e3c322ad983c7cd6d57925ea97f7853d6b70f65edbcfeec6ed3",
+      "artifact_digest_verified": true
+    },
+    "independent_push": {
+      "run": 42510156532,
+      "native_job": 128821299796,
+      "gate_job": 128828237390,
+      "result": "success",
+      "same_unchanged_test": "Passed in 0.001 seconds",
+      "evidence": "Completed native job log and completed job/gate status; no duplicate artifact downloaded."
+    }
+  },
+  "cause": {
+    "old_test": "100 Task.yield calls were treated as proof that context rollover had completed. They are not an asynchronous lifecycle barrier.",
+    "boundary": "While backend.stop is suspended, core.commit can commit a waiting source turn before restart/promote sends it to the backend. ControlledBackend.emit uses an optional continuation which is nil during stop, so premature fixture output is dropped.",
+    "production_and_test_unchanged_between_previous_green_c249_and_ce2": true
+  },
+  "deterministic_red": {
+    "no_production_changes": true,
+    "interleaving": "Hold stop after the first 1.8 seconds of output is admitted. Commit the second source turn while stop is held, emit its 0.4-second response before restart, then release stop and await the second commit.",
+    "result": "Expected failure: consumerOverload never arrives; both the bounded failure milestone and the original failure assertion fail. All admission/stop/start/commit/budget conditions pass.",
+    "elapsed_test_seconds": 2.001,
+    "test_count": 1,
+    "issues": 2,
+    "probe_source": "build/validation/context-rollover-red-test.swift",
+    "probe_sha256": "14568b9709834738b93cbaae3b97166c6ee49e6a98f42255736d001e283b4cd5"
+  },
+  "fix": {
+    "milestones": [
+      "First audio admission reserves exactly 1.8 seconds.",
+      "Backend stop is actually held; second input remains queued behind it.",
+      "After release, await the second backend commit and verify exactly two starts.",
+      "Verify the original 1.8-second reservation survives rollover before emitting the second response.",
+      "Await the real consumerOverload failure, then verify paused state and the unchanged two-second budget."
+    ],
+    "bounded_wait_seconds": 2,
+    "failure_cleanup": "Release held backend stop and await core.stop on both success and throwing failure paths.",
+    "no_skips_or_budget_relaxation": true
+  },
+  "green": {
+    "targeted_swiftpm": {
+      "passed": 1,
+      "failed": 0,
+      "test_seconds": 0.001
+    },
+    "full_swiftpm": {
+      "xctest_passed": 51,
+      "swift_testing_passed": 34,
+      "failed": 0,
+      "command": "swift test --parallel"
+    },
+    "native_kit": {
+      "total": 85,
+      "passed": 85,
+      "failed": 0,
+      "skipped": 0,
+      "wall_seconds": 20.931,
+      "scheme": "NativTranslationKitValidation",
+      "scheme_location": "Temporary validation snapshot only; the repository project configuration is unchanged.",
+      "dependency_targets": [
+        "NativTranslationKit",
+        "NativTranslationKitTests"
+      ],
+      "result_bundle": "/Users/charaf/Library/Developer/NativLiveTranslationValidation/20261108-1352/build/ContextRolloverNativeKit.xcresult",
+      "app_target_built": false
+    }
+  },
+  "signed_preview_unchanged": {
+    "path": "/Users/charaf/Library/Developer/NativLiveTranslationPreview/FinalReviewed/Nativ.app",
+    "source_commit": "029258629ea8f91ee843734bc2e2bb776274e48b",
+    "main_executable_sha256": "65de372d26a03ff2b864d2b7cee857353d732ada3d0be5f15b24b1ce101d7a3a"
+  },
+  "logs_sha256": {
+    "build/validation/context-rollover-deterministic-red.log": "5efe4c4c7d088c9afab9a402b52682be53e8029d641c867ae16b079fb1e31554",
+    "build/validation/context-rollover-deterministic-green-compiled.log": "5f91c80bb14912734f9df23ead8196fb672c65c70bd256c252825bd0ccc6fe7b",
+    "build/validation/context-rollover-full-swiftpm.log": "e2dea1fc24a9e4286936257f2c2b27889a5124b2d49d24f088e45ee9c31747d4",
+    "build/validation/context-rollover-native-kit.log": "6bdfcb604a5da608841230870d2678f737adaa96535905e21d876e5a44ce9148",
+    "build/validation/ci-ce2a838f-pr-failure-excerpt.log": "00859b270d48af85aa772c647fd7472869ca477ec7eefe6cb96ed3314b7db141",
+    "build/validation/ci-ce2a838f-push-comparison-excerpt.log": "2450ff9e7406163d200fa968cbd285a8125bbd9728b2f0826a4b4bc34f993e89"
+  },
+  "limitations": "The failed ce2 PR run remains failed history; the independent green push does not erase it. The corrected test requires a fresh exact-HEAD CI run after review. No model inference or further voice qualification took place.",
+  "independent_source_review": {
+    "result": "No blockers; contract preserved and strengthened, no masked budget failure.",
+    "verified_properties": [
+      "1.8-second reservation survives held stop and real rollover",
+      "second output follows actual backend commit",
+      "extra 0.4 seconds must trigger consumerOverload and paused state",
+      "held stop is released before cleanup on throwing paths"
+    ],
+    "scope": "Source-only review; reviewer did not rerun tests."
+  }
+}
