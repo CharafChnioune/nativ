@@ -34,6 +34,16 @@ actor ControlledBackend: TranslationBackend {
     frames.append(frame)
   }
   func commit(turnID: TranslationTurnID) async throws { commits.append(turnID) }
+  // A fixed number of yields cannot guarantee that the core's asynchronous
+  // stop/start/send/commit chain has completed. Await the actual milestone.
+  func waitForCommitCount(_ count: Int) async -> Bool {
+    let deadline = ContinuousClock.now.advanced(by: .seconds(2))
+    repeat {
+      if commits.count >= count { return true }
+      await Task.yield()
+    } while ContinuousClock.now < deadline
+    return commits.count >= count
+  }
   func cancel(turnID: TranslationTurnID) async {}
   func stop() async {
     stopped = true
@@ -83,7 +93,7 @@ func settle() async { for _ in 0..<100 { await Task.yield() } }
     .init(
       sessionID: s.sessionID, turnID: first, generation: s.generation, payload: .turnCompleted
     ))
-  await settle()
+  #expect(await backend.waitForCommitCount(2))
   #expect(await backend.commits == [first, second])
   await core.stop()
 }
