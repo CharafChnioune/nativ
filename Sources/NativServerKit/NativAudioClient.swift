@@ -35,6 +35,7 @@ public struct NativAudioTranscription: Decodable, Equatable, Sendable {
 
 public enum NativAudioSpeechError: Error, LocalizedError {
     case invalidResponse
+    case localSpeechIsolationUnavailable
     case httpStatus(Int, String)
     case emptyAudio
 
@@ -42,6 +43,8 @@ public enum NativAudioSpeechError: Error, LocalizedError {
         switch self {
         case .invalidResponse:
             "Invalid speech response"
+        case .localSpeechIsolationUnavailable:
+            "This local runtime does not enforce prepared speech assets. Restart the updated Nativ runtime before using translation speech."
         case .httpStatus(let statusCode, let body):
             NativServerErrorMessage.endpointFailure(
                 endpoint: "Speech endpoint",
@@ -60,22 +63,26 @@ public final class NativAudioClient: Sendable {
     private let session: URLSession
     private let timeout: TimeInterval
     private let decoder = JSONDecoder()
+    private let localOnly: Bool
 
     public init(
         baseURL: URL,
         apiKey: String? = nil,
         timeout: TimeInterval = 1_800,
-        sessionConfiguration: URLSessionConfiguration = .ephemeral
+        sessionConfiguration: URLSessionConfiguration = .ephemeral,
+        localOnly: Bool = false
     ) {
         self.baseURL = baseURL
         self.apiKey = apiKey
         self.timeout = timeout
+        self.localOnly = localOnly
 
         let configuration = sessionConfiguration
         configuration.timeoutIntervalForRequest = timeout
         configuration.timeoutIntervalForResource = timeout
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        session = URLSession(configuration: configuration)
+        if localOnly { NativLoopbackEndpoint.configure(configuration) }
+        session = URLSession(configuration: configuration, delegate: localOnly ? NativLocalOnlyRedirectDelegate() : nil, delegateQueue: nil)
     }
 
     deinit {
@@ -97,12 +104,15 @@ public final class NativAudioClient: Sendable {
     public func transcribe(
         audioData: Data,
         fileName: String,
-        model: String
+        model: String,
+        language: String? = nil
     ) async throws -> NativAudioTranscription {
+        if localOnly { try NativLoopbackEndpoint.validate(baseURL) }
         let request = makeURLRequest(
             audioData: audioData,
             fileName: fileName,
-            model: model
+            model: model,
+            language: language
         )
         let (data, response) = try await session.data(for: request)
 
@@ -123,8 +133,9 @@ public final class NativAudioClient: Sendable {
         return transcription
     }
 
-    public func synthesize(text: String, model: String) async throws -> Data {
-        let request = try makeSpeechURLRequest(text: text, model: model)
+    public func synthesize(text: String, model: String, language: String? = nil, referenceAudioPath: String? = nil) async throws -> Data {
+        if localOnly { try await verifyLocalSpeechIsolation() }
+        let request = try makeSpeechURLRequest(text: text, model: model, language: language, referenceAudioPath: referenceAudioPath)
         let (data, response) = try await session.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw NativAudioSpeechError.invalidResponse
@@ -141,7 +152,24 @@ public final class NativAudioClient: Sendable {
         return data
     }
 
-    func makeSpeechURLRequest(text: String, model: String) throws -> URLRequest {
+    /// This read-only preflight sends no speech and fails closed for older runtimes.
+    public func verifyLocalSpeechIsolation() async throws {
+        try NativLoopbackEndpoint.validate(baseURL)
+        var request = URLRequest(url: baseURL.appendingPathComponent("nativ/translation-capabilities"))
+        request.timeoutInterval = min(timeout, 10)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        NativServerAuthorization.authorize(&request, apiKey: apiKey)
+        let (data, response) = try await session.data(for: request)
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200,
+              let capabilities = try? JSONDecoder().decode(LocalSpeechCapabilities.self, from: data),
+              capabilities.local_speech_assets_policy == 1 else {
+            throw NativAudioSpeechError.localSpeechIsolationUnavailable
+        }
+    }
+    private struct LocalSpeechCapabilities: Decodable { let local_speech_assets_policy: Int }
+
+    func makeSpeechURLRequest(text: String, model: String, language: String? = nil, referenceAudioPath: String? = nil) throws -> URLRequest {
+        if localOnly { try NativLoopbackEndpoint.validate(baseURL) }
         var request = URLRequest(url: baseURL.appendingPathComponent("v1/audio/speech"))
         request.httpMethod = "POST"
         request.timeoutInterval = timeout
@@ -149,13 +177,16 @@ public final class NativAudioClient: Sendable {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("audio/wav", forHTTPHeaderField: "Accept")
         NativServerAuthorization.authorize(&request, apiKey: apiKey)
-        request.httpBody = try JSONEncoder().encode(SpeechRequest(model: model, input: text))
+        request.httpBody = try JSONEncoder().encode(SpeechRequest(model: model, input: text, lang_code: language, ref_audio: referenceAudioPath, nativ_local_only: localOnly ? true : nil))
         return request
     }
 
     private struct SpeechRequest: Encodable {
         let model: String
         let input: String
+        let lang_code: String?
+        let ref_audio: String?
+        let nativ_local_only: Bool?
         let response_format = "wav"
         let stream = false
     }
@@ -164,6 +195,7 @@ public final class NativAudioClient: Sendable {
         audioData: Data,
         fileName: String,
         model: String,
+        language: String? = nil,
         boundary: String = "NativBoundary-\(UUID().uuidString)"
     ) -> URLRequest {
         var request = URLRequest(
@@ -182,6 +214,7 @@ public final class NativAudioClient: Sendable {
             audioData: audioData,
             fileName: fileName,
             model: model,
+            language: language,
             boundary: boundary
         )
         return request
@@ -191,12 +224,18 @@ public final class NativAudioClient: Sendable {
         audioData: Data,
         fileName: String,
         model: String,
+        language: String?,
         boundary: String
     ) -> Data {
         var body = Data()
         body.appendUTF8("--\(boundary)\r\n")
         body.appendUTF8("Content-Disposition: form-data; name=\"model\"\r\n\r\n")
         body.appendUTF8("\(model)\r\n")
+        if let language {
+            let safeLanguage = language.filter { $0.isASCII && ($0.isLetter || $0 == "-") }
+            body.appendUTF8("--\(boundary)\r\nContent-Disposition: form-data; name=\"language\"\r\n\r\n\(safeLanguage)\r\n")
+            body.appendUTF8("--\(boundary)\r\nContent-Disposition: form-data; name=\"task\"\r\n\r\ntranscribe\r\n")
+        }
         body.appendUTF8("--\(boundary)\r\n")
         body.appendUTF8("Content-Disposition: form-data; name=\"response_format\"\r\n\r\n")
         body.appendUTF8("json\r\n")

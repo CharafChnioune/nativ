@@ -1,0 +1,146 @@
+{
+  "gemma-4-e4b-it-4bit": {
+    "repository": "mlx-community/gemma-4-e4b-it-4bit",
+    "revision": "475b9088d29754a3379866cf5aeb6b41acd313c2",
+    "license": "gemma",
+    "artifacts": [
+      {
+        "filename": ".gitattributes",
+        "size": 1570,
+        "sha256": "34448b82c17d60fec9b65b1f093c115ddbaadc04beb1b0140b6bfed2e012a930"
+      },
+      {
+        "filename": "README.md",
+        "size": 593,
+        "sha256": "8e9717df49219943b8992eeccecd8050535318d34fffbbaeaac924ed01f27155"
+      },
+      {
+        "filename": "chat_template.jinja",
+        "size": 17336,
+        "sha256": "2f1b4d75d067bae3fe44e676721c7f077d243bc007156cb9c2f8b5836613d082"
+      },
+      {
+        "filename": "config.json",
+        "size": 6628,
+        "sha256": "780ccb3a514a5f1ced161d383f948fc22eca9b84b752ca19494f625bd9bad7a6"
+      },
+      {
+        "filename": "generation_config.json",
+        "size": 208,
+        "sha256": "d4226bbe3117d2d253ba4609720ba82c6c4ce4627a9a6ae05387c78983ac03de"
+      },
+      {
+        "filename": "model.safetensors",
+        "size": 5146800534,
+        "sha256": "932b8271fc3fe65adcc78b96c10c6268bbfb13e8f67d1358727c0d6ee97e1eff"
+      },
+      {
+        "filename": "model.safetensors.index.json",
+        "size": 240961,
+        "sha256": "f8accac59ee7efe87e0c298c854610b262c3cadd477407503147c71209ff0093"
+      },
+      {
+        "filename": "processor_config.json",
+        "size": 1316,
+        "sha256": "de3e580aebdc98272d4c4547daffe6525fcbae18a83a0e0bcf0d7444d4ee6f37"
+      },
+      {
+        "filename": "tokenizer.json",
+        "size": 32169626,
+        "sha256": "cc8d3a0ce36466ccc1278bf987df5f71db1719b9ca6b4118264f45cb627bfe0f"
+      },
+      {
+        "filename": "tokenizer_config.json",
+        "size": 2740,
+        "sha256": "080d9e1aff284e2f6043889cd05367966f7c7b80e025fbc0b06745e218158656"
+      }
+    ],
+    "qualification": "experimental-unqualified"
+  },
+  "whisper-large-v3-turbo": {
+    "repository": "mlx-community/whisper-large-v3-turbo",
+    "revision": "a4aaeec0636e6fef84abdcbe3544cb2bf7e9f6fb",
+    "license": null,
+    "artifacts": [
+      {
+        "filename": ".gitattributes",
+        "size": 1519,
+        "sha256": "11ad7efa24975ee4b0c3c3a38ed18737f0658a5f75a0a96787b576a78a023361"
+      },
+      {
+        "filename": "README.md",
+        "size": 359,
+        "sha256": "78f2d3dc65072211d957fc1b646c2d96e8e8f96dd45ceb2ac5f2643d0c5c05da"
+      },
+      {
+        "filename": "config.json",
+        "size": 268,
+        "sha256": "b34fc29e4e11e0a25e812775dd67f4dd16fc2c8eb43d28ae25ff7d660ecb6379"
+      },
+      {
+        "filename": "weights.safetensors",
+        "size": 1613977612,
+        "sha256": "951ed3fc1203e6a62467abb2144a96ce7eafca8fa77e3704fdb8635ff3e7f8a6"
+      }
+    ],
+    "qualification": "experimental-unqualified"
+  },
+  "gemma-4-e2b-it-4bit": {
+    "repository": "mlx-community/gemma-4-e2b-it-4bit",
+    "revision": "238767527555cb75a05732a84dff5d6ba0dd6809",
+    "license": "gemma",
+    "artifacts": [
+      {
+        "filename": ".gitattributes",
+        "size": 1570,
+        "sha256": "34448b82c17d60fec9b65b1f093c115ddbaadc04beb1b0140b6bfed2e012a930"
+      },
+      {
+        "filename": "README.md",
+        "size": 593,
+        "sha256": "9bd9184deee34e15f680922484005dec022a444239b81cc3fc3b226fc9de7a05"
+      },
+      {
+        "filename": "chat_template.jinja",
+        "size": 17336,
+        "sha256": "2f1b4d75d067bae3fe44e676721c7f077d243bc007156cb9c2f8b5836613d082"
+      },
+      {
+        "filename": "config.json",
+        "size": 6395,
+        "sha256": "6397cb6eca41b911d1dcab74e17941351057bd759284052a2331918ff6f9246c"
+      },
+      {
+        "filename": "generation_config.json",
+        "size": 208,
+        "sha256": "d4226bbe3117d2d253ba4609720ba82c6c4ce4627a9a6ae05387c78983ac03de"
+      },
+      {
+        "filename": "model.safetensors",
+        "size": 3550670554,
+        "sha256": "038e39a37a7667373d2c3991375446b10c96ae1d717a68674870343db376b76e"
+      },
+      {
+        "filename": "model.safetensors.index.json",
+        "size": 218323,
+        "sha256": "edb157dbf495e23f37377af4a628a9ad13c4ee7937f93ccb36ec9e9a19940f16"
+      },
+      {
+        "filename": "processor_config.json",
+        "size": 1316,
+        "sha256": "de3e580aebdc98272d4c4547daffe6525fcbae18a83a0e0bcf0d7444d4ee6f37"
+      },
+      {
+        "filename": "tokenizer.json",
+        "size": 32169626,
+        "sha256": "cc8d3a0ce36466ccc1278bf987df5f71db1719b9ca6b4118264f45cb627bfe0f"
+      },
+      {
+        "filename": "tokenizer_config.json",
+        "size": 2740,
+        "sha256": "080d9e1aff284e2f6043889cd05367966f7c7b80e025fbc0b06745e218158656"
+      }
+    ],
+    "qualification": "explicit-smaller-experiment-unqualified"
+  }
+}

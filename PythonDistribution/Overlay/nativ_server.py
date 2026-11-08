@@ -34,6 +34,7 @@ import mlx_vlm.server as base
 import mlx_vlm.server.cli as base_cli
 import mlx_vlm.server.generation as base_generation
 import mlx_vlm.server.openai as base_openai
+from nativ_translation_local import install as install_translation_local_assets
 
 
 def safe_failure_code(error: BaseException | None = None, status: int | None = None) -> str:
@@ -264,7 +265,7 @@ def analytics_db_path() -> str:
         return os.path.expanduser(configured_path)
 
     return os.path.expanduser(
-        "~/Library/Application Support/Nativ/Analytics.sqlite3"
+        "~/Library/Application Support/io.github.charafchnioune.nativ/Analytics.sqlite3"
     )
 
 
@@ -1489,7 +1490,7 @@ def install_metrics_overlay() -> None:
             raise HTTPException(status_code=400, detail="A routine id is required.")
 
         directory = os.path.expanduser(
-            "~/Library/Application Support/Nativ/Routines/triggers"
+            "~/Library/Application Support/io.github.charafchnioune.nativ/Routines/triggers"
         )
         os.makedirs(directory, exist_ok=True)
         path = os.path.join(directory, f"{uuid.uuid4().hex}.json")
@@ -1516,6 +1517,7 @@ def main() -> None:
 
 
 install_model_load_progress()
+install_translation_local_assets(base)
 install_runtime_settings_overlay()
 install_metrics_overlay()
 
