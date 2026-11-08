@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "source_receipt_sha256": "dbaeb68bd84c7f5dd3a0566053a1d71603268de5d3d260b4697887b7fe98c516",
+  "scope": "Exact authorized build/cache and stale preview allowlist only; no Git mutations or tracked edits",
+  "started_at": "2026-11-08T20:03:43Z",
+  "completed_at": "2026-11-08T20:06:48Z",
+  "summary": {
+    "removed_count": 18,
+    "skipped_count": 0,
+    "all_removed_targets_absent": true,
+    "protected_app_hashes_unchanged": true,
+    "du_total_removed_kib": 23007492,
+    "available_bytes_delta_observed": 19287298048,
+    "free_bytes_delta_observed": 19287298048
+  },
+  "available_bytes_before": 42583420928,
+  "available_bytes_after": 61870718976,
+  "targets": [
+    {
+      "path": "${HOME}/Desktop/code/nativ/build/NativDevelopmentDerivedData",
+      "status": "removed"
+    },
+    {
+      "path": "${HOME}/Library/Developer/NativLiveTranslationValidation/20261108-1352/build/NativDevelopmentDerivedData",
+      "status": "removed"
+    },
+    {
+      "path": "${HOME}/Library/Developer/NativLiveTranslationPreview/CascadeReview",
+      "status": "removed"
+    },
+    {
+      "path": "${HOME}/Library/Developer/NativLiveTranslationPreview/CascadeFinal",
+      "status": "removed"
+    },
+    {
+      "path": "${HOME}/Library/Developer/NativLiveTranslationPreview/CascadeValidated",
+      "status": "removed"
+    },
+    {
+      "path": "${HOME}/Library/Developer/NativLiveTranslationPreview/CompletionValidated",
+      "status": "removed"
+    },
+    {
+      "path": "${HOME}/Library/Developer/NativLiveTranslationPreview/ValidatedLocation",
+      "status": "removed"
+    },
+    {
+      "path": "${HOME}/Library/Developer/NativLiveTranslationPreview/Nativ.app",
+      "status": "removed"
+    },
+    {
+      "path": "${HOME}/Desktop/code/nativ/.build",
+      "status": "removed"
+    },
+    {
+      "path": "${HOME}/Desktop/code/nativ/build/ForkUpdaterChecks/.build",
+      "status": "removed"
+    },
+    {
+      "path": "${HOME}/Desktop/code/nativ/build/translation-host-adapter/.build",
+      "status": "removed"
+    },
+    {
+      "path": "${HOME}/Desktop/code/nativ/build/TranslationStockVoiceChecks/.build",
+      "status": "removed"
+    },
+    {
+      "path": "${HOME}/Desktop/code/nativ/build/RuntimeHostChecks/.build",
+      "status": "removed"
+    },
+    {
+      "path": "${HOME}/Desktop/code/nativ/build/LFMKitChecks/.build",
+      "status": "removed"
+    },
+    {
+      "path": "${HOME}/Desktop/code/nativ/build/translation-client-check/.build",
+      "status": "removed"
+    },
+    {
+      "path": "${HOME}/Desktop/code/nativ/build/TranslationHostChecks/.build",
+      "status": "removed"
+    },
+    {
+      "path": "${HOME}/Desktop/code/nativ/build/TranslationDownloadAdmissionChecks/.build",
+      "status": "removed"
+    },
+    {
+      "path": "${HOME}/Desktop/code/nativ/build/TranslationHostGateChecks/.build",
+      "status": "removed"
+    }
+  ],
+  "protected_apps_verification": [
+    {
+      "path": "${HOME}/Library/Developer/NativLiveTranslationPreview/FinalReviewed/Nativ.app",
+      "tree_hash_unchanged": true,
+      "signature_result_unchanged": true,
+      "signature_before_exit": 0,
+      "signature_after_exit": 0
+    },
+    {
+      "path": "/Applications/Nativ.app",
+      "tree_hash_unchanged": true,
+      "signature_result_unchanged": true,
+      "signature_before_exit": 1,
+      "signature_after_exit": 1
+    }
+  ],
+  "interpretation": "Observed free-space delta, not summed directory sizes; APFS sharing and concurrent writes affect measurements. Model weights, original media, settings, Git, evidence archive and active FinalReviewed app preserved."
+}

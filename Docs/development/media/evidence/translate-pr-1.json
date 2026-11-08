@@ -1,0 +1,170 @@
+{
+  "head": "0e541dc3cb1190e208b6fe8e1f9735b30c6c4b56",
+  "base": "5cb79ed65659414774745c1331cce08397d16055",
+  "pr": "https://github.com/CharafChnioune/nativ/pull/1",
+  "complete": true,
+  "observed_at": "2026-11-08T19:34:31.654206+00:00",
+  "overall_result": "success",
+  "python": {
+    "total": 172,
+    "passed": 169,
+    "skipped": 3,
+    "failed": 0
+  },
+  "swift": {
+    "xctest_passed": 51,
+    "swift_testing_passed": 34,
+    "failed": 0,
+    "counts_overlap_native_target": true
+  },
+  "native": {
+    "summary": {
+      "totalTestCount": 1872,
+      "passedTests": 1862,
+      "failedTests": 0,
+      "skippedTests": 10,
+      "result": "Passed",
+      "startTime": 1794165391.451,
+      "finishTime": 1794166255.74
+    },
+    "required_classes": [
+      "AudioSessionCoordinatorTests",
+      "CascadedTranslationBackendTests",
+      "LiveTranslationIntegrationTests",
+      "ManagedTranslationCascadeResourcesTests",
+      "SoftwareUpdaterTests",
+      "TranslationAudioTests",
+      "TranslationAutomaticDirectionTests",
+      "TranslationCascadeRuntimeTests",
+      "TranslationContentGuardTests",
+      "TranslationDownloadReservationsTests",
+      "TranslationHostOperationGateTests",
+      "TranslationLocalTransportTests",
+      "TranslationModelStoreTests",
+      "TranslationResourceAssessmentTests",
+      "TranslationRuntimeTests",
+      "TranslationStageCatalogTests",
+      "TranslationStockVoicePreparationTests",
+      "TranslationWhisperPreparationTests"
+    ],
+    "required_cases_count": 12,
+    "optional_qualification_unrun": [
+      "TranslationCascadeInferenceTests.testExplicitOwnedHostCascadeSyntheticInference",
+      "TranslationRuntimeTests.testExplicitLocalRuntimeIntegration",
+      "TranslationStockVoicePreparationTests.testPinnedStockArtifactsInstallIdempotentlyAndRequireTheirLicense",
+      "TranslationWhisperPreparationTests.testPinnedArtifactsPrepareWithoutChangingSourceSnapshot"
+    ],
+    "corrected_rollover_case": [
+      {
+        "duration": "0,0029s",
+        "durationInSeconds": 0.0028901100158691406,
+        "name": "oldQueuedAudioStillCountsAfterContextRollover()",
+        "nodeIdentifier": "oldQueuedAudioStillCountsAfterContextRollover()",
+        "nodeIdentifierURL": "test://com.apple.xcode/Nativ/NativTranslationKitTests/oldQueuedAudioStillCountsAfterContextRollover()",
+        "nodeType": "Test Case",
+        "result": "Passed"
+      }
+    ],
+    "artifact_sha256": "b5addb0b77776d789c9c28bb08822e7f123296bdb56b6e991c43d1efd128e267",
+    "bytes": 110987766,
+    "gate_script_sha256": "667a00418cd6c9ab573106351be7cbe2bf78805ca597ea74872d5723a3dc2f48",
+    "skipped_cases": [
+      {
+        "suite": "AudioDiarizationTests",
+        "name": "testDiarizedTextOnlyModelWithRealServer()"
+      },
+      {
+        "suite": "AudioDiarizationTests",
+        "name": "testServerWithRealModel()"
+      },
+      {
+        "suite": "AudioSummaryReferenceTests",
+        "name": "testSavedMeetingSummaryWithLocalModel()"
+      },
+      {
+        "suite": "ChatCompactionTests",
+        "name": "testLiveCompactionAndReplay()"
+      },
+      {
+        "suite": "NativAudioClientTests",
+        "name": "testSpeakerEndpointsWithRealServer()"
+      },
+      {
+        "suite": "ParakeetTests",
+        "name": "testDefaultModelTranscribesSpeech()"
+      },
+      {
+        "suite": "TranslationCascadeInferenceTests",
+        "name": "testExplicitOwnedHostCascadeSyntheticInference()"
+      },
+      {
+        "suite": "TranslationRuntimeTests",
+        "name": "testExplicitLocalRuntimeIntegration()"
+      },
+      {
+        "suite": "TranslationStockVoicePreparationTests",
+        "name": "testPinnedStockArtifactsInstallIdempotentlyAndRequireTheirLicense()"
+      },
+      {
+        "suite": "TranslationWhisperPreparationTests",
+        "name": "testPinnedArtifactsPrepareWithoutChangingSourceSnapshot()"
+      }
+    ],
+    "logical_counts_not_parameterized_invocation_counts": true
+  },
+  "artifact": {
+    "id": 13631033208,
+    "name": "native-validation-0e541dc3cb1190e208b6fe8e1f9735b30c6c4b56-attempt-1",
+    "size_in_bytes": 110987766,
+    "url": "https://api.github.com/repos/CharafChnioune/nativ/actions/artifacts/13631033208",
+    "archive_download_url": "https://api.github.com/repos/CharafChnioune/nativ/actions/artifacts/13631033208/zip",
+    "expired": false,
+    "created_at": "2026-11-08T19:31:21Z",
+    "expires_at": "2027-02-06T19:01:35Z",
+    "updated_at": "2026-11-08T19:31:21Z",
+    "digest": "sha256:b5addb0b77776d789c9c28bb08822e7f123296bdb56b6e991c43d1efd128e267",
+    "workflow_run": {
+      "id": 42512899763,
+      "repository_id": 1449152125,
+      "head_repository_id": 1449152125,
+      "head_branch": "codex/live-translation",
+      "head_sha": "0e541dc3cb1190e208b6fe8e1f9735b30c6c4b56"
+    },
+    "local_zip": "build/validation/ci-0e541dc3-pr-native-artifact/artifact.zip",
+    "digest_verified": true,
+    "local_xcresult": "build/validation/ci-0e541dc3-pr-native-artifact/TranslationTests.xcresult"
+  },
+  "scope": "Both final exact-HEAD validation runs and always-required gates succeeded. PR native XCResult was downloaded, digest-verified and checked with the exact committed gate script. This does not promote skipped model/human qualification into a passing measurement. The earlier ce2 PR failure and deterministic test fix remain separate evidence.",
+  "local_evidence_sha256": {
+    "build/validation/ci-0e541dc3-pr-native-artifact/summary.json": "c0abfd9e65c2c5caf76be16aaac970a53c3250d9995f6a17550fb0a24918dfaf",
+    "build/validation/ci-0e541dc3-pr-native-artifact/tests.json": "6427a1eb552ffbf805868ae73e4730d629387098b0feb456669ade80fac1cab5",
+    "build/validation/ci-0e541dc3-pr-native-artifact/verified.json": "ab678ccce6341ee8891bba1677c3a293fc2d1c47658ea7122ae5caba21b83c94",
+    "build/validation/ci-0e541dc3-pr-native-excerpt.log": "8468605435b1417ce431fa4a1d929f89aaf17769baac491365408ad197e0d38d",
+    "build/validation/ci-0e541dc3-pr-gate.log": "f65b827d9e45d7ea9a9b20b1680800f33ea051ba074414477db8ec83660d4aa8",
+    "build/validation/ci-0e541dc3-push-native-excerpt.log": "5f3dd527aa45f2f1f369066390cddd071bc01388aabf62e7932109b2981d77c2",
+    "build/validation/ci-0e541dc3-push-gate.log": "32849c4fa7642b30c88883010c55a8d800a5fbe9afb18a21bec8e5b893208bdc",
+    "build/validation/ci-0e541dc3-job-128829607589.log": "66e98d05f1170020b89d2980188f170c4b7e9c4192936bf6964da487622582ff",
+    "build/validation/ci-0e541dc3-job-128829652995.log": "d9459a32da7b904ea94c84ea6a438237434de956182933c3bc7e7650acbb37f0",
+    "build/validation/ci-0e541dc3-job-128829653025.log": "ae22de6e56da31db8a82112ccc20d52e90bd5a757e472200b131e4ac7b008210"
+  },
+  "source_receipt_sha256": "0ed7fd6488096697661ef35bb678c564cfe65176341a6aab8cc0a64a55bdae73",
+  "normal_merge_commit": "e22f7b9333a4ff7437bd81879454f050cbb3c6b9",
+  "runs": [
+    {
+      "id": 42512899763,
+      "event": "pull_request",
+      "head_sha": "0e541dc3cb1190e208b6fe8e1f9735b30c6c4b56",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/CharafChnioune/nativ/actions/runs/42512899763"
+    },
+    {
+      "id": 42512895254,
+      "event": "push",
+      "head_sha": "0e541dc3cb1190e208b6fe8e1f9735b30c6c4b56",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/CharafChnioune/nativ/actions/runs/42512895254"
+    }
+  ]
+}

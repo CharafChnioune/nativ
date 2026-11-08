@@ -1,0 +1,709 @@
+# Nativ Video Generation Implementation Plan
+
+For agentic workers: use superpowers:subagent-driven-development or superpowers:executing-plans when available. Implement the tasks, review the real results and track progress with the checkboxes. This is an execution request, not a request to return another plan.
+
+Goal: Add a professional native Video workspace, text-to-video and image-to-video generation, a durable public Nativ Video API, and first-class generated-video artifacts to my existing Nativ fork, preserving Music, Live Translate and future upstream improvements.
+
+Architecture: Native Swift views, Chat tools and external API clients use one canonical generation service. That service owns durable jobs, immutable reference inputs, local workers, remote adapters and published outputs. Reuse compatible job, credential, compute, artifact and updater infrastructure already implemented for Music or Live Translate; do not create competing owners.
+
+Tech stack: Preserve the actual Nativ Swift/SwiftUI/AppKit/AVFoundation, NativServerKit, XcodeGen and managed Python/MLX architecture. Use a small native feature module and isolated, pinned inference runtimes. Keep the server responsive independently of model inference and video encoding.
+
+Spec: Sections 1-11 are the self-contained product and architecture specification. Sections 12-15 provide implementation tasks, acceptance criteria, handoff requirements and primary research references. Read this entire file before implementation.
+
+## Global constraints
+
+- Repository: CharafChnioune/nativ. Canonical upstream: Neywa-Labs/nativ, formerly Blaizzy/nativ.
+- Research date: 2026-11-08. Recheck current repository rules, commits, model availability and official API contracts before editing.
+- Preserve all existing user changes and earlier Music/Live Translate work. A previous plan is not proof that its code exists.
+- Default to a qualified local model; external execution requires an explicitly configured provider and an explicit request. No silent cloud fallback.
+- Existing English product copy remains consistent with Nativ. Communicate with me in Dutch. Use no emojis.
+- Do not infer generation capability from video understanding, an uploaded movie, a model name, an open pull request or a README feature list.
+- Do not install video dependencies into Nativ's existing inference environment unless a complete locked dependency set is proven compatible. Preserve chat, images, voice and music.
+- Do not publish a release, merge main, buy credits, enroll a paid account or run paid generation as an incidental installation/test step.
+
+## Review focus
+
+1. An input image deleted, rotated or replaced after submission must not change an accepted video job. Tasks 1, 2 and 6 own immutable-input, crop and provenance tests.
+2. Frames, FPS, dimensions and audio must produce the accepted clip, not a silently rounded duration, stretched image or drifting soundtrack. Tasks 1, 4 and 8 own capability and decoded-media checks.
+3. A lost connection or crash around a paid POST must not create another paid generation. Tasks 2, 5 and 9 own dispatch-intent, idempotency and recovery tests.
+4. UI windows, Chat, API clients and Artifacts must refer to the same job and original, with safe deletion and authenticated playback. Tasks 2, 3, 6 and 7 own ownership/reference/cache tests.
+5. An upstream or runtime update must not bypass resource admission, omit Python files, skip video tests or restore upstream binary feeds. Tasks 3, 9 and 10 own packaging, lifecycle and update gates.
+
+## 1. Baseline, authority and reconnaissance
+
+Work in a clean feature branch/worktree of my existing fork. Read applicable AGENTS.md and nested rules before touching the relevant files. Preserve uncommitted work. Do not create another fork, reset to the research snapshot, force-push main, rewrite inherited history or submit an upstream PR.
+
+The reverified fork and upstream main were both 5cb79ed65659414774745c1331cce08397d16055, with latest release v0.4.5 dated 2026-11-04. The complete 772-entry tree did not contain AGENTS.md, CLAUDE.md or CONTRIBUTING guidance files; repository Docs and the contributor workflow still matter. The inspected main has Chat and Images, not the previously planned Music/Live Translate implementations. This says nothing about later commits, other branches or local work, so inspect those at execution time.
+
+Read current README.md, Docs/, project.yml, Makefile, contributor/signing guidance and workflows. Read Docs/extending/extensions.md and kits.md: their rules apply if creating an extension or Kit. Video is initially a native workspace feature following Images. Do not represent it as an independently versioned extension without implementing the required target/manifest/SDK boundary. Do not invent a new public XPC video broker merely to add a workspace.
+
+Inspect whether Music, Live Translate, fork identity, update feeds, synchronization, durable jobs, a shared player or compute leases already exist. Record a concise integration map before editing: each reused service, its owner, data root/schema, public routes and the minimum change required for Video. If the earlier features do not exist, implement Video independently; do not make them prerequisites or pretend they are installed.
+
+Read current equivalents of:
+
+- Sources/Nativ/Features/Chat/ChatWorkspacePicker.swift and Chat tool/model-selection/message-media dispatch.
+- ChatToolRegistry.swift, ChatAttachmentKind.swift, ChatAttachmentValidator.swift, tool result types and Chat work-upload filters. Existing ChatImageAttachment naming is not proof that a generated MP4 can render or survive attachment validation.
+- Sources/Nativ/Features/ControlPanel/ControlPanelDetail.swift, ControlPanelDependencies.swift, sidebar/session/navigation/actions files.
+- Sources/Nativ/Features/ImageGeneration/ImageGenerationView.swift and ImageGenerationViewModel.swift.
+- Sources/NativServerKit/NativImageClient.swift, NativServerKit.swift, NativModelTypeRegistry.swift, ServerProcessEnvironment.swift and any existing generation clients.
+- Sources/Nativ/Features/Artifacts/Artifact.swift, ArtifactCatalog.swift, ArtifactPreview.swift, ArtifactStore.swift, ArtifactTrash.swift and index/search/recovery tests.
+- ChatSessionStore.swift and MediaAssetStore; image attachments and the actual lifetime of security-scoped user-selected files.
+- Sources/Nativ/Features/Shared/InferenceActivityCoordinator.swift, PersistedDataChangeHub.swift and shared audio/playback coordinators.
+- NativModel.swift, NativSettings.swift, active server connection/Keychain handling, model discovery and the MLX image resolver.
+- PythonDistribution/Overlay/nativ_server.py and any current nativ_music or shared generation packages.
+- PythonDistribution/Scripts/build_mlx_vlm_server.py, framework-resource builders, capability manifest generation and current runtime requirements/locks.
+- project.yml, actual test membership/CI selectors, Developer endpoint documentation, release/signing/updater scripts and both stable/preview appcasts.
+
+Inspect the actual packaged dependencies rather than equating a lower-bound requirements file with a particular Git commit. Enumerate registered routes before and after installation. Record the fork/upstream SHAs, exact server dependencies, authentication contract and any video-support mismatch between documentation and code.
+
+Separately inspected mlx-vlm a54f1a0d86fa45c466c00d819ac6ac5ba9d61ac4 already exposes a real Python video-generation API for MiniMax-H3 in mlx_vlm/generate/video_generation.py and models/minimax_h3/. It has no corresponding generation HTTP routes at that pin. Reuse the public loader/request/result interface for the optional H3 adapter instead of implementing H3 mathematics. Existing video-input helpers in the chat server are for understanding video, not generation. H3's resource and license limits in section 4 prevent treating this code presence as a general Mac default.
+
+## 2. Product behavior and visual integration
+
+### 2.1 Required first release
+
+Add Video beside the existing workspaces. Preserve Music when present. Users can generate a short video from text, animate a chosen still image using a compatible model, optionally request native generated audio where supported, observe progress, cancel, play/seek, export and revisit previous results.
+
+Use an integrated model/runtime setup flow. Opening Video must not download weights, allocate large GPU memory or start a paid request. Show exact download components/sizes, sufficient free-space checks, readiness, cancel/resume installation and repair. A local profile is selectable as supported only after its exact runtime/checkpoints have passed qualification on a documented Mac class.
+
+The composer contains prompt, operation, model/deployment, optional first frame, conditional last frame, supported output preset and audio mode. Advanced settings are collapsed. Do not expose a control simply because a CLI accepts a similarly named option. Validate the complete parameter combination before queueing and show unsupported choices as unavailable with a useful reason.
+
+Use explicit audio modes: silent or native_generated, plus an exact capability declaration for models with fixed behavior. Do not add a music track, TTS or Foley behind the user's back. A video with an absent audio track is not an audio-generation success. If silent output requires stripping a natively generated soundtrack, state that behavior and its generation cost; store it as an explicit derivative and preserve provenance.
+
+Duration, resolution/aspect and frame rate are dependent controls. Offer curated tested presets. For discrete frame models, expose the effective frame count and approximate playback duration before submission. Never independently round width, height, duration and FPS and pretend the user received exactly the original request. Persist requested and effective values.
+
+Allow a generated image in Images or an image artifact to open the Video composer through a deliberate Animate action. Do not generate immediately. Import a stable snapshot of the selected image into the canonical video input store when the user submits. If the selected provider is external, clearly identify that the reference will be sent to that provider.
+
+### 2.2 Native presentation and animation
+
+Reuse Nativ's current composer, fonts, spacing, card surfaces, menus, popovers, empty states and workspace transitions. Follow Images as the visual reference, adapting the result layout for landscape and portrait media. Do not embed a provider website, Gradio page or unrelated web frontend.
+
+Represent setup, download, queued, recovery hold, waiting for compute/memory, preparing, generating, encoding/importing, completed, cancellation requested, cancelled, interrupted, uncertain remote outcome and actionable failure distinctly. Use real stage/elapsed/queue information. A denoising step percentage is scoped to that stage; encoding and download can follow. Do not fabricate an overall ETA or percentage.
+
+Use a restrained animated progress treatment. Show a real poster/preview only when actual media exists, labelled Preview if it is not final. Progress events, latent previews, frame-by-frame decoding and a progressively written MP4 are not automatically playable video streaming. Enable preview playback only if the runtime, container and client truly support it and it is tested.
+
+Result cards include a poster, title, model/provider and Local/Remote label, actual duration/resolution, audio indicator, play/pause, seek, time, volume/mute, full-screen, generation details, Regenerate and Export. Keep playback deliberate: no autoplay after generation, reopening a session, receiving an API result or hovering over a grid item.
+
+Use app-scoped playback coordination so Music and Video do not unexpectedly play simultaneously across windows. Keep drafts and selection per window. Only visible actively played video should decode continuously. Extract bounded posters/filmstrip thumbnails off MainActor and cache them; release players, observers and buffers as views leave active use. Respect Reduce Motion/Transparency, keyboard control, VoiceOver, contrast and narrow-window layouts.
+
+Changing workspace or closing one control-panel window must not cancel a submitted job. Reopening attaches to the same durable job. Explain whether the selected canonical server continues running when the app quits; do not claim the local app has an independent daemon unless one exists and is intentionally supported.
+
+### 2.3 Chat and second-stage operations
+
+Add a generate_video Chat tool following the current image-tool approval/access-level and model-selection flow. It submits the same job schema and returns a stable job reference immediately. Completion updates the existing result card; it does not send another generation. Release the Chat inference lease before waiting for a local video worker that needs it. Model-generated arguments cannot choose arbitrary URLs, paths, credentials or a paid fallback. Live Translate interpreter sessions remain tool-free.
+
+Keep seams for audio-to-video, video extension, retake/inpaint, motion/control inputs, multiple-reference consistency, LoRAs and upscaling. Ship each only when its exact checkpoint/runtime and end-to-end path are implemented. The first release is T2V, I2V and supported native audio; it is not a full timeline editor. A Music-to-video workflow is a later explicit operation, not automatic soundtrack synthesis or a pretext to change Music's storage contract.
+
+## 3. Shared architecture and ownership
+
+### 3.1 Reuse without a broad rewrite
+
+If the earlier Music feature already has a canonical generation service, extend its narrow reusable contracts for job identity, events, idempotency, assets, references, process lifecycle and compute admission. Add a Video facade/provider kind while preserving existing Music routes and stored IDs. Do not create another scheduler or garbage collector for the same storage root, and do not migrate Music files merely to make directory names symmetrical.
+
+If no such service exists, implement PythonDistribution/Overlay/nativ_video/ with focused modules: contracts.py, routes.py, service.py, repository.py, catalog.py, inputs.py, assets.py, media.py, runtime.py, resources.py and providers/. Keep the interfaces below compatible with later sharing, without first building an unused framework. The baseline audit chooses one concrete mapping and records it in Docs/features/video.md; use it consistently.
+
+Canonical invariants apply in either case: Python owns durable video jobs, accepted input snapshots, completed originals, reference reservations and trash state. Native Swift is a client with a rebuildable projection/cache. Provider adapters never write a public success state directly; the service validates and commits their results.
+
+Add native files under Sources/Nativ/Features/VideoGeneration/. Put wire DTOs and NativVideoClient in NativServerKit. Mount a narrow router/lifecycle hook in nativ_server.py without replacing unrelated startup/shutdown handlers. Importing routes, listing models and requesting health must not import a heavy model or require optional video packages.
+
+### 3.2 Store and server identity
+
+Use the active server URL and credential snapshot, not pending edits in settings. Support the selected local or remote Nativ server as the canonical service. The location of that service and the execution location of a model are separate concepts.
+
+Every canonical store has a persistent random store_id returned by the info endpoint. Namespace native session selections, job references, cache entries and media links by store_id plus entity ID. Switching servers must not mutate or display data from another store under a coincidentally identical UUID.
+
+Enforce one scheduler owner per canonical storage root using a startup lock. SQLite transactions alone do not prevent two independent schedulers from dispatching the same accepted operation. A second server opening the same root fails with a clear diagnostic while leaving the first intact. Never run multiple Uvicorn worker processes as a shortcut around blocking inference.
+
+For remote canonical servers, use authenticated bounded downloads into a disposable local cache for native playback. Never interpret a server filesystem path on the client or put the bearer key into a URL. Reuse a validated local original only through a verified same-store/local-path bridge; no arbitrary path returned over HTTP is trusted.
+
+### 3.3 Provider interface and capability catalogue
+
+Define typed equivalents of:
+
+VideoProvider.capabilities(deployment) -> VideoCapabilities
+VideoProvider.prepare(profile, cancellation) -> PreparedVideoProvider
+VideoProvider.run(job, emit_event, cancellation) -> VideoCandidate
+VideoProvider.cancel(handle) -> CancellationOutcome
+VideoProvider.shutdown() -> None
+
+PreparedVideoProvider records exact runtime/checkpoint/device and effective supported profiles. VideoCandidate contains bounded local files or provider download handles, provider operation IDs, accepted parameters and optional observed intermediate metadata. Keep requested, accepted and measured output fields separate, with unknown provider-determined values represented explicitly. The service probes and imports the candidate before publishing success.
+
+Capabilities include operation/checkpoint identity, execution location, readiness/qualification, allowed input roles, input limits, duration semantics, frame-count congruence, dimensions/alignment/aspects, allowed FPS, combination constraints, seed/negative-prompt support, native/fixed/no audio, first/last-frame behavior, progress/preview support, cancellation semantics and output containers/codecs. Represent unsupported and unknown explicitly.
+
+Use a separately versioned Video catalogue initially if Nativ's global model registry cannot represent generation capabilities compatibly. Video understanding in a vision-language model is a different capability. Do not add a new enum value without updating all schema generators/validators/fixtures. UI and server validation consume the same catalogue; retain unknown optional server fields safely but fail clearly on an unsupported contract version.
+
+## 4. Model selection and concrete provider implementations
+
+### 4.1 Primary local runtime: LTX through a qualified MLX pipeline
+
+Prefer the actively maintained dgrauet/ltx-2-mlx runtime, inspected at 747b30ef10e92a011e85b2aa0f6c4ee86ced5218 (2026-11-01), for the primary LTX adapter. It has explicit pipeline maturity classifications and public Python pipeline classes. This is a community MLX port of Lightricks models, not an official Lightricks Mac distribution.
+
+The preferred first qualification candidate is LTX-2.5 Distilled using dgrauet/ltx-2.5-mlx-q8, with the public catalogue ID ltx-2.5-distilled-q8-local. Qualify its q4 conversion separately before offering a lower-memory option. LTX-2.3 Distilled using dgrauet/ltx-2.3-mlx-q8/q4 remains an alternative profile with its own encoder/components and evidence. Select an installed, hardware-qualified local profile as the actual app default; do not download or enable a large model merely because it is newest. If no profile is qualified for that device, show setup/compatibility guidance and explicit cloud choices instead of a hidden fallback. A smaller checkpoint or older version alone does not prove lower peak memory or acceptable motion quality.
+
+Use ltx_pipelines_mlx.DistilledPipeline or the qualified TI2VidTwoStagesPipeline through its public generate/generate_and_save contract, inside the managed worker. The project's maturity document classifies main T2V/I2V generate pipelines as Stable, while several editing/audio-driven paths are Beta/Experimental. That upstream classification is useful evidence, not a substitute for Nativ's own packaging and hardware qualification.
+
+LTX uses an 8k+1 frame grid. The inspected runtime can floor an off-grid request with a warning; Nativ must normalize visibly or reject before dispatch. Use explicit frame count/FPS in the first release, even though LTX-2.5 offers automatic duration. A 97-frame, 24-fps draft is approximately four seconds; publish the measured container duration rather than promising exactly 4.000 seconds. Select dimensions from the actual chosen one-stage/two-stage pipeline's divisibility requirements, not a different port's defaults.
+
+The inspected two-stage/Distilled pipeline requires width and height divisible by 64; the one-stage route requires multiples of 32. It can round an apparent 704x480 request down to 704x448. Initial draft-landscape is therefore a qualification candidate at 704x448, 97 frames and 24 fps; draft-portrait swaps dimensions and must be qualified independently. Do not label this draft as exact 16:9 or 720p. If the preset does not meet the selected pipeline/hardware quality constraints, Task 1 must replace the catalogue preset with a valid tested one before release and record that decision. Never silently modify an already accepted request. Seed 42 is used only in reproducible examples, not forced for every generation.
+
+LTX can generate video with native stereo audio; inspect and preserve the selected pipeline's actual output rate, typically 48 kHz on this port. Main generation is not a stream of final playable video. The optional stepwise preview feature writes animated latent-preview clips and retains extra decoder memory. Keep it off initially; add it only as labelled, bounded preview output after measuring memory/latency overhead. A preview failure must not fail or replace a good final result.
+
+Inventory the exact transformer variant, encoder/tokenizer, connectors, audio/video VAE, vocoder and upscaler needed for the chosen pipeline. A Hugging Face repository can contain dev, multiple distilled variants and LoRAs together. The README's approximate profile size and the full repository's current byte total can differ substantially. Download only the pinned required files and sum those actual file sizes; do not download an entire multi-variant repository by default.
+
+The LTX-2.3 path and LTX-2.5 path use different text-encoder packaging. The inspected 2.5 pack includes its own Gemma-4 text encoder; several prompt-enhancement/TeaCache flags are explicitly unsupported there. A catalogue item must not inherit 2.3-only options. Initial prompt enhancement is off so the original user prompt is preserved unless rewriting is explicitly requested.
+
+Use a separately locked arm64 inference environment containing only runtime packages and required codecs; do not install the training extras or run uv sync --all-extras in the delivered app. The inspected core requires Python >=3.11 and MLX >=0.31 with mlx-lm/mlx-arsenal dependencies; matching minimum versions alone is not a complete compatible lock. Some low-RAM code changes process-wide MLX cache settings, another reason to isolate workers. Respect the original LTX model license and encoder terms, plus conversion notices and gated access. The MIT runtime-code license does not replace model-weight conditions. The current LTX model license also contains an annual-revenue threshold for separate commercial licensing; preserve the actual terms in installation/distribution records. Do not claim a generic minimum Mac RAM value from a README's low-RAM experiment.
+
+Progress needs a narrow adapter: internal step callbacks and phase messages exist, but the phase helper emits its closing message from finally, including on failure. Never treat a done-like log line as success. No stable public cancellation-token contract was verified in generate_and_save; use the managed process lifecycle and validate the final candidate as specified below.
+
+### 4.2 Additional local provider: Wan2.2 TI2V-5B through mlx-gen
+
+Use lpalbou/mlx-gen 0.38.0 at inspected commit 99fb94dd3eaa9dd1931cd3cd8eae1ae3e20f2ef3 as the preferred Wan runtime. It has real application-facing Python generation, structured progress, explicit download policy and checkpoint-specific request validation. This community runtime is a separate dependency from Nativ's current image stack; do not replace that stack to add Video.
+
+The selected checkpoint family is Wan-AI/Wan2.2-TI2V-5B-Diffusers. The runtime documents AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit as a prepared conversion. Verify its files, immutable HF revision, exact quantization coverage and provenance before use. Catalogue ID: wan2.2-ti2v-5b-q8-local. Runtime commits are not model revisions; pin both.
+
+Use mflux.models.wan.variants.wan2_2_ti2v.Wan2_2_TI2V and its generate_video contract, or the documented application runtime around it, inside an owned worker. CLI entrypoints are mlxgen and mlxgen-generate-wan; the delivered app should use a bounded adapter protocol rather than scraping arbitrary CLI text. generate_video includes image_path, num_frames, fps and progress_callback. Denoiser-release options may invalidate the instance for future generation; recreate it instead of reusing freed state.
+
+TI2V-5B supports both T2V and one first-image I2V with the same family. It explicitly rejects last_image_path. The separate Wan2.2 A14B I2V checkpoint's experimental first/last-frame route is not a TI2V-5B capability; A14B T2V and I2V also use different checkpoint packages and larger expert configurations. Keep these out of the first public profile.
+
+Use the 4n+1 frame grid and TI2V-5B's 32-pixel spatial multiples. The documented TI2V default is 121 frames at 24 fps and 50 denoise steps, with native dimensions 1280x704 or 704x1280. A lower-resolution 832x480 route is documented with flow shift 3 instead of the native-resolution default 5. Start wan-draft-landscape qualification at 832x480, 81 frames, 24 fps, 50 steps and flow shift 3; this is a Nativ test candidate, not an existing measured performance guarantee. Release only tested presets. Validate the exact dimension/patch constraints and reject CLI-style hidden frame rounding. An arbitrary MP4 playback FPS accepted by the encoder does not prove the model was trained or qualified for that choice.
+
+This Wan path produces silent video. LTX native audio, Wan silent generation and H3 joint generation are different contracts. Do not make a Music request to disguise silence as native audiovisual generation. Preserve stage-scoped progress, avoid double callback registration and publish success only after canonical media import. No stable cooperative cancellation contract was verified; test worker-level shutdown across loading, inference, decode and save.
+
+The inspected mlx-gen manifest requires Darwin MLX >=0.27,<0.33, Transformers >=5,<6, NumPy >=2,<3 and Torch >=2.7.1,<3 for the relevant Python class. Those ranges can overlap Nativ's current lower bounds but future MLX upgrades can break them. Use a separate exact arm64 lock; omit its dev extra, which pins a different MLX version. Inventory code, official Apache-2.0 Wan checkpoints, conversion components and encoders separately. Model parameter count is not total memory usage.
+
+Blaizzy/mlx-video at 87db56a51758fefb748a359b90a5283bb8ba4837 (2026-05-13) remains a secondary reference/possible adapter alternative, with real Wan and LTX2/2.3 code. Do not infer LTX2.5 support there or use a family table as proof of every workflow. Use this alternative only after documenting why it is preferable and qualifying its actual public entrypoint, full lock and model format; do not ship two redundant Wan runtimes by default.
+
+### 4.3 MiniMax-H3: optional ecosystem-native adapter with actual gates
+
+Implement a focused MiniMaxH3MLXProvider around the existing mlx_vlm.generate.VideoGenerationRequest, load_video_generation_model and generate_video API at the inspected mlx-vlm revision. Add it as a disabled/unqualified advanced profile until license eligibility and hardware are established. The public Python integration exists even though Nativ has no Video HTTP route yet.
+
+The published local model is MiniMaxAI/MiniMax-H3. Initial supported operations use t2va and fl2va with the correct FL2VA partition. The runtime also exposes ref2va for ordered multimodal references; that is second-stage scope and must not be advertised through the first-release still-image upload contract. A loaded model is bound to workflow and inference-step configuration; implement the documented reload/cache discipline when those change.
+
+Follow this adapter's own constraints: 24 fps, 32 kHz stereo, width/height supplied together as positive multiples of 32, a 17n+5 temporal grid and the runtime's validated duration window (the inspected MLX README states 5-15 seconds, while the broader official model card states 4-15). The documented 124-frame example is a valid starting fixture, not an exact five-second promise. Do not transfer LTX's 8k+1 grid, 48 kHz audio or free FPS controls to H3.
+
+The current API generates audio jointly; do not invent a native generate_audio=false argument. Offer silent output only through the explicit derivative behavior in section 2 if implemented, otherwise report native_generated as the supported mode. A progress callback exists but is not proof of cooperative cancellation. The current save_video implementation blocks while encoding, uses FFmpeg/libx264/AAC and makes full frame-array copies; include encoder and memory behavior in real qualification and owned-process cancellation tests.
+
+H3-Base is substantially heavier than its transformer-only quantization download suggests: the official system includes a 33B diffusion transformer and a large Qwen3-VL conditioner plus video/audio VAEs. The published local release does not include the complete hosted Context-IR and 2K regeneration workflow. Do not market a local H3 adapter as the complete hosted Hailuo product or as lightweight/fast without measurements. An alternative community H3 port or transformer-only quantization is not automatically load-compatible with mlx-vlm's model format.
+
+The official MiniMax H3 Community License dated 2026-08-02 excludes the EU, UK, Republic of Korea and USA from its default territorial grant and offers a separate license application. Preserve and surface this exact eligibility restriction; do not infer that a public download or MIT adapter grants permission. Do not auto-download, run or redistribute H3 weights for an ineligible configuration. The adapter can be implemented/tested with fixtures while a real license/hardware gate remains unresolved. This does not block LTX/Wan or the rest of Video. Evaluate hosted MiniMax service access under its own current terms separately.
+
+### 4.4 Required optional-cloud adapter: LTX V2
+
+Implement a real LTXCloudProvider for users who deliberately configure that account. Use POST https://api.ltx.io/v2/text-to-video or /v2/image-to-video, Bearer auth, a currently supported model ID and JSON. The V1 generation endpoints were retired on 2026-10-26; do not use their old synchronous MP4-response examples. The upload endpoint remains POST /v1/upload.
+
+Use ltx-2-5-fast and ltx-2-5-pro as current profiles, with ltx-2-3-fast/pro as separately selectable lower-cost/older profiles when still available. Validate the full model/resolution/FPS/duration matrix. The inspected 2.5 Fast supports longer clips at some lower-frame-rate resolutions; Pro and high-resolution/high-FPS combinations have different bounds. Do not present 4K, maximum duration and maximum FPS as independently combinable sliders.
+
+Submit prompt (up to 5,000 characters), model, duration, resolution, optional fps and generate_audio. I2V additionally uses image_uri and optionally last_frame_uri. Normal first-release requests use explicit duration. If automatic duration is later enabled, send duration:null rather than omitting it, reject its combination with last_frame_uri and show the maximum prepaid reservation: the provider can hold credits for the longest allowed clip even if the result is shorter. Seed is not a verified control in the inspected official V2 generation schema.
+
+POST returns 202 with id and created_at. Persist id plus endpoint kind, then GET /v2/{endpoint}/{id}; pending/processing are nonterminal, completed contains result.video_url and failed contains an error. Poll at least five seconds apart with jitter/backoff. Terminal job status can expire within 24 hours; output URLs expire independently. Import promptly and preserve retry-download without a second generation.
+
+For private reference inputs, use /v1/upload and its returned signed PUT URL, required_headers and storage_uri. Send every required storage header unchanged and no provider bearer token to the storage host. The signed upload URL expires after one hour and the stored input is available for 24 hours in the inspected contract. The 200 MB upload cap does not override generation's smaller image limit (15 MB). Queue/resume must revalidate or recreate an expired upload for the same pinned input before generation, while preserving the generation dispatch-intent rules.
+
+No cancellation or provider-side idempotency guarantee was verified in these endpoints; keep cancellation unconfirmed and never automatically retry an ambiguous generation POST. Apply documented polling/download retries separately. Current pricing is per generated second and model/resolution; store source/date in displayed estimates rather than hardcoding a timeless fee. A provider error/content rejection is not permission to switch services or alter the prompt to bypass its controls.
+
+### 4.5 Required optional-cloud adapter: Runway Gen-4.5
+
+Implement RunwayVideoProvider using the official developer API at https://api.dev.runwayml.com, Bearer authentication and X-Runway-Version: 2024-11-06. This header is the version required by the inspected current OpenAPI; do not invent a newer date. The first-release model is gen4.5, with ordinary H.264 MP4 output. Extra output formats, HDR/EXR and other models exposed through Runway are separate capabilities and cost decisions.
+
+POST /v1/text_to_video sends model, promptText, ratio, duration and optional seed. POST /v1/image_to_video adds promptImage. The successful provider create response is HTTP 200 with id; Nativ's own asynchronous submit still returns 202. Gen-4.5 accepts duration as an integer from 2 to 10 seconds and seed from 0 to 4294967295. Prompt length is 1-1000 UTF-16 code units, not simply Python character count. Same-seed output is described as similar, not bit-identical.
+
+T2V ratios are 1280:720 and 720:1280. I2V also supports 1104:832, 960:960, 832:1104 and 1584:672. The I2V schema accepts one first image, including an array with exactly one {uri, position:"first"} item. Use the documented upload mechanism or a size-qualified image data URI for private local references. Do not publish a user's picture to obtain a public URL. No first-release Gen-4.5 last-frame, multi-reference, adjustable FPS or native audio control was verified: keep those controls unavailable and make its output contract silent.
+
+GET /v1/tasks/{id} returns PENDING, THROTTLED, RUNNING, SUCCEEDED, FAILED or CANCELLED. Poll no faster than every five seconds with bounded backoff. Success contains output as an array of URLs, not result.video_url; optional cost.credits may provide observed cost. Download output immediately into Nativ's canonical asset store. Runway documents a 24-48 hour output-URL lifetime; a new task GET can supply fresh URLs while the task remains available. Test retrieval_pending and refresh without another create request.
+
+DELETE /v1/tasks/{id} cancels pending/throttled/running tasks but deletes tasks already in other states. The response is 204; a repeated delete can be 404. Do not issue DELETE against a known completed task merely because a late local Cancel action arrived: this can destroy retrieval access. Model the race and its limits explicitly. A prior PENDING status does not guarantee a refund: billing depends on the server's state when cancel is handled, and RUNNING work is not refunded. Even an accepted cancellation/refund does not guarantee the underlying provider computation physically stops. Preserve any completed local asset and present accurate outcome/billing status.
+
+No provider create-idempotency guarantee was verified. Nativ's key and durable dispatch intent protect its own admissions; they cannot make an ambiguous provider POST safe to repeat. The inspected standard rate is 12 credits/second at USD 0.01/credit, excluding applicable taxes and output extras. Store dated pricing evidence and distinguish estimated credits from observed response cost; recheck current pricing at implementation time.
+
+### 4.6 Other evaluated models and bounded future expansion
+
+Do not add a long list of selectable provider names with no working adapter. First release requires the local LTX/Wan paths and optional-cloud LTX/Runway implementations above, plus the gated H3 integration. Keep other providers in documentation until their actual supported path passes the same contract, retrieval, license and quality checks.
+
+- Google Gemini: the current video documentation reports the Veo 3.1 preview IDs retired on 2026-10-22 and points to gemini-omni-1.2-flash through Interactions. Treat cached older deprecation tables as potentially stale and revalidate against the current model endpoint/docs. Omni has native audio and its own duration/resolution/reference limits. Its REST result is model_output content within steps, not an SDK-only output_video property. Verify model-specific background/streaming, URI versus inline delivery, retrieval and regional editing restrictions before implementation. This is a later adapter, not an old Veo request with a renamed model field.
+- Google Cloud: separately documented veo-3.1-generate-001 and veo-3.1-fast-generate-001 use the Cloud project's own authentication and capacity contract. The retirement of Gemini preview IDs does not establish retirement of these GA products. Do not present them as interchangeable with a Gemini API key.
+- Luma: current official Agents API uses ray-3.2, https://agents.lumalabs.ai/v1/generations, nested video settings, asynchronous status and output URL arrays. Output URLs are short-lived. Deleting a terminal generation and cancelling an active generation are different; the inspected delete operation rejects nonterminal generation. Verify current pricing/privacy terms before enabling a later adapter.
+- MiniMax hosted video: the current official API is MiniMax-H3 through POST /v2/video_generation, with typed content references and task_id, then GET /v2/query/video_generation/{task_id}; output is task.content.url. It supports different model variants and broader reference workflows than the local first release. Running tasks are not cancelled by the documented delete endpoint. Hosted terms and availability must be assessed independently of the local weights license. Add this separately only after its exact contract and account eligibility are qualified.
+- OpenAI: the official deprecation page lists Sora 2 models and the Videos API as shut down on 2026-09-24, with no replacement listed. Do not implement an active Sora provider using historical examples. Recheck official availability before any later proposal.
+- Kling, Seedance, Wan 3 and other models may be available through official gateways such as Runway as well as distinct first-party services. Gateway model IDs/auth/contracts are not interchangeable with direct-provider APIs. Do not use unofficial browser automation, consumer-session scraping or guessed endpoints as a production adapter.
+- Adobe Firefly has a real developer video API, but its complete current contract/eligibility was not selected for this first release. Keep it as an evaluated future option rather than claiming it only has a consumer UI.
+- HunyuanVideo-1.5 has a community MLX port, but the inspected distilled port covers T2V rather than complete I2V; official weights also have territorial restrictions. CogVideoX1.5/MPS work does not supply a qualified Nativ MLX baseline, and its weight licenses differ by family. Treat both as future candidates.
+- Mochi-1 has a real SceneWorks Rust/MLX route, but its inspected untiled video decoder has a very high memory estimate. FramePack offers segment-based longer generation through a different architecture; its documented CUDA memory figures are not Mac figures, and its older Transformers pin conflicts with Nativ's environment. Neither is a lightweight first-release substitute merely because a wrapper or quantized checkpoint exists.
+
+When a new provider is added later, require a capability fixture, upload/create/poll/download/cancel contract tests, real account-appropriate acceptance evidence and explicit budget/data-flow settings. Existing saved jobs retain the exact provider/model/profile revision they used.
+
+## 5. Immutable reference inputs and request normalization
+
+Accept reference images through authenticated bounded multipart upload and opaque input_id values. The first release accepts still PNG/JPEG/WebP; add HEIC conversion only through a tested native import path with explicit normalized output. Do not accept arbitrary local paths, public URLs, SVG, archives or animated formats as if they were still images. A later URL importer needs its own validated contract and must not be accidentally exposed by provider parameters.
+
+Initial application upload limits are 25 MiB encoded bytes and 40 million decoded pixels per still, further restricted by the selected provider. Enforce both before allocating a full decoded image where possible. Stream uploads into private partial files, validate actual type/dimensions, compute SHA-256 and publish atomically. Do not trust extensions, Content-Length alone or a provider's filename. Zero-byte, truncated, decompression-bomb and MIME-mismatched files return actionable errors.
+
+Preserve the original user-selected bytes privately. Normalize orientation, color and a supported encoding in a separately recorded derivative when needed. Use an explicit fit policy with preview: crop, contain or a supported native aspect. Never silently stretch a portrait image into landscape. Alpha flattening/background color and source-to-output crop must be deliberate and recorded. Strip irrelevant location metadata from provider-bound derivatives while preserving visual content and provenance.
+
+Define one versioned input-transform schema shared by Swift and Python: fit_policy, optional explicit crop rectangle, and contain/alpha background. Crop coordinates are normalized to the orientation-corrected source width/height, with a documented top-left origin and normalization order. Validate bounds and nonempty area. The composer preview and provider-bound derivative implement the same transform; pin its version/parameters and record the derivative hash before provider upload. A different provider crop policy must be represented explicitly, not applied invisibly after the user approves the preview.
+
+On submission, transactionally pin the exact input bytes/revision and normalization recipe to the job. Replacing a composer image, deleting the original Images result or editing a file on disk cannot change an already accepted request. A queued/recovery-held job retains its inputs. Deletion of a pinned input returns its usages; prune only unreferenced uploads according to a documented retention policy, never all inputs indiscriminately.
+
+Map roles explicitly: first_frame and optionally last_frame for supported I2V profiles. T2V rejects an unexpected reference rather than silently treating it as I2V. Last-frame-only, first-plus-last and automatic-duration combinations follow the exact provider's constraints. Do not equate multiple reference images with a first/last-frame pair.
+
+Before queueing, freeze every effective value that the selected runtime/provider can determine, together with accepted output constraints. Local fixed-frame profiles require exact frame count, dimensions, FPS rational and audio behavior. Provider-determined frame count, FPS or automatic duration remain explicitly unknown until media probing; never invent them from requested duration. Store requested values, immutable accepted constraints and measured output separately, and validate results against supported constraints and documented tolerances. If explicit numeric fields are accepted, reject ambiguity. Reusing an idempotency key compares the original normalized request and pinned profile/input revisions, not newly changed global defaults. Return a field-specific error for unsupported choices; no hidden cropping, rounding, seed dropping or model substitution.
+
+## 6. Durable jobs, cancellation and recovery
+
+Each job has stable job_id, store_id, session_id and attempt_id, accepted profile revision, normalized request, immutable input refs and requested/effective parameters. Only its active attempt may publish events/results. Late progress after cancellation/restart cannot resurrect a job or overwrite an asset.
+
+Use explicit states: queued, recovery_hold, preparing, running, finalizing, retrieval_pending, succeeded, cancel_requested, cancelled, interrupted, failed and submission_unknown. Terminal generation states are succeeded, cancelled, interrupted and failed; submission_unknown is unresolved and never resumable as a fresh POST. Progress is optional and stage-scoped. Keep provider execution outcome separate from local observation and asset-import status.
+
+Require Idempotency-Key for every generation submission, including UI and Chat. Atomically reserve key/job before acknowledging. Same key and same normalized request returns the existing job; a changed request is HTTP 409. Persist the record for the job lifetime, with tombstones for at least seven days after any future job purge; document the actual guarantee window.
+
+Before any native or Chat generation POST, durably journal the frozen request, store_id, Idempotency-Key and originating user-intent or persisted tool-call identity. After timeout, disconnect or relaunch, reconcile that intent by retrying the same request with the same key against the same store. Only an explicit new generation or Regenerate action creates a new intent/key. Never create a new key merely because the client did not receive the server's acceptance response. Document this client requirement for external API users too.
+
+Before a provider generation POST, durably record dispatch intent. Persist provider operation IDs and endpoint type immediately when returned. A crash with unresolved remote dispatch intent becomes submission_unknown, even if sending may not have happened. Never replay an ambiguous paid POST unless the provider has a verified idempotency contract and the adapter reuses it correctly. Polling/download GET retries are different from generation retries.
+
+Snapshot deployment/profile identity. Before dispatch or Resume, revalidate enablement, matching configuration and credentials. A changed endpoint/model/account must not silently retarget a queued job. Show a configuration mismatch and require a deliberately new request where appropriate. Do not store vendor keys in snapshots.
+
+Polling, cancellation, reconciliation and Retry Download also resolve the immutable deployment, endpoint type and account identity captured by the attempt. A replaced profile must not retarget an existing operation. Credential rotation is allowed for the same account identity; a mismatch preserves the original operation for recovery and returns an actionable configuration error, not a false output-expired or unknown-task conclusion.
+
+Default limits: one active local heavyweight generation across Music and Video; one reserved external Video operation; four queued Video jobs, subject to any existing stricter shared generation limit; one output per request; JSON metadata at most 128 KiB; output download at most 2 GiB; latest 1,000 coalesced events per job. Keep these documented and configurable with hard resource bounds. Model/context memory is not allocated for a queued job. Return structured overload errors and Retry-After where meaningful.
+
+Cancel queued work without calling a provider. Cancel local work cooperatively if supported; otherwise stop only the owned worker/process group after a bounded grace period and restart it cleanly next time. A request to cancel is not proof that inference, decoder or encoder children stopped. Keep the compute lease until all owned work has actually exited.
+
+For remote providers without confirmed cancellation, stop local observation/import if requested and show that provider work/charges may continue. Unknown and cancellation-unconfirmed attempts retain their external capacity reservation until terminal outcome is known or the user explicitly releases it while acknowledging possible execution/billing. Releasing a reservation never replays a POST or claims a refund. Document that explicit overrides may overlap with unresolved external work.
+
+On shutdown stop admission, persist state, stop owned workers and close streams. On restart preserve terminal states and honor durable cancellation first. Reconcile durable publication/import records before classifying interrupted local work: a validated candidate already prepared or renamed for publication may complete the same job/attempt under a recovered publication fence without rerunning inference, provided cancellation has not already won. Only eligible nonterminal jobs with no dispatch intent enter recovery_hold for explicit Resume under the same identity. In-flight local work becomes interrupted only when inference or required media preparation cannot be completed from its durable candidate; Regenerate is a new job. Known remote jobs are reconciled by their existing operation ID. Never automatically regenerate accepted paid work on app launch.
+
+A completed remote generation whose download/import failed enters retrieval_pending: recovery concerns that existing result, not a new generation. Persist the provider ID and import checkpoint and provide Retry Download while retrieval remains possible. One fenced import operation may move retrieval_pending to finalizing and then succeeded or back to retrieval_pending; it never changes/replays the provider generation attempt. An already-running import returns its current state. A confirmed expired/unrecoverable result becomes failed with output_expired or an exact import error and no Retry Download action. A cancellation arriving after durable success cannot erase or relabel the completed result.
+
+## 7. Public Nativ Video API
+
+Use the Nativ extension namespace /v1/video/*. This is not a claim of OpenAI Videos API compatibility. Do not overload chat completions, image generation, existing video-understanding inputs or TTS routes. Recheck namespace collisions against the actual bundled server before registering anything.
+
+Required routes:
+
+GET    /v1/video/info
+GET    /v1/video/models
+POST   /v1/video/inputs
+GET    /v1/video/inputs/{input_id}
+GET    /v1/video/inputs/{input_id}/content
+DELETE /v1/video/inputs/{input_id}
+GET    /v1/video/sessions
+POST   /v1/video/sessions
+PATCH  /v1/video/sessions/{session_id}
+POST   /v1/video/generations
+GET    /v1/video/generations
+GET    /v1/video/generations/{job_id}
+GET    /v1/video/generations/{job_id}/events
+POST   /v1/video/generations/{job_id}/cancel
+POST   /v1/video/generations/{job_id}/resume
+POST   /v1/video/generations/{job_id}/retry-download
+POST   /v1/video/generations/{job_id}/release-remote-reservation
+GET    /v1/video/assets/{asset_id}
+GET    /v1/video/assets/{asset_id}/content
+GET    /v1/video/assets/{asset_id}/poster
+GET    /v1/video/assets/{asset_id}/usages
+PUT    /v1/video/assets/{asset_id}/references/{reference_id}
+DELETE /v1/video/assets/{asset_id}/references/{reference_id}
+DELETE /v1/video/assets/{asset_id}
+POST   /v1/video/assets/{asset_id}/restore
+
+Use stable cursor pagination and typed schemas. Include store_id, contract version, supported operations/readiness and capacity/qualification details. Session PATCH supports title/hidden; hiding a session never deletes files. If a generation omits session_id, create its session atomically with the accepted job.
+
+POST generation requires the existing Nativ server bearer token and Idempotency-Key. Return HTTP 202 quickly with store_id, job_id, state, accepted parameters and status/events URLs; do not wait for inference or the compute lease. A missing key is HTTP 400; duplicate request identity returns the same job, including uncertain or terminal outcomes.
+
+Reference request shape (the catalogue must actually define the chosen IDs before use):
+
+{
+  "model": "ltx-2.5-distilled-q8-local",
+  "operation": "text_to_video",
+  "prompt": "A small wooden boat drifting across a calm lake at sunrise, slow camera movement",
+  "output_preset": "draft-landscape",
+  "audio_mode": "native_generated",
+  "seed": 42,
+  "allow_remote": false
+}
+
+For I2V, set operation to image_to_video and add inputs with role first_frame and the uploaded input_id. Include last_frame only when the exact selected profile supports it. The upload route uses multipart bytes; never place base64 video output or large images in the metadata request.
+
+Each input may carry transform:{version:1, fit_policy:"contain", crop:null, background:"#000000"}. For explicit cropping, crop is {x,y,width,height} in normalized orientation-corrected coordinates as specified in section 5; use a strict shared enum/schema and reject fields that do not apply. The accepted request returns the pinned transform and derivative identity, or a pending derivative state until its deterministic materialization completes before provider dispatch.
+
+Input content retrieval returns the validated immutable still for authenticated draft/history display; its metadata identifies any orientation/encoding normalization. Job-specific crop/resize derivatives remain tied to the accepted request and their own hashes, not mutable changes to that input. This also makes a reference visible after reconnecting to a remote server without trusting a server path.
+
+External execution additionally requires allow_remote=true and an already enabled named provider profile. Never accept a new endpoint/credential in a generation body. Explain in provider settings that anyone authorized with the Nativ server key can use enabled capabilities; apply configured budgets and limits consistently to native/API clients.
+
+Status contains stage/progress, accepted/effective configuration, timestamps, deployment/model identity, provider outcome, cancellation semantics, import status, reservation state and safe output references. Errors use stable code/message/field/retryable/job_id fields. Do not expose secrets, raw exception traces, server paths, provider signed URLs or upstream private error bodies.
+
+SSE uses monotonically ordered event IDs, Last-Event-ID, heartbeat, bounded buffering and current-state resynchronization after pruning. Disconnecting an event/polling client never cancels a job. Polling is a fully supported fallback. Emit final success only after valid durable media and database references are committed.
+
+Resume applies only to eligible never-dispatched recovery_hold jobs. Retry Download retrieves the same known completed provider result without generation. Cancel/Resume/Retry Download are idempotent and share one active-attempt fence. Reservation release requires acknowledge_possible_execution_and_charges=true and never submits work.
+
+Protect every route, input mutation, poster, event stream and download with actual Nativ bearer authentication. New routes mounted on base.app may not inherit the dependency router's auth. If required protection cannot be installed, fail Video startup closed with a useful diagnostic while preserving unrelated services. If no server key exists, use the existing key setup flow rather than silently weakening protection or rotating a configured key.
+
+Content supports Content-Type/Length, ETag, safe filenames, HEAD and byte ranges with correct 206/416 behavior. Resolve opaque IDs to managed files, reject traversal/symlink escapes and never redirect clients to a secret provider URL. Keep loopback defaults and existing restrictive CORS. Disable wildcard credentialed browser access. Test unauthenticated status, poster, range, upload and SSE separately.
+
+Document routes and examples in Docs/api/video.md, Docs/features/video.md, Developer endpoint discovery and generated OpenAPI. Preserve other clients' model schemas; /v1/video/models is authoritative unless a current global model schema already represents this compatibly.
+
+## 8. Video media, storage, playback and Artifacts
+
+### 8.1 Import and publish real media
+
+Keep canonical data under the fork's configured server data root. If no shared store exists, a suitable layout is Video/jobs.sqlite, Video/inputs/<input_id>/, Video/assets/<asset_id>/original.<ext>, manifest.json, poster.jpg and Video/Trash/. Runtime/model caches, partial frames and temporary encoder files are separate from completed user assets.
+
+Stream candidate downloads into private .partial files with byte/deadline limits. Validate destinations/redirects and never forward provider authorization to a different host. Persist recoverable download state when possible. A URL returned by a provider is not permanent storage. Import promptly after completion.
+
+Probe actual container/streams, duration, dimensions, transform/orientation, pixel aspect, nominal/average FPS, codec, color metadata and audio presence. Verify at least representative first/middle/last frame decoding and a playable timeline. Check nonempty finite audio when requested, sample rate/channels and audio/video duration alignment. Do not trust a .mp4 extension, successful process exit or JSON success status alone.
+
+Distinguish temporal spacing from container playback duration. A frame grid constrained to 8n+1 or 4n+1 may yield a duration slightly different from the human label. Store effective frame count/FPS and measured media duration; do not fix a timing error by relabelling the sample rate, dropping frames or truncating audio without an explicit documented transform.
+
+For locally encoded output, use a qualified MP4 profile playable in AVFoundation: normally H.264 with a supported pixel format and AAC when audio is included. Prefer an appropriate platform encoder where practical; inventory the actual FFmpeg/codec build, license obligations and signing. No dependency on a user's Homebrew ffmpeg. Preserve native cloud output bytes; create a labelled compatible proxy/export derivative if needed. A re-encoded or upscaled copy is not a higher-quality original.
+
+Keep color/rotation/HDR metadata truthful. First-release presets target tested SDR playback; do not advertise HDR support merely because a container contains a flag. A native HDR original may be retained while a clearly labelled SDR playback proxy is created using a tested conversion. Never silently change the archival original.
+
+Atomically publish a validated original and recoverably commit its asset/job records. Reconcile crashes between file rename and database commit. A thumbnail/cache failure must not delete a valid video. Disk-full/corrupt/truncated output cannot become succeeded with a nonexistent playable file. Cleanup kills only owned encoder children and removes only managed partial files.
+
+Record SHA-256, byte size, container/codecs, actual duration/frame rate/dimensions/audio, prompt, effective seed/settings, input hashes/crop recipes, runtime/checkpoint/license revisions and optional provider operation ID. Do not save credentials, signed URLs or absolute provider paths in user manifests.
+
+### 8.2 Reference ownership and deletion
+
+ArtifactKind.video already exists in the inspected Nativ architecture; reuse it. Add a videoGeneration workspace/provenance type only where needed, with backward-compatible decoding. Update catalog, filters, search/index, preview, deep links, trash/restore and sidebar sessions without duplicating the same original.
+
+In particular, current Artifact.locations falls back to imageGeneration for generated files, ArtifactCatalog consumes only chat/image sessions, and ArtifactStore rebuild fingerprints cover those same sources. Extend all three coherently. Current ChatAttachmentKind contains image/document/unsupported; a generated video needs an explicit compatible rendering/reference path and validator/work-upload handling. Do not put MP4 bytes into an image attachment and assume that creates a working video card. Generated-video output need not be automatically sent back as a model-understanding input.
+
+The service alone mutates canonical generated originals, usage references and trash state. Native Artifacts is a rebuildable projection. Existing MediaAssetStore/owners.json cleanup must never independently delete a canonical Video file. Create the successful result's session usage transactionally; historical generation provenance is not a perpetual live usage that makes all deletion impossible.
+
+PUT/DELETE reference operations are idempotent and use stable reference_id values. For a Swift-owned Chat attachment, persist a durable outbox, reserve the service reference before committing the chat attachment and finalize it afterward. Reconcile crashes/disconnection; unresolved reservations block destructive deletion. Do not treat a mere GET or export as a permanent usage.
+
+Specify reserved, live and released reference states with revision/tombstone guards for each stable reference_id. PUT identifies reserve/finalize plus the expected revision; DELETE records a durable release. Retries are idempotent but a stale finalize cannot recreate a released reference. The native outbox covers attachment and unlink directions. An explicit later reattachment uses a new reference identity; it does not remove an old tombstone. Keep uncertain reservations protected until reconciliation proves their disposition.
+
+DELETE asset moves an unused original into recoverable trash. Return HTTP 409 and usages while live references/reservations remain. Explicitly unlink only the selected usage; never silently edit/delete another chat or every reference. Restore retains the same asset ID. Hiding a session or cancelling a new job does not delete earlier completed videos. Preserve valid originals even when a model is removed or a cloud account expires.
+
+### 8.3 Native playback
+
+Reuse the existing AVKit/AVPlayer video preview where practical, extending shared player lifecycle rather than embedding a second uncontrolled player in every card. Load metadata asynchronously and avoid full-file Data copies. Use authenticated cache acquisition before local AVPlayer playback rather than undocumented bearer-header URLAsset hacks. Support retries and range downloads without triggering regeneration.
+
+One app-scoped playback coordinator handles Video/Music/audio focus, device changes and active recording/translation. Pause playback when it would feed a microphone or when the user starts another media item. Respect the user's explicit resume preference. Detach time observers and cancel thumbnail work correctly; verify no accumulating players/decoders after scrolling through history or opening multiple windows.
+
+## 9. Runtimes, compute admission and server responsiveness
+
+Every local runtime profile has a manifest of exact source/model revisions, Python/architecture, dependency lock hashes, required components/checksums, worker protocol, codec binaries/licenses and measured hardware limits. Install/repair it inside Nativ through a reproducible bundled or signed/integrity-checked runtime archive. No launch-time pip upgrade, mutable main checkout, curl-pipe-shell or interactive setup script.
+
+Do not package a whole web UI or require uv/Homebrew on the user's PATH. Run a narrow worker protocol in an owned process, with stdin/socket identity handshake, bounded messages, genuine stage events and explicit shutdown. If using an internal HTTP helper, bind loopback, authenticate it, safely choose a port and verify ownership. Never terminate an unrelated process occupying a preferred port.
+
+Only compatible current locks may share the base Python environment, and even then video inference runs in an owned worker with isolated model state. Otherwise use a separate arm64 environment. No heavy imports/model loading on the ASGI loop or MainActor. Filter child environments so local workers/encoders do not inherit unrelated cloud keys. Secrets stay in fork-scoped Keychain for native use and documented server environment configuration for deliberate headless use.
+
+Share one actual compute-admission boundary across Video, Music and other local inference. InferenceActivityCoordinator alone is not a host-wide GPU scheduler. Direct API requests and native requests obey the same leases. Hold a lease through streaming inference, decode/encode phases that require the resource, cancellation cleanup and child-process exit.
+
+Existing active Chat/Images/STT/TTS/Live Translate can finish. Queued Video must wait without loading weights. New incompatible requests while an exclusive generation runs receive a clear busy response or enter a supported bounded queue. Active translation prevents starting new heavyweight generation. If requested during non-pausable video inference, offer explicit cancel-and-start or wait; never fake pause, kill another feature's work or silently move to cloud.
+
+Account for resident idle models and memory pressure. Use supported unload/cache APIs under the right lease without destroying another feature's active context. Preflight a qualified resolution/frame/quantization profile, monitor real pressure and leave UI/OS headroom. Checkpoint size is not peak RAM. Do not convert CUDA VRAM claims into Mac requirements.
+
+Cross-process locks need correct in-process coordination too. Admission must survive the real worker lifetime: server death either reliably stops owned workers via a tested watchdog or leaves admission blocked until recovery proves those workers exited. Test server SIGKILL during inference, immediate restart and a competing request; verify PID reuse cannot target an unrelated process.
+
+Verify the selected mlx-vlm image handlers do not block the shared event loop. The earlier inspected dependency performed synchronous model loading/generation inside async image handlers. Prefer an upstream fixed/pinned version; if a patch remains necessary, keep it version/hash guarded and include it in the runtime fingerprint. Leave request reading/auth/admission on ASGI; offload the full blocking image operation to one qualified serial MLX worker with explicit stream/cache lifecycle. Never to_thread an async handler or scatter MLX state across arbitrary threads. Status/cancel/events/health must remain responsive during both image generation and edits.
+
+Extend the runtime builder to recursively copy/fingerprint new packages and worker files, remove deleted packaged files and invalidate stale cached distributions. Verify imports/routes from the real bundled location outside the source checkout with no video weights installed. Test signed app execution of nested interpreters/dylibs/encoders and runtime archive rollback without relaxing release signing settings.
+
+## 10. Upstream source synchronization and fork app updates
+
+Arbitrary future upstream changes cannot be guaranteed conflict-free. Automate detection, candidate integration and meaningful validation, keeping uncertain changes away from the working fork.
+
+Reuse the existing fork sync workflow if earlier work added one. origin is my fork; upstream is read-only Neywa-Labs/nativ. Keep my customized main and inherited ancestry. Default to a daily check for new stable upstream releases, with manual dispatch for a selected immutable main SHA. Record the integrated baseline and never downgrade a newer baseline to an older stable release. Fetch upstream tags separately from fork release tags.
+
+Create a candidate from the exact current fork main SHA and resolved upstream SHA. Merge normally, preserving ancestry; no squash/rebase sync merges, blanket ours/theirs, reset-hard or force synchronization. On conflict preserve main and report affected integration seams. A no-op creates no commit/PR/release.
+
+Before publishing an executable same-repository candidate, inspect imported workflows/local Actions and scripts that could run with write/signing credentials. Run untrusted candidate validation without those credentials. Use separate least-privilege orchestration, pinned Actions, protected release environments and explicit dispatch/App-token behavior where required. Do not execute arbitrary PR code under pull_request_target or assume GITHUB_TOKEN recursively triggers every required workflow.
+
+Validate the exact combined candidate: existing regressions, all enabled media features, new Python package fingerprints/imports, API/auth contracts, media/persistence migrations and Mac build. Add new Swift tests to project.yml and actual CI -only-testing selectors. An aggregate gate must fail for missing/skipped/cancelled/stale mandatory checks. If fork main advances, rebuild/revalidate the candidate against the new base.
+
+Start with reviewed integration PRs. Runtime/model locks, licensing, persistence, authentication, shared compute/audio, updater/signing and workflow changes remain protected from unattended merging. Document last successful check and manual fallback; scheduled Actions are best effort. Guard inherited upstream-only Pages/statistics publishing and keep one authoritative release publisher.
+
+Source synchronization and updating the installed app are separate. Preserve or create fork-owned stable AND preview appcasts, Sparkle signing identity, bundle/settings/Keychain identity and release metadata. Inspect the actual built Info.plist and archive URLs, not just source strings. No fallback to an upstream binary that lacks Music/Video/Translate. Disable automatic update startup until valid fork feeds/keys exist.
+
+Preserve existing fork data paths and numeric/rc version conventions. Record upstream SHA/tag separately rather than inventing an unsupported version suffix. Keep internal product/scheme names until release scripts are consistently parameterized. Runtime/model updates are separately pinned and reviewed; an app update must not silently reconvert large models or modify output originals.
+
+Run an upgrade preservation test from an existing fork fixture containing chat/images, music when present, video jobs/inputs/results and translation settings. Verify assets still play, schemas decode and the updater selects only fork releases. List exact owner-only branch protection/secret/signing setup after preparing all reversible changes; do not fabricate credentials or publish a release as part of implementation.
+
+## 11. Validation strategy and implementation boundaries
+
+Tests should prove consequential behavior, not repeat every constant. Keep network-free fixtures for provider contracts and failure/recovery tests. Separate them from real hardware/audio-video qualification and any deliberately authorized paid calls. Connection tests/catalog discovery never generate paid video.
+
+Use a small fixed visual qualification corpus: motion of a known object, camera movement, portrait and landscape composition, a first-frame subject, native sound when advertised and silent output. Include a timestamped or patterned local encoder fixture to measure video/audio alignment independently of a generative model's aesthetic quality. Verify actual artifacts with AVFoundation and a trusted media probe, not file existence alone.
+
+Document exact Mac chip/RAM/macOS, runtime/model/quantization/pipeline, resolution/frame count/FPS, cold/warm state, generation/decode/encode/download time, peak memory/swap and output quality. Vendor/server GPU benchmarks and estimates are not measurements on the target Mac. If a profile cannot be tested, implement its path and label qualification incomplete rather than inventing a supported-memory badge.
+
+Preserve all existing routes and data schemas unless an explicit compatible migration is tested. Do not replace working Images/Music with a generic media rewrite just to share a few types. Keep Video files modular, minimal host seams and provider-specific behavior in adapters. Prepare a reviewable fork change, not an unbounded dependency fork.
+
+## 12. Implementation tasks
+
+Use small reviewable commits. The paths below assume the standalone nativ_video layout; if Task 1 identifies an already implemented shared generation core, record the exact equivalents once and preserve these interfaces/invariants. Do not create duplicate authoritative storage or perform a broad refactor before a working vertical slice.
+
+### Task 1: Baseline, provider matrix and effective output profiles
+
+Files: create Docs/features/video.md and Docs/development/video-runtime-qualification.md; inspect section 1's integration files and the exact provider sources in section 15.
+
+Interfaces: produce a versioned VideoCapabilities catalogue and immutable QualifiedVideoProfile containing runtime/model revision, operation/input roles, accepted output constraints, exact dimensions/frame_count/FPS when the provider fixes them, audio behavior and measured/experimental hardware status. Provider-determined fields remain unknown until output probing; never populate them with invented defaults.
+
+- [ ] Record current fork/upstream SHAs, applicable rules, actual packaged dependencies, existing Music/Translate/update services, auth boundaries and Video namespace availability.
+- [ ] Inspect the selected LTX and Wan runtime implementations, not only README examples. Record supported versus ignored/unsupported options and every model component/license.
+- [ ] Define draft output presets and reject off-grid frames, unsupported dimensions and invalid audio/reference combinations before inference; test normalization against pinned runtime fixtures.
+- [ ] Perform a minimal real T2V and I2V qualification spike on available Apple Silicon without mutating Nativ's existing environment. If unavailable, record the exact hardware test still required; do not substitute a mocked success claim.
+- [ ] Record current official cloud request/response schemas, availability and pricing basis without paid discovery calls.
+- [ ] Commit the implementation map and profile decisions so later tasks use consistent IDs and dependencies.
+
+Deliverable: precise feasible defaults and capability contracts before polishing UI around unverified models.
+
+### Task 2: Durable jobs, immutable inputs and canonical media
+
+Files: create or extend nativ_video/contracts.py, catalog.py, repository.py, service.py, inputs.py, assets.py, media.py and providers/base.py; tests scripts/tests/test_video_jobs.py, test_video_inputs.py, test_video_media.py.
+
+Interfaces: submit(request: VideoGenerationRequest, idempotency_key: str) -> VideoJob; normalize(request, profile, inputs) -> AcceptedVideoRequest; get/list/events/cancel/resume/retry_download/release_reservation; import_input(stream, metadata) -> VideoInput; validate_and_publish(candidate, job) -> VideoAsset; idempotent reference/trash/restore operations.
+
+- [ ] Test concurrent same-key submissions produce one job, changed content returns conflict, and defaults/profile changes cannot mutate the original request identity.
+- [ ] Test Nativ accepts a submission but its reply is lost; native/Chat relaunch restores the persisted intent/key and discovers the same job with no second generation.
+- [ ] Test crash points before remote send, after acceptance and before response persistence; unresolved intent never causes a second POST. Test reservation retention and explicit release.
+- [ ] Test restart preserves cancelled/failed jobs and persisted cancellation, queues eligible work in recovery_hold, and recovers only the existing provider result after download failure.
+- [ ] Test streamed upload bounds, actual MIME, EXIF rotation, crop/contain, oversized decoded dimensions and deletion/replacement of the original image after submission.
+- [ ] Test atomic output import, media probing, missing requested audio, corrupt/truncated MP4, disk-full, crash after file rename and retry of the same known output.
+- [ ] Test publication recovery completes the same durable local candidate/attempt before interruption classification, honoring already-persisted cancellation and avoiding inference rerun.
+- [ ] Implement transactional repositories/migrations, one scheduler per store, bounded events/queues and all legal state transitions.
+- [ ] Test canonical reference reservations, trash/restore and no independent MediaAssetStore cleanup of a generated original.
+
+Deliverable: a deterministic service that a native client and external API can share; fake providers exist only in tests.
+
+### Task 3: Authenticated API, Swift transport and real packaging
+
+Files: nativ_video/routes.py; Sources/NativServerKit/NativVideoClient.swift and NativVideoTypes.swift; Docs/api/video.md. Modify nativ_server.py, runtime overlay/fingerprint builders, Developer endpoint listing and project.yml.
+
+Interfaces: NativVideoClient.info(), models(), uploadInput(file:), submit(_:idempotencyKey:), job(id:), jobs(cursor:), events(jobID:lastEventID:), cancel(jobID:), resume(jobID:), retryDownload(jobID:), download(assetID:to:). Define session/reference/restore methods to match section 7 exactly.
+
+- [ ] Test every route with/without valid bearer auth, including multipart input, poster, HEAD/range, SSE and mutations; missing generation idempotency is 400 and conflicting identity is 409.
+- [ ] Test stable pagination, unknown IDs, unsupported profile/fields, overload, old event cursors, reconnection and safe error bodies.
+- [ ] Implement one router/lifecycle installation and client transport using active server configuration; verify switching servers namespaces caches/selections by store_id.
+- [ ] Recursively copy/hash packages, workers and compatibility patches. Verify modification/deletion invalidates the actual cached distribution.
+- [ ] Enumerate packaged app.routes and require each Video method/path exactly once. Fail future upstream collisions rather than shadowing a route.
+- [ ] Launch the packaged server outside the checkout with no video weights and prove health/existing routes work and native/external clients observe one test job.
+
+Deliverable: a working public API independent of whether the Video workspace is open.
+
+### Task 4: Managed local video adapters
+
+Files: providers/ltx_mlx.py, providers/wan_mlx.py, providers/minimax_h3_mlx.py, runtime.py, dedicated worker wrappers and exact lock/manifests/build/install support under PythonDistribution/VideoRuntimes/. Add native runtime setup/repair support under VideoGeneration/.
+
+Interfaces: implement VideoProvider using Task 1's pinned profiles and Task 2's candidate contract. Worker messages carry job_id/attempt_id, bounded genuine stage progress, requested/effective values and owned output handles.
+
+- [ ] Implement LTX through the qualified public pipeline API in an owned MLX worker, including T2V/I2V and native audio, exact image preprocessing and frame-grid validation.
+- [ ] Implement the selected Wan profile with its actual model/encoder/VAE contract. Reject unsupported I2V/audio/first-last behavior and do not infer it from a related checkpoint.
+- [ ] Implement the optional H3 adapter using mlx-vlm's public generation contract, with explicit workflow/reload behavior and license/hardware gates. Fixture-test it without downloading/running restricted or unqualified weights; its unresolved eligibility does not block the other providers.
+- [ ] Build integrated install/repair with component hashes, free-space checks, controlled environment and no user PATH dependency. Never run upstream interactive/bootstrap scripts during app launch.
+- [ ] Test absent/partial weights, incompatible runtime protocol, encoder failure, invalid dimensions, nonfinite/missing audio, occupied helper port and unrelated process protection.
+- [ ] Test cooperative or process-level cancellation through model load, denoise, decode and encode; verify all owned children stop before resource release.
+- [ ] Run real generation from the bundled/signed runtime path on qualified hardware; verify decoded frames, soundtrack, output timings and replay/export.
+
+Deliverable: real local generation without requiring the user to start a separate terminal server.
+
+### Task 5: Official asynchronous cloud adapters
+
+Files: providers/ltx_cloud.py and providers/runway.py; other optional providers remain separately scoped. Add fork-scoped credentials/profile settings and fixture-based tests test_video_ltx_cloud.py and test_video_runway.py.
+
+Interfaces: adapters map the common accepted request to verified official schemas and return operation identity/results. They never set a canonical success state or auto-retry ambiguous paid POSTs.
+
+- [ ] Implement LTX's current V2 generation/poll flow, retaining endpoint type plus operation ID. Keep its upload endpoint at the documented version.
+- [ ] Implement I2V upload with returned required headers/storage identity and provider-specific size constraints; never forward provider secrets to a signed storage URL.
+- [ ] Implement Runway gen4.5 using its exact T2V/I2V schema, required version header, UTF-16 prompt limit, supported ratios/durations, silent output and output[] retrieval.
+- [ ] Test HTTP errors and terminal provider errors separately, moderation rejection without bypass/fallback, unknown submission, expired uploads/outputs, polling backoff and retry-download without regeneration.
+- [ ] Test a replaced endpoint/account profile cannot retarget polling, cancellation or retrieval of an older job; a same-account credential rotation can recover it safely.
+- [ ] Test remote cancellation semantics and reservation retention honestly. Show price basis/max-duration cost where verified; no account creation or paid generation in installation/discovery/tests.
+- [ ] Run one small real cloud acceptance test only when eligible credentials and explicit paid-test authorization/budget are available. Keep fixtures free of private images/videos and keys.
+
+Deliverable: deliberate cloud choices with durable result import and no dependency on an unavailable or retired API.
+
+### Task 6: Native Video workspace, image handoff and player
+
+Files: VideoGenerationView.swift, VideoGenerationViewModel.swift, VideoComposer.swift, VideoResultCard.swift, VideoLibraryObserver.swift and shared/native VideoPlaybackCoordinator support. Modify workspace picker, ChatWorkspaceView, control-panel shared dependencies and session/sidebar navigation minimally.
+
+Interfaces: per-window draft/selection state consumes NativVideoClient; app-scoped observation/playback references canonical store/job/asset IDs. Image Animate passes an input draft, never an immediate generation.
+
+- [ ] Test two windows, workspace switching, reconnect/relaunch, API-created jobs, provider changes and no view-lifecycle duplicate submission/model loads.
+- [ ] Build prompt, T2V/I2V, image/crop preview, supported presets/audio mode and genuine model/readiness settings.
+- [ ] Implement state cards, real posters, playback/seek/mute/full-screen/export and explicit Resume/Retry Download where eligible.
+- [ ] Implement authenticated client media caching and invalidate by store identity/content digest. Test remote-server playback without exposing tokens in URLs.
+- [ ] Verify no autoplay, blocked MainActor decode, runaway players/observers, accidental generation from Animate or cancellation on onDisappear.
+- [ ] Inspect actual Mac screenshots/interactions in light/dark, narrow/wide windows, portrait/landscape results and reduced-motion/accessibility modes.
+
+Deliverable: Video visually and behaviorally belongs to Nativ.
+
+### Task 7: Chat, Artifacts and backward-compatible history
+
+Files: ChatVideoTool.swift and result rendering; tool registry/approval/model-selection integration; Artifact generation/usage/catalog/preview/trash/index/deep links; shared data-change notifications.
+
+Interfaces: generate_video submits the public schema and returns a durable reference; service reference operations connect a chat attachment or Video session to the same original.
+
+- [ ] Test the Chat tool returns immediately, releases its inference lease, updates one card and never creates another generation after reconnect.
+- [ ] Honor existing tool policy and explicit paid provider selection; model arguments cannot broaden permissions or choose hidden paths/endpoints.
+- [ ] Reuse ArtifactKind.video, add compatible Video provenance/workspace fields and open-in-Video navigation; preserve old chat/image/music fixtures.
+- [ ] Update actual attachment classification, tool outcome/rendering and work-upload filtering for generated video references; test that MP4 is neither discarded as unsupported nor decoded as an image/model input.
+- [ ] Implement durable reference outbox/reservations and crash reconciliation between service attach and chat save; uncertain references block destructive deletion.
+- [ ] Test delayed/retried finalize after successful unlink cannot resurrect a released reference or break trash; both attach and unlink survive a native restart.
+- [ ] Verify session hide, selected-reference unlink, trash and restore never delete an original still used elsewhere.
+
+Deliverable: generated video is usable from Chat and the existing Artifacts experience without a second original.
+
+### Task 8: Audio-video qualification and performance evidence
+
+Files: Docs/development/video-runtime-qualification.md, small deterministic media fixtures, targeted Swift/Python tests and manual hardware scripts/screenshots in the normal review artifact channel.
+
+Interfaces: produce measured QualificationRecord for each released runtime/model/profile and a reproducible fixture/result manifest, separate from mocked contract results.
+
+- [ ] Validate a fixed small corpus of T2V/I2V, portrait/landscape, two seeds, native/silent audio where supported, and repeated generation. Include at least four completed clips per released local provider and all advertised first-release operations.
+- [ ] Use a synthetic timestamp/audio-marker fixture to verify frame rate, orientation, decoded duration, AAC/container behavior, seek and synchronization independently of model quality.
+- [ ] Measure cold setup/load separately from warm inference, decode/encode/import, first playable result, memory/swap and UI response.
+- [ ] Inspect generated frames and motion, reference fidelity, black/corrupt clips and soundtrack validity. A playable file alone is insufficient quality evidence.
+- [ ] Confirm that labelled drafts/previews cannot replace the original and that export/cache failure preserves a valid output.
+
+Deliverable: supported profiles have real evidence and useful limits; untested profiles remain explicitly unqualified.
+
+### Task 9: Shared resource, failure and lifecycle regressions
+
+Files: resources.py and the narrow host/server lease/audio adapters; tests test_video_resource_admission.py, VideoAudioCoordinationTests, VideoSessionSynchronizationTests and subprocess lifecycle regressions.
+
+- [ ] Test direct API generation obeys the same admission rules as native Video and cannot overlap another exclusive Music/video worker.
+- [ ] Test streamed Chat and active voice/translation hold their leases for their true lifetime; queued video holds no model weights.
+- [ ] Test server SIGKILL with surviving worker, immediate restart, cancellation during encoding, PID reuse protection and no leaked children/locks.
+- [ ] Qualify the shared server-loop fix when needed: both image generation and edits leave Video status/cancel/events and health responsive, preserving image auth/responses/cache ownership.
+- [ ] Test sleep/wake, memory pressure, device loss, disk-full, download interruption, explicit recovery holds and disabled provider profiles.
+- [ ] Verify Music/Video playback coordination and no microphone feedback during dictation/Live Translate; remote generation does not unnecessarily occupy local inference capacity.
+
+Deliverable: the feature remains responsive and bounded under actual competing workloads and failures.
+
+### Task 10: Tested upstream integration and fork release preservation
+
+Files: existing/new upstream sync and fork release workflows/scripts/tests; updater/signing configuration; project.yml/CI selectors; Python packaging and upgrade fixtures.
+
+- [ ] Extend the one authoritative source-sync workflow with Video checks while preserving Music/Translate. Test no-op, conflict, stale base and changed privileged automation.
+- [ ] Add actual new test membership and CI selection; require mandatory jobs and packaged runtime checks on the exact candidate SHA.
+- [ ] Verify no upstream stable/preview appcast fallback in the built app and correct fork identity/signature configuration.
+- [ ] Perform a controlled upgrade fixture preserving old chats/images/music, Video jobs/inputs/results and translation settings.
+- [ ] Record exact owner-only protection/secret/signing setup and produce a reviewable fork patch/PR as authorized. Do not publish or merge main as an incidental test.
+
+Deliverable: the customized app can accept verified upstream improvements and update through its own release channel.
+
+## 13. Acceptance and verification commands
+
+Release acceptance:
+
+- Video is a native workspace alongside the existing features, with useful animation, model setup and a complete player/export/history flow.
+- At least one real qualified local LTX path supports T2V and I2V, with LTX-2.5 Distilled the preferred qualification candidate; Wan2.2 TI2V-5B has a real adapter and accurately gated silent T2V/I2V capabilities. H3 remains gated independently.
+- Native audio works only where advertised and is validated in the resulting media. Duration/resolution/frame-rate normalization is visible and correct.
+- Required official cloud adapters implement their real contracts; access/hardware-dependent live tests are identified accurately.
+- App, Chat and external API clients share durable jobs/sessions/inputs/assets; multi-window/restart behavior creates no duplicates.
+- Uploads, status, SSE, poster and ranged downloads are authenticated and use stable opaque IDs.
+- Idempotency, dispatch-intent recovery, retry-download and remote cancellation/reservations prevent hidden resubmission or false stop guarantees.
+- One canonical owner manages original video files and references. Trash/restore and old-session migrations work.
+- Shared compute and playback coexist with chat/images/voice/Music/Translate, including direct API workloads and orphan-worker recovery.
+- Actual bundled runtime imports, signing/encoder execution, selected tests, fork feeds and one upgrade-preservation fixture pass.
+
+Engineering response targets are targets to measure, not existing benchmark claims:
+
+- A valid ready-profile submission is persisted and acknowledged within one second on an idle local service, before inference admission.
+- Native committed job state appears within one second while connected; external provider polling follows that provider's interval and is not disguised as one-second provider progress.
+- Local status, cancel acknowledgment and health stay under a one-second response target during competing image inference; record real percentiles.
+- Cancel reacts immediately in the UI; an unresponsive owned local process receives termination after a documented grace period, initially five seconds, followed by measured OS cleanup.
+- Seek/scroll/play remains responsive during generation; no heavy media work on MainActor and no growth in players/workers/observers after repeated runs.
+
+Derive exact build/test commands from the current repository. Expected starting points are make xcode-generate, make xcode-build, targeted xcodebuild test and python3 -m unittest discover -s scripts/tests -p 'test_video*.py' -v if that matches the implemented test framework. Lock any added test dependency. A test excluded by project.yml, framework target or CI selectors does not count.
+
+On non-Mac systems, run all possible contract/static/package checks and report why Xcode, Metal, AVFoundation playback/signing or real video generation remains unverified. Never equate fixture success with working real-model output. Do not download large models or run paid tests without the corresponding deliberate setup/authorization.
+
+## 14. Final implementation handoff
+
+Report in Dutch:
+
+1. Working Video, Images-to-Video, Chat, Artifacts and API behavior.
+2. Exact model/runtime revisions, execution location, supported profiles/audio/inputs and qualification status.
+3. Current repository rules followed and any minimum integration changes needed.
+4. Tests executed with results, real hardware/media measurements, fixture-only evidence and unavailable checks.
+5. Integrated installation/repair and provider credential setup instructions.
+6. Copyable Nativ API examples for catalogue, upload, T2V/I2V, idempotency, events, cancel, Resume, retry-download and authenticated download.
+7. Preservation of existing Music/Live Translate, shared audio and resource behavior.
+8. Source-sync versus fork binary-update behavior and exact remaining owner-only setup.
+9. Changed files/commits, concrete limitations and any experimental or unqualified profile.
+
+Do not report completion because a view compiles or a model name appears. Complete all authorized reversible implementation and possible verification. Prepare a concrete reviewable result before any necessary final publication/signing-account action.
+
+## 15. Primary research references and version discipline
+
+Research was read on 2026-11-08. Repository pins below identify the inspected evidence, not a command to downgrade the current fork. Resolve and record current compatible source/weight revisions, official model availability and API contracts before implementation; a mutable URL or model family name is not a release lock. Keep this prompt and the final qualification report with the implementation.
+
+Nativ source and host contracts:
+
+- User fork: https://github.com/CharafChnioune/nativ
+- Canonical upstream: https://github.com/Neywa-Labs/nativ
+- Inspected Nativ snapshot: https://github.com/Neywa-Labs/nativ/tree/5cb79ed65659414774745c1331cce08397d16055
+- Extension rules: https://github.com/Neywa-Labs/nativ/blob/5cb79ed65659414774745c1331cce08397d16055/Docs/extending/extensions.md
+- Images implementation: https://github.com/Neywa-Labs/nativ/tree/5cb79ed65659414774745c1331cce08397d16055/Sources/Nativ/Features/ImageGeneration
+- Artifact model and preview: https://github.com/Neywa-Labs/nativ/tree/5cb79ed65659414774745c1331cce08397d16055/Sources/Nativ/Features/Artifacts
+- Server overlay: https://github.com/Neywa-Labs/nativ/blob/5cb79ed65659414774745c1331cce08397d16055/PythonDistribution/Overlay/nativ_server.py
+- Runtime builder: https://github.com/Neywa-Labs/nativ/blob/5cb79ed65659414774745c1331cce08397d16055/PythonDistribution/Scripts/build_mlx_vlm_server.py
+- Updater: https://github.com/Neywa-Labs/nativ/blob/5cb79ed65659414774745c1331cce08397d16055/Sources/Nativ/SoftwareUpdater.swift
+- Build targets/settings: https://github.com/Neywa-Labs/nativ/blob/5cb79ed65659414774745c1331cce08397d16055/project.yml
+
+Local model/runtime sources:
+
+- Preferred LTX MLX port at inspected revision: https://github.com/dgrauet/ltx-2-mlx/tree/747b30ef10e92a011e85b2aa0f6c4ee86ced5218
+- Pipeline maturity: https://github.com/dgrauet/ltx-2-mlx/blob/747b30ef10e92a011e85b2aa0f6c4ee86ced5218/docs/PIPELINE_MATURITY.md
+- LTX-2.3 converted weights/components: https://huggingface.co/dgrauet/ltx-2.3-mlx-q8
+- Lower-memory LTX-2.3 conversion: https://huggingface.co/dgrauet/ltx-2.3-mlx-q4
+- LTX-2.5 converted weights/components: https://huggingface.co/dgrauet/ltx-2.5-mlx-q8
+- Official LTX model/license sources: https://github.com/Lightricks/LTX-2 and the original model cards linked by the exact conversion; verify every component's actual license rather than assuming the code license covers all weights.
+- Additional MLX video runtime: https://github.com/Blaizzy/mlx-video/tree/87db56a51758fefb748a359b90a5283bb8ba4837
+- Preferred Wan runtime: https://github.com/lpalbou/mlx-gen/tree/99fb94dd3eaa9dd1931cd3cd8eae1ae3e20f2ef3
+- Wan runtime model guide: https://github.com/lpalbou/mlx-gen/blob/99fb94dd3eaa9dd1931cd3cd8eae1ae3e20f2ef3/docs/wan-video.md
+- Wan runtime API contract: https://github.com/lpalbou/mlx-gen/blob/99fb94dd3eaa9dd1931cd3cd8eae1ae3e20f2ef3/docs/api.md
+- Official Wan checkpoint: https://huggingface.co/Wan-AI/Wan2.2-TI2V-5B-Diffusers
+- Prepared Wan conversion candidate: https://huggingface.co/AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit
+- HunyuanVideo-1.5: https://github.com/Tencent-Hunyuan/HunyuanVideo-1.5/tree/60783e704160023913bee78f0b47036d393d4dfa
+- CogVideo family: https://github.com/zai-org/CogVideo/tree/7a1af7154511e0ce4e4be8d62faa8c5e5a3532d2
+- Mochi MLX worker: https://github.com/SceneWorks/SceneWorks/blob/97852ea6739c19c40c63c8b78d047c4395ad30c0/crates/sceneworks-worker/src/video_jobs/mochi.rs
+- FramePack: https://github.com/lllyasviel/FramePack/tree/97fe5dbe06ac1f337ece08935b1076a35eefeeb9
+- Existing mlx-vlm generation API: https://github.com/Blaizzy/mlx-vlm/blob/a54f1a0d86fa45c466c00d819ac6ac5ba9d61ac4/mlx_vlm/generate/video_generation.py
+- Existing H3 implementation/readme: https://github.com/Blaizzy/mlx-vlm/tree/a54f1a0d86fa45c466c00d819ac6ac5ba9d61ac4/mlx_vlm/models/minimax_h3
+- Official H3 model card: https://huggingface.co/MiniMaxAI/MiniMax-H3
+- Official H3 license: https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE
+
+Required cloud providers:
+
+- LTX official documentation index: https://docs.ltx.io/llms.txt
+- LTX API base: https://api.ltx.io
+- LTX models: https://docs.ltx.io/models
+- LTX V1 retirement and migration: https://docs.ltx.io/migrate-v1-to-v2/
+- LTX V2 text submission: https://docs.ltx.io/api-documentation/api-reference/async-video-generation/submit-text-to-video
+- LTX asynchronous lifecycle: https://docs.ltx.io/async-jobs
+- LTX status contract: https://docs.ltx.io/api-documentation/api-reference/async-video-generation/get-job-status
+- LTX pricing and capacity: https://docs.ltx.io/pricing and https://docs.ltx.io/rate-limits
+- LTX model/endpoint migration and full request matrices must be followed from the current official index. Verify V2 text-to-video, image-to-video, asynchronous job retrieval, V1 upload, pricing and limits together; do not combine old synchronous examples with new job responses.
+- Runway models: https://docs.dev.runwayml.com/guides/models/
+- Runway full versioned request/response contract: https://docs.dev.runwayml.com/openapi.json
+- Runway output retrieval/lifetime: https://docs.dev.runwayml.com/assets/outputs/
+- Runway upload contract: https://docs.dev.runwayml.com/assets/uploads/
+- Runway pricing: https://docs.dev.runwayml.com/guides/pricing/
+
+Other evaluated availability/contracts:
+
+- Google current video guidance: https://ai.google.dev/gemini-api/docs/video (may redirect to https://aistudio.google.com/docs/video)
+- Google Omni generation: https://ai.google.dev/gemini-api/docs/omni
+- Google Interactions reference: https://ai.google.dev/api/interactions
+- Separate Google Cloud Veo GA model card: https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/veo/3-1-generate
+- OpenAI official deprecations: https://developers.openai.com/api/docs/deprecations
+- Luma current model capabilities: https://docs.agents.lumalabs.ai/guides/model/
+- Luma video create contract: https://docs.agents.lumalabs.ai/api/resources/generations/methods/create/
+- Luma deletion semantics: https://docs.agents.lumalabs.ai/guides/generation-deletion/
+- MiniMax hosted video guidance: https://platform.minimax.io/docs/guides/video-generation
+- MiniMax V2 contract: https://platform.minimax.io/docs/api-reference/video/generation/api/v2-video-generation.json
+- Adobe developer API changelog: https://developer.adobe.com/firefly-services/docs/firefly-api/getting-started/changelog/
+
+Media and packaging:
+
+- Apple AVFoundation/AVPlayer: https://developer.apple.com/documentation/avfoundation/avplayer
+- FFmpeg legal/build licensing: https://ffmpeg.org/legal.html
+- Sparkle update configuration: https://sparkle-project.org/documentation/
+
+These sources establish implementation inputs and constraints. No paid generation, model execution, Mac benchmark, release signing or full Nativ build was performed while preparing this plan. Implementation must supply its own real validation evidence before claiming the feature works.
