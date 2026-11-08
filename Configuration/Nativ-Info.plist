@@ -57,6 +57,10 @@
 	<string>$(NATIV_STABLE_FEED_URL)</string>
 	<key>SUEnableAutomaticChecks</key>
 	<false/>
+	<key>SURequireSignedFeed</key>
+	<true/>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
 	<key>NativPreviewFeedURL</key>
 	<string>$(NATIV_PREVIEW_FEED_URL)</string>
 	<key>NativForkRepository</key>

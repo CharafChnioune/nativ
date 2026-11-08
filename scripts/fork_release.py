@@ -94,13 +94,18 @@ def validate_info(info, sha):
         valid_key = False
     if not valid_key:
         raise ValueError("The fork's own Sparkle public key is required")
+    if info.get("SURequireSignedFeed") is not True or info.get("SUVerifyUpdateBeforeExtraction") is not True:
+        raise ValueError("Fork updates require signed feeds and archive verification before extraction")
     if not re.fullmatch(r"[1-9][0-9]*", info.get("CFBundleVersion", "")):
         raise ValueError("Fork build number must be a positive integer")
     if not re.fullmatch(r"(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)", info.get("CFBundleShortVersionString", "")):
         raise ValueError("Fork marketing version must be numeric")
-    for key in ("NativGitHubAppClientID", "NativGitHubAppSlug"):
-        if not info.get(key) or "$" in info[key] or "\n" in info[key]:
-            raise ValueError("The owner's GitHub OAuth app configuration is required")
+    client, slug = (info.get(key, "") for key in ("NativGitHubAppClientID", "NativGitHubAppSlug"))
+    if bool(client) != bool(slug):
+        raise ValueError("Optional GitHub OAuth configuration requires both client ID and app slug")
+    if client and (not re.fullmatch(r"[A-Za-z0-9_.-]+", client)
+                   or not re.fullmatch(r"[A-Za-z0-9-]+", slug)):
+        raise ValueError("Invalid GitHub OAuth public configuration")
 
 
 def validate_run(run, sha):

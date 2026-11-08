@@ -25,6 +25,8 @@ struct NativUpdateConfiguration: Equatable {
               let stable = info?["SUFeedURL"] as? String,
               let preview = info?["NativPreviewFeedURL"] as? String,
               let key = info?["SUPublicEDKey"] as? String,
+              info?["SURequireSignedFeed"] as? Bool == true,
+              info?["SUVerifyUpdateBeforeExtraction"] as? Bool == true,
               key != Self.upstreamPublicKey, Data(base64Encoded: key)?.count == 32,
               let stableURL = URL(string: stable), let previewURL = URL(string: preview),
               Self.isForkFeed(stableURL, preview: false), Self.isForkFeed(previewURL, preview: true) else {

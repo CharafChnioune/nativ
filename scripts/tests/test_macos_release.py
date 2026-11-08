@@ -17,6 +17,7 @@ from unittest.mock import patch
 import xml.etree.ElementTree as ET
 import zipfile
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 spec = importlib.util.spec_from_file_location("macos_release", Path(__file__).parents[1] / "macos_release.py")
 release = importlib.util.module_from_spec(spec)
@@ -252,7 +253,22 @@ class ReleaseTests(unittest.TestCase):
                 ET.ElementTree(root).write(args[args.index("-o") + 1], encoding="utf-8")
             '''))
             generator.chmod(0o755)
+            signer = directory / "sign_update"
+            signer.write_text(textwrap.dedent('''\
+                #!/usr/bin/env python3
+                import hashlib, pathlib, sys
+                path = pathlib.Path(sys.argv[-1])
+                marker = b"<!-- sparkle-signatures:"
+                data = path.read_bytes()
+                if "--verify" in sys.argv:
+                    body, signature = data.rsplit(marker, 1)
+                    sys.exit(0 if signature == hashlib.sha256(body).hexdigest().encode() + b"-->" else 1)
+                body = data.split(marker)[0]
+                path.write_bytes(body + marker + hashlib.sha256(body).hexdigest().encode() + b"-->")
+            '''))
+            signer.chmod(0o755)
             environment = dict(os.environ, SPARKLE_GENERATE_APPCAST=str(generator),
+                               SPARKLE_SIGN_UPDATE=str(signer),
                                SPARKLE_PRIVATE_KEY="test-key-not-used", NATIV_GITHUB_REPOSITORY="CharafChnioune/nativ")
             script = Path(__file__).parents[1] / "generate_macos_appcast.sh"
             for version in ["0.4.0", "0.4.0rc1"]:
@@ -743,6 +759,30 @@ class PreviewPublishingTests(unittest.TestCase):
         release.publish_preview(github, self.output)
         self.assertEqual(github.asset_bytes("appcast.xml"), self.output.read_bytes())
         self.assertEqual(len(ET.fromstring(self.output.read_bytes()).findall("./channel/item")), 1)
+
+    def test_fork_preview_authenticates_inputs_then_signs_final_bytes_before_upload(self):
+        github = FakePreviewGitHub()
+        github.repository = "CharafChnioune/nativ"
+        github.feeds = {key: data.replace(REPOSITORY.encode(), github.repository.encode()) for key, data in github.feeds.items()}
+        operations = []
+        def verify(data):
+            operations.append("verify")
+        def sign(path):
+            operations.append("sign")
+            Path(path).write_bytes(Path(path).read_bytes() + b"<!-- sparkle-signatures:fixture -->")
+        release.publish_preview(github, self.output, sign_feed=sign, verify_feed=verify)
+        self.assertEqual(operations, ["verify", "sign", "verify"])
+        self.assertEqual(github.asset_bytes("appcast.xml"), self.output.read_bytes())
+        self.assertIn(b"sparkle-signatures:", self.output.read_bytes())
+
+    def test_fork_preview_rejects_unsigned_input_before_any_remote_write(self):
+        for repository in ("CharafChnioune/nativ", "charafchnioune/nativ"):
+            github = FakePreviewGitHub()
+            github.repository = repository
+            github.feeds = {key: data.replace(REPOSITORY.encode(), github.repository.encode()) for key, data in github.feeds.items()}
+            with self.assertRaisesRegex(ValueError, "Unsigned feed"):
+                release.publish_preview(github, self.output)
+            self.assertFalse(github.events)
 
     def test_upload_and_verification_precede_replacing_old_feed(self):
         github = self.existing_preview()

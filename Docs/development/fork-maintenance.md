@@ -119,9 +119,14 @@ Both update feeds are explicit configuration values:
 - Stable: `https://github.com/CharafChnioune/nativ/releases/latest/download/appcast.xml`
 - Preview: `https://github.com/CharafChnioune/nativ/releases/download/preview/appcast.xml`
 
-The checked-in Sparkle key is empty. `SoftwareUpdater` does not start until the
-actual app identifier, both fork feeds and a valid non-upstream public key match.
-The UI explains that updates are unavailable. The upstream key, feeds and archive
+The fork's public Sparkle key is configured in `Configuration/Fork.xcconfig` by
+`scripts/sparkle_setup.py`; its private key stays in the macOS Keychain account
+`io.github.charafchnioune.nativ`, service `https://sparkle-project.org`.
+`SoftwareUpdater` does not start until the actual app identifier, both fork feeds
+and a valid non-upstream public key match. The UI explains incomplete configuration.
+Both `SURequireSignedFeed` and `SUVerifyUpdateBeforeExtraction` must also be true;
+missing/disabled flags fail the app's configuration check and release validation.
+The upstream key, feeds and archive
 URLs are rejected. There is no inherited team/profile fallback. The upstream
 provisioning file remains historical source material, but the signing script
 requires an explicit owner profile for Developer ID signing.
@@ -133,7 +138,8 @@ Version suffixes outside the existing numeric/`rcN` grammar are not used.
 
 ## Owner setup before publication
 
-No credentials, repository rules or protected environments were created by this
+The local Sparkle Keychain setup is separate from distribution credentials.
+No repository rules, protected environments or publication were created by this
 implementation. The inspected fork had Issues disabled, no visible rulesets and
 no published releases. Configure these concrete gates before enabling writes:
 
@@ -147,15 +153,26 @@ no published releases. Configure these concrete gates before enabling writes:
 3. Optionally install the fork-only sync App and configure `FORK_SYNC_APP_ID`
    (variable) / `FORK_SYNC_APP_PRIVATE_KEY` (secret). Otherwise explicitly approve
    token-created PR validation runs.
-4. Set public repository variables `FORK_SPARKLE_PUBLIC_KEY`,
-   `FORK_GITHUB_APP_CLIENT_ID`, `FORK_GITHUB_APP_SLUG`; use the owner's actual OAuth
-   App with device flow. The public Sparkle key must belong to this fork.
+4. The public Sparkle key is read from the reviewed `Fork.xcconfig`. Optional
+   repository variable `FORK_SPARKLE_PUBLIC_KEY` must exactly match it when set;
+   a stale/different override fails the release build. GitHub login is optional:
+   either leave both `FORK_GITHUB_APP_CLIENT_ID` and `FORK_GITHUB_APP_SLUG` empty,
+   or configure both for the owner's actual OAuth App with device flow. A partial
+   OAuth configuration fails validation; an absent one does not disable updates.
 5. Set `FORK_APPLE_TEAM_ID` and protected release secrets
    `FORK_DEVELOPER_ID_APPLICATION_P12_BASE64`,
    `FORK_DEVELOPER_ID_APPLICATION_P12_PASSWORD`,
    `FORK_PROVISIONING_PROFILE_BASE64`, `FORK_SPARKLE_PRIVATE_KEY`,
    `FORK_APPLE_API_KEY_P8_BASE64`, `FORK_APPLE_API_KEY_ID`, and
    `FORK_APPLE_API_ISSUER_ID`.
+   The local audit found an Apple Development identity, not a Developer ID
+   Application identity. The owner must supply a valid Developer ID Application
+   certificate with its private key, a matching fork provisioning profile covering
+   the actual entitlements/identities, and an App Store Connect notarization API
+   key with its real key/issuer IDs. None is replaced by the development identity.
+   The Sparkle private key exists locally in Keychain; it has not been exported or
+   installed as a GitHub secret. CI must receive that same key via the protected
+   environment before publication can run. Secret setup is still an owner gate.
 6. After review/merge and exact-main validation, create an immutable numeric fork
    tag at that combined SHA. Dispatch **Publish fork macOS release** from `main`
    with the exact `commit` and `tag`; approve the protected environment.
@@ -169,6 +186,16 @@ packages, notarizes and publishes immutable assets. Preview refresh is explicitl
 chained, since a `GITHUB_TOKEN` release event does not launch a second workflow.
 Local appcast generation requires `NATIV_GITHUB_REPOSITORY=CharafChnioune/nativ`;
 there is no upstream fallback.
+
+`sparkle_feed.py` authenticates any feed already signed by `generate_appcast`,
+then applies RC display metadata to a temporary copy, signs the final XML and
+verifies it before replacing the staging output. A failed signature or signing
+operation leaves the original file intact. The preview publisher verifies every
+source release feed before parsing/merging, signs and verifies the composed XML,
+and only then creates/uploads/promotes the rolling feed. No further XML rewriting
+occurs after signing. The post-publication check verifies downloaded fork feed
+signatures as well as byte equality. CI passes its protected Sparkle secret only
+to the official tools over stdin; helper diagnostics never expose the key.
 
 Publication re-derives the normal merge tree with `git merge-tree --write-tree`
 (Git 2.38 or later), allowing only the exact deterministic integration metadata
@@ -201,6 +228,60 @@ installation preserving Translate settings remain open acceptance gates. Unit
 tests of identity rejection do not constitute that installation test.
 
 ## Local verification
+
+Eenmalige lokale Sparkle-configuratie, vanaf de repositoryroot:
+
+```sh
+python3 scripts/sparkle_setup.py --prepare-tools --initialize
+python3 scripts/sparkle_setup.py
+python3 scripts/verify_sparkle_channel.py --output build/validation/sparkle-local-20261108
+```
+
+Het eerste commando downloadt alleen indien nodig de officiële Sparkle 2.9.4
+tools. Het controleert de gepinde archiefhash én de daadwerkelijk uitgevoerde
+binarybytes voordat het de Keychain benadert. Alleen de unieke fork-account kan
+worden aangemaakt, alleen met `--initialize`, en uitsluitend wanneer zowel de
+Keychain-account als de openbare configuratie leeg zijn. Het schrijft uitsluitend
+de openbare sleutel naar `Fork.xcconfig`; de rest van het bestand blijft behouden.
+Herhalen met dezelfde sleutel verandert niets. Een mismatch, vergrendelde
+Keychain of al vastgelegde sleutel zonder bijbehorende private key blokkeert
+de operatie. Er is geen export, import of automatische sleutelrotatie. Op een
+andere Mac moet de eigenaar toegang tot de bestaande sleutel herstellen; een
+nieuwe sleutel zou eerder uitgebrachte installaties hun vertrouwde updateketen
+ontnemen.
+
+De proef gebruikt dezelfde Keychain-account, ondertekent een klein testarchief
+en een XML-feed met de echte `sign_update` tool, downloadt beide uitsluitend via
+`127.0.0.1`, en verifieert de ontvangen bytes. Daarna moeten gewijzigde versies
+van zowel archief als feed op een ongeldige signature worden afgewezen. Een nieuwe
+outputmap bewaart de originele ondertekende artifacts en een `report.json`, zonder
+private key. Dit is bewijs van ondertekening, transport en integriteit; het
+testarchief is geen installeerbare app. Het vervangt geen oud-naar-nieuw
+Sparkle-installatietest of notarized release. De productie-app behoudt uitsluitend
+de eigen HTTPS GitHub-feed/archief-URL's; localhost wordt daar niet toegestaan.
+
+Sparkle-documentatie:
+[sleutelbeheer](https://sparkle-project.org/documentation/),
+[appcast- en archiefondertekening](https://sparkle-project.org/documentation/publishing/).
+De productie-app vereist nu ook de feedsignature: `SURequireSignedFeed=true`,
+samen met het door Sparkle vereiste `SUVerifyUpdateBeforeExtraction=true`.
+De proef controleert aanvullend de echte RC-postprocessor en de samengestelde
+preview-feed, inclusief afwijzing na sabotage van beide. Zie
+[Sparkle-configuratie](https://sparkle-project.org/documentation/customization/).
+
+Op 8 november 2026 is de eigen Keychain-sleutel werkelijk aangemaakt en de
+openbare sleutel vastgelegd:
+`YAX1zGfcsvfAec12FrJ0y+q0tsiqe6F65Y2Fvs36AR8=`.
+De eerste vijfchecks-proef staat lokaal onder
+`build/validation/sparkle-local-20261108c/`. De uitgebreide proef slaagde met alle
+acht checks onder `build/validation/sparkle-publisher-20261108/`:
+archiefsignature, feedsignature, loopbackdownload, weigering gewijzigd archief,
+weigering gewijzigde feed, ondertekende RC-postprocessing, ondertekende preview
+en weigering van gewijzigde publisher-/preview-feed. Het
+[vastgelegde meetrapport](sparkle-signature-evidence.json) bevat tijdstip, toolpin,
+openbare sleutel en artifacthashes. Er is geen private key geëxporteerd en geen
+release gepubliceerd. Een echte oude-naar-nieuwe appinstallatie, notarization en
+publiek bereikbare updatefeeds zijn hiermee niet aangetoond.
 
 ```sh
 python3 -m unittest discover -s scripts/tests -v

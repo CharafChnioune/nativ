@@ -41,6 +41,9 @@ scripts/notarize_macos_release.sh --key "$temporary_directory/notary.p8" --key-i
 [[ -n "${SPARKLE_GENERATE_APPCAST:-}" && -x "$SPARKLE_GENERATE_APPCAST" ]] || {
   echo 'Verified Sparkle release tooling was not prepared' >&2; exit 1;
 }
+[[ -n "${SPARKLE_SIGN_UPDATE:-}" && -x "$SPARKLE_SIGN_UPDATE" ]] || {
+  echo 'Verified Sparkle feed signing tooling was not prepared' >&2; exit 1;
+}
 export NATIV_GITHUB_REPOSITORY=CharafChnioune/nativ
 scripts/generate_macos_appcast.sh --tag "$RELEASE_TAG" --output dist/release/appcast.xml "$archive"
 # Recheck stale identity immediately before publishing. Existing signed assets are immutable.

@@ -18,6 +18,7 @@ final class SoftwareUpdaterTests: XCTestCase {
             "SUFeedURL": "https://github.com/CharafChnioune/nativ/releases/latest/download/appcast.xml",
             "NativPreviewFeedURL": "https://github.com/CharafChnioune/nativ/releases/download/preview/appcast.xml",
             "SUPublicEDKey": Data(repeating: 1, count: 32).base64EncodedString(),
+            "SURequireSignedFeed": true, "SUVerifyUpdateBeforeExtraction": true,
         ])
     }
 
@@ -140,8 +141,16 @@ final class SoftwareUpdaterTests: XCTestCase {
             "SUFeedURL": "https://github.com/CharafChnioune/nativ/releases/latest/download/appcast.xml",
             "NativPreviewFeedURL": "https://github.com/CharafChnioune/nativ/releases/download/preview/appcast.xml",
             "SUPublicEDKey": Data(repeating: 1, count: 32).base64EncodedString(),
+            "SURequireSignedFeed": true, "SUVerifyUpdateBeforeExtraction": true,
         ]
         XCTAssertNotNil(NativUpdateConfiguration(info: info))
+        for key in ["SURequireSignedFeed", "SUVerifyUpdateBeforeExtraction"] {
+            var changed = info
+            changed[key] = false
+            XCTAssertNil(NativUpdateConfiguration(info: changed))
+            changed.removeValue(forKey: key)
+            XCTAssertNil(NativUpdateConfiguration(info: changed))
+        }
         for key in ["SUFeedURL", "NativPreviewFeedURL"] {
             var changed = info
             changed[key] = "https://github.com/Neywa-Labs/nativ/releases/latest/download/appcast.xml"

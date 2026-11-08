@@ -5,13 +5,19 @@ import os
 from pathlib import Path
 
 from fork_release import NAMESPACE, FORK, STABLE, PREVIEW, validate_info, release_build_number
+from sparkle_setup import DEFAULT_CONFIG, read_public_key
 
 
-def configuration(commit, tag, environment):
+def configuration(commit, tag, environment, public_config=DEFAULT_CONFIG):
+    public_key = read_public_key(public_config)
+    override = environment.get("FORK_SPARKLE_PUBLIC_KEY", "")
+    if override and override != public_key:
+        raise ValueError("Repository Sparkle variable must match the checked-in fork public key")
     info = {"CFBundleIdentifier": NAMESPACE, "NativForkRepository": FORK, "NativForkRevision": commit,
             "CFBundleShortVersionString": tag.removeprefix("v").split("rc")[0], "CFBundleVersion": "1",
             "SUFeedURL": STABLE, "NativPreviewFeedURL": PREVIEW,
-            "SUPublicEDKey": environment.get("FORK_SPARKLE_PUBLIC_KEY", ""),
+            "SUPublicEDKey": public_key,
+            "SURequireSignedFeed": True, "SUVerifyUpdateBeforeExtraction": True,
             "NativGitHubAppClientID": environment.get("FORK_GITHUB_APP_CLIENT_ID", ""),
             "NativGitHubAppSlug": environment.get("FORK_GITHUB_APP_SLUG", "")}
     validate_info(info, commit)

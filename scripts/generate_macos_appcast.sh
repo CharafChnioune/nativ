@@ -118,6 +118,8 @@ if [[ -z "$generate_appcast" ]]; then
     generate_appcast="$derived_data_path/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_appcast"
 fi
 [[ -x "$generate_appcast" ]] || fail "Sparkle generate_appcast not found at $generate_appcast; resolve packages or set SPARKLE_GENERATE_APPCAST"
+export SPARKLE_SIGN_UPDATE="${SPARKLE_SIGN_UPDATE:-$(dirname "$generate_appcast")/sign_update}"
+[[ -x "$SPARKLE_SIGN_UPDATE" ]] || fail "Verified Sparkle sign_update was not prepared"
 
 temporary_directory="$(mktemp -d "${TMPDIR:-/tmp}/nativ-appcast.XXXXXX")"
 mount_path="$temporary_directory/mount"
@@ -210,10 +212,11 @@ grep -Fq "<sparkle:shortVersionString>$version</sparkle:shortVersionString>" "$g
 grep -Fq "<sparkle:version>$build_number</sparkle:version>" "$generated_appcast" || \
     fail "generated feed does not contain build $build_number"
 
-# The archive retains its numeric marketing version; display the full RC label
-# in the feed without changing the signed archive or its enclosure signature.
-python3 "$script_directory/macos_release.py" finalize-appcast "$generated_appcast" \
-    --tag "$release_tag" --repository "$github_repository"
+# Sign the final RC/display metadata, after verifying and replacing any signature
+# generate_appcast already added. The enclosure still authenticates the archive.
+feed_arguments=(finalize "$generated_appcast" --tag "$release_tag" --repository "$github_repository" --account "$account")
+if [[ -n "$private_key_path" ]]; then feed_arguments+=(--private-key "$private_key_path"); fi
+python3 "$script_directory/sparkle_feed.py" "${feed_arguments[@]}"
 
 mv "$generated_appcast" "$output_path"
 echo "Sparkle appcast: $output_path"

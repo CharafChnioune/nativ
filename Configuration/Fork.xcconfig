@@ -9,7 +9,7 @@ NATIV_TRANSLATION_EXTENSION_BUNDLE_IDENTIFIER = $(NATIV_BUNDLE_IDENTIFIER).LiveT
 // Empty expansion prevents xcconfig's // comment syntax from truncating URLs.
 NATIV_STABLE_FEED_URL = https:/$()/github.com/CharafChnioune/nativ/releases/latest/download/appcast.xml
 NATIV_PREVIEW_FEED_URL = https:/$()/github.com/CharafChnioune/nativ/releases/download/preview/appcast.xml
-NATIV_SPARKLE_PUBLIC_KEY =
+NATIV_SPARKLE_PUBLIC_KEY = YAX1zGfcsvfAec12FrJ0y+q0tsiqe6F65Y2Fvs36AR8=
 NATIV_GITHUB_APP_CLIENT_ID =
 NATIV_GITHUB_APP_SLUG =
 NATIV_UPSTREAM_SHA = 5cb79ed65659414774745c1331cce08397d16055

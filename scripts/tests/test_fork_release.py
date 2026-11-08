@@ -25,6 +25,7 @@ class ForkReleaseTests(unittest.TestCase):
             "SUFeedURL": "https://github.com/CharafChnioune/nativ/releases/latest/download/appcast.xml",
             "NativPreviewFeedURL": "https://github.com/CharafChnioune/nativ/releases/download/preview/appcast.xml",
             "SUPublicEDKey": base64.b64encode(b"a" * 32).decode(),
+            "SURequireSignedFeed": True, "SUVerifyUpdateBeforeExtraction": True,
             "NativGitHubAppClientID": "owner-client", "NativGitHubAppSlug": "owner-app",
         }
 
@@ -36,6 +37,7 @@ class ForkReleaseTests(unittest.TestCase):
             ("NativPreviewFeedURL", "https://github.com/Neywa-Labs/nativ/releases/download/preview/appcast.xml"),
             ("SUPublicEDKey", "A8x4wdNekd1aoWpU8bVdsNdOFzuua8nC1mfLCwGDSPk="),
             ("SUPublicEDKey", ""), ("CFBundleVersion", "1-translation"),
+            ("SURequireSignedFeed", False), ("SUVerifyUpdateBeforeExtraction", False),
             ("NativForkRevision", "b" * 40), ("NativGitHubAppClientID", ""),
         ]:
             with self.assertRaises(ValueError, msg=key):
@@ -49,6 +51,13 @@ class ForkReleaseTests(unittest.TestCase):
                            ("path", ".github/workflows/other.yml"), ("head_branch", "upstream"), ("event", "pull_request")]:
             with self.assertRaises(ValueError, msg=key):
                 self.module.validate_run({**run, key: value}, "a" * 40)
+
+    def test_oauth_is_optional_but_partial_or_invalid_configuration_fails(self):
+        self.module.validate_info({**self.info, "NativGitHubAppClientID": "", "NativGitHubAppSlug": ""}, "a" * 40)
+        for client, slug in [("", "app"), ("client", ""), ("$(INHERITED)", "app"), ("client", "bad/slug")]:
+            with self.assertRaisesRegex(ValueError, "OAuth"):
+                self.module.validate_info({**self.info, "NativGitHubAppClientID": client,
+                                           "NativGitHubAppSlug": slug}, "a" * 40)
 
     def test_tag_and_numeric_version_must_match_validated_fork_commit(self):
         self.module.validate_release_identity("v1.0.0", "a" * 40, "a" * 40, "a" * 40)

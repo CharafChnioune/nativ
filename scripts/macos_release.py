@@ -210,7 +210,7 @@ def is_temporary_appcast(asset):
     return bool(asset and (asset.get("label") or "").startswith(TEMPORARY_APPCAST_LABEL))
 
 
-def release_items(github, releases, *, check_downloads=False):
+def release_items(github, releases, *, check_downloads=False, verify_feed=None):
     result = []
     for release in releases:
         if release.get("draft") or release.get("tag_name") == PREVIEW_TAG:
@@ -227,7 +227,10 @@ def release_items(github, releases, *, check_downloads=False):
         if not archive or archive.get("state") != "uploaded":
             raise ValueError(f"{tag}: appcast exists without a completely uploaded archive")
         url = f"https://github.com/{github.repository}/releases/download/{tag}/appcast.xml"
-        item = parse_item(github.request(url), tag, github.repository)
+        feed = github.request(url)
+        if verify_feed is not None:
+            verify_feed(feed)
+        item = parse_item(feed, tag, github.repository)
         enclosure = item.find("enclosure")
         if int(enclosure.get("length")) != archive["size"]:
             raise ValueError(f"{tag}: archive length differs from signed appcast")
@@ -276,14 +279,23 @@ def verify_appcast_download(github, tag, name, data):
     raise ValueError(f"{tag}: published asset does not match the validated feed: {name}")
 
 
-def publish_preview(github, output_path):
+def publish_preview(github, output_path, *, sign_feed=None, verify_feed=None):
     # Reconstruct from versioned releases instead of editing the previous rolling
     # feed. This handles final releases, retractions, and publication retries.
-    records = release_items(github, github.releases(), check_downloads=True)
+    if github.repository.casefold() == "charafchnioune/nativ":
+        from sparkle_feed import sign_feed as sign_fork_feed, verify_feed_bytes
+        sign_feed = sign_feed or sign_fork_feed
+        verify_feed = verify_feed or verify_feed_bytes
+    records = release_items(github, github.releases(), check_downloads=True, verify_feed=verify_feed)
     if not records:
         raise ValueError("No completed macOS releases are available for the preview feed")
     data = preview_appcast(records)
     atomic_write(output_path, data)
+    if sign_feed is not None:
+        sign_feed(output_path)
+        data = Path(output_path).read_bytes()
+        if verify_feed is not None:
+            verify_feed(data)
     try:
         preview = github.release(PREVIEW_TAG)
     except urllib.error.HTTPError as error:
