@@ -1,0 +1,13 @@
+diff --git a/tools/server/server-http.cpp b/tools/server/server-http.cpp
+index cf147c7e7..566aef3ce 100644
+--- a/tools/server/server-http.cpp
++++ b/tools/server/server-http.cpp
+@@ -332,2 +332,8 @@ bool server_http_context::init_listener(const common_params & params) {
+     srv->set_pre_routing_handler([&params, middleware_validate_api_key, middleware_server_state](const httplib::Request & req, httplib::Response & res) {
++        // Nativ native helper: no browser Origin is accepted, including WebSocket upgrades.
++        if (!req.get_header_value("Origin").empty()) {
++            res.status = 403;
++            res.set_content("Browser origins are not allowed", "text/plain");
++            return httplib::Server::HandlerResponse::Handled;
++        }
+         if (params.cors_credentials && params.cors_origins == "*") {

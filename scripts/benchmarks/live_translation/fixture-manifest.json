@@ -1,0 +1,863 @@
+{
+  "schemaVersion": 1,
+  "origin": "Original task-authored text; record with consenting human speakers before qualification.",
+  "status": "unrecorded-unreviewed",
+  "directions": [
+    "nl-en",
+    "en-nl"
+  ],
+  "turnsPerDirection": 30,
+  "recordingPolicy": "No microphone activation by scripts. Record each source text explicitly; keep consent and recordings outside git. Reference translations require competent bilingual review. Noise/codeswitch variants must be recorded and identified, never inferred.",
+  "reviewFields": [
+    "meaningPreserved",
+    "numbersNegationsCorrect",
+    "spokenMatchesCommittedText",
+    "targetLanguageCorrect",
+    "noAdditions",
+    "completeSpeech",
+    "reviewer",
+    "notes"
+  ],
+  "turns": [
+    {
+      "id": "nl-01",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "De afspraak is om half vier, niet om vier uur.",
+      "referenceTranslation": "The appointment is at half past three, not at four.",
+      "tags": [
+        "number",
+        "negation",
+        "time"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-02",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Kunt u twee plaatsen voor vrijdag reserveren?",
+      "referenceTranslation": "Could you reserve two seats for Friday?",
+      "tags": [
+        "number",
+        "question"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-03",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Waar kan Samira haar fiets neerzetten?",
+      "referenceTranslation": "Where can Samira park her bicycle?",
+      "tags": [
+        "name",
+        "question"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-04",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Stuur het pakket niet naar mijn oude adres.",
+      "referenceTranslation": "Do not send the parcel to my old address.",
+      "tags": [
+        "negation",
+        "command"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-05",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "De doos weegt twaalf en een halve kilo.",
+      "referenceTranslation": "The box weighs twelve and a half kilograms.",
+      "tags": [
+        "number",
+        "unit"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-06",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Ik kom op acht december terug.",
+      "referenceTranslation": "I will return on the eighth of December.",
+      "tags": [
+        "date",
+        "number"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-07",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Het totaal is zevenendertig euro en vijftig cent.",
+      "referenceTranslation": "The total is thirty-seven euros and fifty cents.",
+      "tags": [
+        "number",
+        "money"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-08",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Heb je de deur niet op slot gedaan?",
+      "referenceTranslation": "Did you not lock the door?",
+      "tags": [
+        "negation",
+        "question"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-09",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Meneer Van Dijk wacht bij perron zes.",
+      "referenceTranslation": "Mr Van Dijk is waiting at platform six.",
+      "tags": [
+        "name",
+        "number"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-10",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Leg uit waarom de trein vandaag later vertrekt.",
+      "referenceTranslation": "Explain why the train leaves later today.",
+      "tags": [
+        "command",
+        "question-as-translation"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-11",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Welke bus rijdt naar het museum?",
+      "referenceTranslation": "Which bus goes to the museum?",
+      "tags": [
+        "question"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-12",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Ik heb drie sleutels, maar geen sleutel van de garage.",
+      "referenceTranslation": "I have three keys, but no key to the garage.",
+      "tags": [
+        "negation",
+        "number"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-13",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Sla na tweehonderd meter linksaf.",
+      "referenceTranslation": "Turn left after two hundred metres.",
+      "tags": [
+        "unit",
+        "number"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-14",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Noor belt je morgenochtend voor negen uur.",
+      "referenceTranslation": "Noor will call you tomorrow morning before nine.",
+      "tags": [
+        "name",
+        "time"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-15",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Ik ben niet boos, ik ben alleen teleurgesteld.",
+      "referenceTranslation": "I am not angry, I am just disappointed.",
+      "tags": [
+        "negation",
+        "tone"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-16",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Is kamer tweehonderdtien op de tweede verdieping?",
+      "referenceTranslation": "Is room two hundred and ten on the second floor?",
+      "tags": [
+        "number",
+        "question"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-17",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Open het raam en laat de computer uit.",
+      "referenceTranslation": "Open the window and leave the computer off.",
+      "tags": [
+        "command",
+        "tool-boundary"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-18",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "De winkel is maandag gesloten, niet zondag.",
+      "referenceTranslation": "The shop is closed on Monday, not on Sunday.",
+      "tags": [
+        "date",
+        "negation"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-19",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Kun je dat herhalen als de bus voorbij is?",
+      "referenceTranslation": "Can you repeat that once the bus has passed?",
+      "tags": [
+        "noise-variant-required",
+        "question"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-20",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "We ontmoeten elkaar om kwart over elf bij de ingang.",
+      "referenceTranslation": "We will meet at quarter past eleven by the entrance.",
+      "tags": [
+        "noise-variant-required",
+        "number"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-21",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "De meeting begint straks, maar de agenda is nog niet klaar.",
+      "referenceTranslation": "The meeting starts shortly, but the agenda is not ready yet.",
+      "tags": [
+        "code-switch"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-22",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Alex zei take care voordat hij de trein instapte.",
+      "referenceTranslation": "Alex said take care before he boarded the train.",
+      "tags": [
+        "code-switch",
+        "name"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-23",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Dat kan morgen.",
+      "referenceTranslation": "That can be done tomorrow.",
+      "tags": [
+        "short",
+        "ambiguity"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-24",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Nee, de andere kant.",
+      "referenceTranslation": "No, the other side.",
+      "tags": [
+        "short",
+        "negation"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-25",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Houd minstens anderhalve meter afstand van de rand.",
+      "referenceTranslation": "Keep at least one and a half metres away from the edge.",
+      "tags": [
+        "number",
+        "units"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-26",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Als het niet regent, gaan we lopend naar huis.",
+      "referenceTranslation": "If it does not rain, we will walk home.",
+      "tags": [
+        "negation",
+        "condition"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-27",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Mijn achternaam is Bakker, met dubbel k.",
+      "referenceTranslation": "My surname is Bakker, with a double k.",
+      "tags": [
+        "name",
+        "spelling"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-28",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Sorry, ik bedoelde vijftien dozen, geen vijftig.",
+      "referenceTranslation": "Sorry, I meant fifteen boxes, not fifty.",
+      "tags": [
+        "number",
+        "correction"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-29",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Zou u mij kunnen vertellen of deze stoel vrij is?",
+      "referenceTranslation": "Could you tell me whether this seat is available?",
+      "tags": [
+        "question",
+        "intent"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "nl-30",
+      "sourceLanguage": "nl",
+      "targetLanguage": "en",
+      "text": "Kopieer alleen de laatste twee regels en verwijder niets.",
+      "referenceTranslation": "Copy only the last two lines and do not delete anything.",
+      "tags": [
+        "command",
+        "negation",
+        "number"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-01",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "The appointment is at half past three, not at four.",
+      "referenceTranslation": "De afspraak is om half vier, niet om vier uur.",
+      "tags": [
+        "number",
+        "negation",
+        "time"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-02",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "Could you reserve two seats for Friday?",
+      "referenceTranslation": "Kunt u twee plaatsen voor vrijdag reserveren?",
+      "tags": [
+        "number",
+        "question"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-03",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "Where can Samira park her bicycle?",
+      "referenceTranslation": "Waar kan Samira haar fiets neerzetten?",
+      "tags": [
+        "name",
+        "question"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-04",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "Do not send the parcel to my old address.",
+      "referenceTranslation": "Stuur het pakket niet naar mijn oude adres.",
+      "tags": [
+        "negation",
+        "command"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-05",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "The box weighs twelve and a half kilograms.",
+      "referenceTranslation": "De doos weegt twaalf en een halve kilo.",
+      "tags": [
+        "number",
+        "unit"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-06",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "I will return on the eighth of December.",
+      "referenceTranslation": "Ik kom op acht december terug.",
+      "tags": [
+        "date",
+        "number"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-07",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "The total is thirty-seven euros and fifty cents.",
+      "referenceTranslation": "Het totaal is zevenendertig euro en vijftig cent.",
+      "tags": [
+        "number",
+        "money"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-08",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "Did you not lock the door?",
+      "referenceTranslation": "Heb je de deur niet op slot gedaan?",
+      "tags": [
+        "negation",
+        "question"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-09",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "Mr Van Dijk is waiting at platform six.",
+      "referenceTranslation": "Meneer Van Dijk wacht bij perron zes.",
+      "tags": [
+        "name",
+        "number"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-10",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "Explain why the train leaves later today.",
+      "referenceTranslation": "Leg uit waarom de trein vandaag later vertrekt.",
+      "tags": [
+        "command",
+        "question-as-translation"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-11",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "Which bus goes to the museum?",
+      "referenceTranslation": "Welke bus rijdt naar het museum?",
+      "tags": [
+        "question"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-12",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "I have three keys, but no key to the garage.",
+      "referenceTranslation": "Ik heb drie sleutels, maar geen sleutel van de garage.",
+      "tags": [
+        "negation",
+        "number"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-13",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "Turn left after two hundred metres.",
+      "referenceTranslation": "Sla na tweehonderd meter linksaf.",
+      "tags": [
+        "unit",
+        "number"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-14",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "Noor will call you tomorrow morning before nine.",
+      "referenceTranslation": "Noor belt je morgenochtend voor negen uur.",
+      "tags": [
+        "name",
+        "time"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-15",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "I am not angry, I am just disappointed.",
+      "referenceTranslation": "Ik ben niet boos, ik ben alleen teleurgesteld.",
+      "tags": [
+        "negation",
+        "tone"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-16",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "Is room two hundred and ten on the second floor?",
+      "referenceTranslation": "Is kamer tweehonderdtien op de tweede verdieping?",
+      "tags": [
+        "number",
+        "question"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-17",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "Open the window and leave the computer off.",
+      "referenceTranslation": "Open het raam en laat de computer uit.",
+      "tags": [
+        "command",
+        "tool-boundary"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-18",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "The shop is closed on Monday, not on Sunday.",
+      "referenceTranslation": "De winkel is maandag gesloten, niet zondag.",
+      "tags": [
+        "date",
+        "negation"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-19",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "Can you repeat that once the bus has passed?",
+      "referenceTranslation": "Kun je dat herhalen als de bus voorbij is?",
+      "tags": [
+        "noise-variant-required",
+        "question"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-20",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "We will meet at quarter past eleven by the entrance.",
+      "referenceTranslation": "We ontmoeten elkaar om kwart over elf bij de ingang.",
+      "tags": [
+        "noise-variant-required",
+        "number"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-21",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "The meeting starts shortly, but the agenda is not ready yet.",
+      "referenceTranslation": "De meeting begint straks, maar de agenda is nog niet klaar.",
+      "tags": [
+        "code-switch"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-22",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "Alex said tot morgen before he boarded the train.",
+      "referenceTranslation": "Alex zei tot morgen voordat hij in de trein stapte.",
+      "tags": [
+        "code-switch",
+        "name"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-23",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "That can be done tomorrow.",
+      "referenceTranslation": "Dat kan morgen.",
+      "tags": [
+        "short",
+        "ambiguity"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-24",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "No, the other side.",
+      "referenceTranslation": "Nee, de andere kant.",
+      "tags": [
+        "short",
+        "negation"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-25",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "Keep at least one and a half metres away from the edge.",
+      "referenceTranslation": "Houd minstens anderhalve meter afstand van de rand.",
+      "tags": [
+        "number",
+        "units"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-26",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "If it does not rain, we will walk home.",
+      "referenceTranslation": "Als het niet regent, gaan we lopend naar huis.",
+      "tags": [
+        "negation",
+        "condition"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-27",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "My surname is Bakker, with a double k.",
+      "referenceTranslation": "Mijn achternaam is Bakker, met dubbel k.",
+      "tags": [
+        "name",
+        "spelling"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-28",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "Sorry, I meant fifteen boxes, not fifty.",
+      "referenceTranslation": "Sorry, ik bedoelde vijftien dozen, geen vijftig.",
+      "tags": [
+        "number",
+        "correction"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-29",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "Could you tell me whether this seat is available?",
+      "referenceTranslation": "Zou u mij kunnen vertellen of deze stoel vrij is?",
+      "tags": [
+        "question",
+        "intent"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    },
+    {
+      "id": "en-30",
+      "sourceLanguage": "en",
+      "targetLanguage": "nl",
+      "text": "Copy only the last two lines and do not delete anything.",
+      "referenceTranslation": "Kopieer alleen de laatste twee regels en verwijder niets.",
+      "tags": [
+        "command",
+        "negation",
+        "number"
+      ],
+      "recording": null,
+      "consent": null,
+      "review": null
+    }
+  ]
+}
