@@ -10,7 +10,15 @@ spec.loader.exec_module(evidence)
 class TranslationTestEvidenceTests(unittest.TestCase):
     def test_resource_and_lifecycle_regressions_are_required(self):
         self.assertTrue({"TranslationResourceAssessmentTests", "TranslationHostOperationGateTests",
-                         "TranslationDownloadReservationsTests"}.issubset(evidence.REQUIRED))
+                         "TranslationDownloadReservationsTests", "TranslationCascadeRuntimeTests",
+                         "ManagedTranslationCascadeResourcesTests", "TranslationStageCatalogTests"}.issubset(evidence.REQUIRED))
+
+    def test_cascade_ownership_cases_cannot_be_replaced_by_green_placeholder(self):
+        tree = self.fixture()
+        suite = next(node for node in tree["testNodes"] if node["name"] == "ManagedTranslationCascadeResourcesTests")
+        suite["children"] = [{"nodeType": "Test Case", "name": "testPlaceholder", "result": "Passed"}]
+        with self.assertRaisesRegex(ValueError, "Missing executed deterministic tests"):
+            evidence.verify({"totalTestCount": len(evidence.REQUIRED), "failedTests": 0}, tree)
 
     def fixture(self):
         return {"testNodes": [{"nodeType": "Test Suite", "name": name, "children": [
@@ -44,6 +52,17 @@ class TranslationTestEvidenceTests(unittest.TestCase):
         runtime["children"][0]["name"] = "testStopOwnedHelper()"
         with self.assertRaisesRegex(ValueError, "skipped"):
             evidence.verify(summary, tree)
+
+    def test_optional_host_inference_is_reported_without_qualifying_the_profile(self):
+        tree = self.fixture()
+        tree["testNodes"].append({"nodeType": "Test Suite", "name": "TranslationCascadeInferenceTests", "children": [
+            {"nodeType": "Test Case", "name": "testExplicitOwnedHostCascadeSyntheticInference()", "result": "Skipped"}
+        ]})
+        unrun = []
+        found = evidence.verify({"totalTestCount": len(evidence.REQUIRED) + 1, "failedTests": 0}, tree, unrun)
+        self.assertEqual(set(found), evidence.REQUIRED)
+        self.assertNotIn("TranslationCascadeInferenceTests", found)
+        self.assertEqual(unrun, ["TranslationCascadeInferenceTests.testExplicitOwnedHostCascadeSyntheticInference"])
 
     def test_whisper_preparation_requires_deterministic_tests_and_reports_artifact_skip(self):
         summary = {"totalTestCount": len(evidence.REQUIRED) + 1, "failedTests": 0}

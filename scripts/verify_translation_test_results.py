@@ -4,17 +4,25 @@ import argparse
 import json
 import subprocess
 
-REQUIRED = {"TranslationModelStoreTests", "TranslationRuntimeTests", "AudioSessionCoordinatorTests",
+REQUIRED = {"CascadedTranslationBackendTests", "TranslationContentGuardTests", "TranslationAutomaticDirectionTests", "TranslationModelStoreTests", "TranslationRuntimeTests", "AudioSessionCoordinatorTests",
             "TranslationAudioTests", "LiveTranslationIntegrationTests", "SoftwareUpdaterTests",
             "TranslationLocalTransportTests", "TranslationWhisperPreparationTests",
             "TranslationResourceAssessmentTests", "TranslationHostOperationGateTests",
-            "TranslationDownloadReservationsTests"}
+            "TranslationDownloadReservationsTests", "TranslationCascadeRuntimeTests",
+            "ManagedTranslationCascadeResourcesTests", "TranslationStageCatalogTests", "TranslationStockVoicePreparationTests"}
 REQUIRED_CASES = {("TranslationWhisperPreparationTests", "testDifferentRevisionDoesNotCreatePreparedFiles"),
-                  ("TranslationWhisperPreparationTests", "testAlreadyCancelledPreparationDoesNotTouchTheCache")}
+                  ("TranslationWhisperPreparationTests", "testAlreadyCancelledPreparationDoesNotTouchTheCache"),
+                  ("ManagedTranslationCascadeResourcesTests", "testInvalidatedPendingBeginCannotResurrectAfterCleanup"),
+                  ("ManagedTranslationCascadeResourcesTests", "testStaleReleaseAndInvalidationCannotUnloadNextGeneration"),
+                  ("ManagedTranslationCascadeResourcesTests", "testInvalidationDuringSpeechAdmissionDrainsPreparerBeforeNextGeneration"),
+                  ("TranslationStockVoicePreparationTests", "testAlreadyCancelledStockPreparationHasNoFilesystemOrNetworkEffects"),
+                  ("TranslationStockVoicePreparationTests", "testInvalidReferenceNeverBecomesInstalledStockVoice")}
 # Real model inference is a separate explicit qualification job. Its absence must
 # be reported, and it cannot stand in for the deterministic runtime lifecycle tests.
 OPTIONAL_QUALIFICATION = {("TranslationRuntimeTests", "testExplicitLocalRuntimeIntegration"),
-                          ("TranslationWhisperPreparationTests", "testPinnedArtifactsPrepareWithoutChangingSourceSnapshot")}
+                          ("TranslationWhisperPreparationTests", "testPinnedArtifactsPrepareWithoutChangingSourceSnapshot"),
+                          ("TranslationStockVoicePreparationTests", "testPinnedStockArtifactsInstallIdempotentlyAndRequireTheirLicense"),
+                          ("TranslationCascadeInferenceTests", "testExplicitOwnedHostCascadeSyntheticInference")}
 
 
 def verify(summary, tree, unrun=None):
@@ -26,16 +34,17 @@ def verify(summary, tree, unrun=None):
     def visit(node, suite=None):
         if node.get("nodeType") == "Test Suite":
             suite = node.get("name", "").split(".")[-1]
-        if node.get("nodeType") == "Test Case" and suite in REQUIRED:
+        if node.get("nodeType") == "Test Case":
             name = node.get("name", "").removesuffix("()")
             if node.get("result") == "Skipped" and (suite, name) in OPTIONAL_QUALIFICATION:
                 if unrun is not None:
                     unrun.append(suite + "." + name)
                 return
-            if node.get("result") != "Passed":
-                raise ValueError("Required test was skipped or did not pass: " + node.get("name", ""))
-            found.add(suite)
-            executed_cases.add((suite, name))
+            if suite in REQUIRED:
+                if node.get("result") != "Passed":
+                    raise ValueError("Required test was skipped or did not pass: " + node.get("name", ""))
+                found.add(suite)
+                executed_cases.add((suite, name))
         for child in node.get("children", []):
             visit(child, suite)
 
