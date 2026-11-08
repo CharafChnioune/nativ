@@ -149,7 +149,9 @@ struct LiveTranslationView: View {
             switch value.speechProvider {
             case .omni: speech = "LFM3-Omni " + value.quantization
             case .chatterbox: speech = value.chatterboxModel
-            case .localModel: speech = value.speechModel + (value.speechVoice.isEmpty ? "" : " · " + value.speechVoice)
+            case .localModel:
+                speech = value.speechModel.isEmpty ? "No speech model selected"
+                    : value.speechModel + (value.speechVoice.isEmpty ? "" : " · " + value.speechVoice)
             case .apple: speech = AVSpeechSynthesisVoice(identifier: value.appleVoiceID)?.name ?? "Choose a system voice"
             }
         }
@@ -365,7 +367,9 @@ struct LiveTranslationView: View {
     }
     private func modelPicker(_ title: String, selection: Binding<String>, candidates: [LocalModel]) -> some View {
         Picker(title, selection: selection) {
-            if !candidates.contains(where: { $0.repoID == selection.wrappedValue }) {
+            if selection.wrappedValue.isEmpty {
+                Text("Choose a \(title.lowercased())").tag("")
+            } else if !candidates.contains(where: { $0.repoID == selection.wrappedValue }) {
                 Text(selection.wrappedValue + " · not installed").tag(selection.wrappedValue)
             }
             ForEach(candidates) { Text($0.displayTitle).tag($0.repoID) }
