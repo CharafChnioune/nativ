@@ -74,6 +74,16 @@ De helper verdween aantoonbaar na cleanup, maar eindigde met `SIGABRT` (exitcode
 
 Een eventuele tweede duurproef moet een nieuw cohort krijgen na aantoonbaar stabielere achtergrondbelasting. De druk- en swapgrenzen mogen niet worden verruimd en een nieuwe baseline mag deze mislukte poging niet verbergen.
 
+### Tweede poging: niet gestart na baselinecontrole
+
+Na afronding van de native build/tests en het stoppen van de previewserver is op 8 november 2026 van 13:38:55 tot 13:39:55 UTC één aparte uitgangsmeting uitgevoerd. Er is **geen tweede modelrun gestart**. De voorgenomen tweede run had 1800 seconden, minimaal 200 warme turns en tien proceskoude starts moeten omvatten, met dezelfde swap-/criticalguards. De eerste mislukte run is niet vervangen of samengevoegd.
+
+De vooraf vastgelegde startcriteria waren: minstens zestig seconden meten; iedere sample OS-pressure 1; swaprange maximaal 128 MiB; absolute nettoverandering maximaal 64 MiB; geen sample boven de oorspronkelijke 18.990,62 MiB-baseline. De read-only observatie duurde 60,075 seconden en leverde 56 samples. **Alle 56 hadden OS-pressure 2 (warning)**. Swap daalde van 18.262,94 naar 18.158,94 MiB, een nettoverandering van −104 MiB. De swaprange en oorspronkelijke bovengrens voldeden, maar normale druk en nettostabiliteit niet. Er waren tijdens deze uitgangsmeting geen xcodebuild-, Swift- of clang-processen zichtbaar. Andere apps bleven ongemoeid.
+
+Het afzonderlijke bewijs staat in [`endurance-retry-preflight.json`](../../scripts/benchmarks/live_translation/endurance-retry-preflight.json), inclusief de volledige uitgangsreeks, criteria, observerhash en hash van het ongewijzigde eerste bewijs. De exact gebruikte read-only observer staat in [`observe_baseline.py`](../../scripts/benchmarks/live_translation/observe_baseline.py). Deze start nooit een model. Herhalen kan met een nieuwe uitvoerbestandsnaam en dezelfde expliciete referentie; voor deze oplevering is geen nieuwe uitgangsmeting of modelrun uitgevoerd.
+
+Het behaalde resultaat blijft dus tien koude processtarts, 38 warme transportturns en een na circa zeven minuten afgebroken run. Honderd warme observaties per mode, dertig minuten duurproef, menselijke kwalificatie en akoestische acceptatie blijven open. Er is nog steeds geen echte 128 GB-meting.
+
 ## Harnesscontrole
 
 Acht deterministische tests behandelen correcte mediaan/nearest-rank-p95, het uitsluiten maar wel meetellen van fouten en onderbrekingen, het weigeren van incomplete/afgebroken succesclaims, OS-pressure/swapparsing, onvolledige poortregels, over HTTP gesplitste FLOAT32-samples, stille eerste PCM-chunks en precies één beëindigingssignaal bij guard plus cleanup. De regressies zijn eerst rood waargenomen en daarna groen uitgevoerd. Deze tests laden geen model. De oorspronkelijke runtimeproeven en het onafhankelijke audio/core-reviewrapport blijven aparte bewijsstukken.

@@ -216,71 +216,47 @@ protection, changed bases, existing human edits, moved tags and pre-push workflo
 blocking. Release fixtures cover exact validated commits, skipped checks, numeric
 ordering and rejection of upstream update identities.
 
-The local app build completed successfully; the full native test gate is separate.
-The first `xcodebuild test` attempt from the Desktop checkout stopped before a
-case ran because macOS requested Desktop-folder access for Xcode/xctest. The
-sample and TCC event are retained in `build/validation/native-test-startup-sample.txt`
-and `native-test-tcc.log`. Only the owned runner was stopped; privacy settings
-were not changed. That interruption was neither a test pass nor an assertion failure.
+## Executed development validation
 
-A source snapshot outside Desktop under
-`~/Library/Developer/NativLiveTranslationValidation/20261108-1352` allowed real
-native validation. `build/validation/native-snapshot-files.json` records source
-paths and hashes; XcodeGen regenerated the missing test-action scheme. Actual
-XCTest discovery then exposed the baseline CoreAI/Parakeet metadata crash on
-macOS 26.6. The narrow fix preserves CoreAI's availability boundary and all tests.
-A subsequent full run in `native-tests-regressions.log` completed with failures
-in a stale PDF-excerpt assertion, WebKit's blank replacement-page navigation and
-chat recovery, and wake-word fixtures. Those regressions are now corrected: `native-tests-validated.log` completed
-with exit 0 and `TEST SUCCEEDED`. The result bundle is
-`~/Library/Developer/NativLiveTranslationValidation/20261108-1352/build/TranslationTests-validated.xcresult`.
-It contains **1802 logical cases: 1794 passed, eight explicit skips, zero failed**.
-The 1799 passing invocations include dynamic parameter variants; do not report
-those as extra test cases. `native-evidence-validated.log` confirms all eleven
-required classes actually passed. The portable [validation results](validation-results.json)
-name all eight unrun optional integration/model cases and record the log hash.
+The final Make/Xcode build succeeded with app source revision
+`e1cf3640ef066cf3bd7e1f149701c6294bf5a0f9`. The complete native suite ran
+1,802 logical cases: 1,794 passed, eight explicit optional model/integration
+checks skipped, zero failures. The 1,799 passed invocations include dynamic
+parameter variants and are not a separate total. All eleven required classes
+passed the result-bundle verifier. SwiftPM's 53 tests overlap the native framework
+target. Local Python: 123 discovered, 122 passed, one explicit optional check skipped.
+See [machine-readable evidence](validation-results.json) for counts and skipped names.
 
-The functional app code is commit `e1cf3640ef066cf3bd7e1f149701c6294bf5a0f9`;
-`fb3ec9163caaa34cbd680788dcb820d400d93283` adds benchmark evidence. The final
-source snapshot manifest is `native-snapshot-final-files.json`. After the full
-run compiled, only one extra EOF blank line was removed from
-`TranslationWhisperPreparation.swift`. Its targeted exact-file test then passed:
-two passed, one explicit artifact skip, zero failures (`native-whisper-final.log`).
-The final Make build also succeeded (`development-build-verified-revision.log`);
-the built Info.plist contains `io.github.charafchnioune.nativ` and
-`NativForkRevision=e1cf3640ef066cf3bd7e1f149701c6294bf5a0f9`. No functional app
-change followed the successful suite. Final preview signing and the draft-PR
-URL remain pending in the [acceptance matrix](live-translation-acceptance.md). The
-[development bundle evidence](development-bundle-evidence.json) confirms 649
-compiled inputs match the canonical repository, the app/three-framework/two-appex
-identities and bindings, the bundled arm64 helper, and updates disabled because
-the own Sparkle key is empty. This is not distribution qualification.
+The original Desktop checkout encountered a TCC test-startup prompt and absolute
+debug-library paths that stalled app launch. The source snapshot and DerivedData
+under `~/Library/Developer/NativLiveTranslationValidation/20261108-1352` resolved
+those obstacles without changing macOS privacy settings. Only owned runners were
+stopped. The native run exposed baseline CoreAI reflection, PDF assertion and
+WebKit recovery problems; those were reproduced, corrected and passed in the
+full suite. The [audit and reviews](live-translation-acceptance.md) retain the evidence.
+One trailing blank line was removed after that suite's compilation; the exact final
+Whisper source was rebuilt and its two deterministic tests passed again, with the
+optional artifact test explicitly skipped. All 649 final compiled inputs match
+the canonical repository.
 
-The native dark Translate page was actually observed in an owned preview under
-Library/Developer signed with an existing valid Apple Development identity via
-`sign_macos_debug.sh`. Its direct/cascade selectors and inactive behavior are
-recorded in the [UI inspection](live-translation-ui.md). The initial ad-hoc
-preview did not reach a visible interface (AMFI -423); a started process was not
-UI evidence. A later product retained absolute Desktop debug library paths and
-stalled at launch. Rebuilding from the source snapshot outside Desktop resolved
-that obstacle. See the [local build instructions](../features/live-translation.md)
-for the checked signing/launch route; relocating only the app is insufficient.
-The launcher remains restricted to the owned fork identity.
+The final owned preview passed Apple Development deep/strict signature verification
+and visibly opened outside Desktop. [Bundle evidence](development-bundle-evidence.json)
+checks the actual app, three framework identities, both extension bindings and
+bundled arm64 helper. [UI observations](live-translation-ui.md) include accessible
+extension labels and shared idle language direction across two windows. The initial
+ad-hoc attempt was not a successful UI launch; use the verified
+[local build/signing route](../features/live-translation.md).
 
-These observations do not qualify overlay/notch behavior, multiple windows,
-sleep/lock, real audio, voice quality or a 128 GB Mac. The screenshots precede
-the latest baseline fixes and the final generic extension accessibility-label
-change. Apple Development signing is not Developer ID signing, notarization,
-publication or proof of a working Sparkle update. Those credentials and release
-gates remain open. The intended review deliverable is a development PR; the
-verified bundle revision is recorded; final preview signing and the PR URL remain
-pending in the acceptance matrix.
-The second real endurance cohort remains pending; the first guard-aborted
-run is retained. Its abnormal teardown was traced to guard plus cleanup
-sending two SIGTERMs; the benchmark-only idempotent termination fix and
-its test are documented in [technical performance](technical-performance.md).
+The review is [draft PR #1](https://github.com/CharafChnioune/nativ/pull/1), branch
+`codex/live-translation`. GitHub checks validate each exact review HEAD; consult the
+PR for current run links. Git commits are unsigned, so no GitHub Verified status is
+claimed. Evidence/documentation commits after the app revision do not change its
+production code. Main, upstream and releases were not modified.
 
-The most recent complete Python run is `build/validation/python-delivery.log`:
-123 discovered tests, 122 passed and one explicitly opt-in runtime check skipped.
-That skip is unexecuted runtime qualification, not a successful test of a loaded
-speech model. The native-result gate remains independent of this Python result.
+This is a development PR. Active audio concurrency, physical devices, overlay/notch,
+VoiceOver, sleep/lock, human voice/meaning acceptance and actual 128 GB hardware
+remain qualification gates. The first endurance run was guard-aborted; a second
+cohort was not started because its independent baseline remained under warning
+pressure. See [measurements](technical-performance.md). Apple Development signing
+is not Developer ID signing, notarization, publication or a working Sparkle update.
+The owner/distribution setup above remains required.

@@ -14,5 +14,17 @@
   "updates": "disabled: own Sparkle key is empty; no upstream fallback",
   "native_snapshot_compile_inputs_matching_canonical": 649,
   "compile_inputs_sha256": "2b48dbd579c51cf760eca04fa33d056bf861775acc5317dd5fa5619781bd50e7",
-  "distribution_qualified": false
+  "distribution_qualified": false,
+  "local_signing": {
+    "type": "Apple Development",
+    "deep_strict_verification": "passed",
+    "visible_final_launch": "observed",
+    "distribution_signing": false
+  },
+  "ui": {
+    "final_screenshot": "images/translate-final-native-dark.png",
+    "extension_toggle_accessibility_labels": "observed",
+    "second_window_shared_idle_language_direction": "observed",
+    "active_audio_multiwindow_qualification": false
+  }
 }

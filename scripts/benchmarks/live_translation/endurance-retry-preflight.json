@@ -1,0 +1,843 @@
+{
+  "schema_version": 1,
+  "cohort": "second-attempt-preflight-only",
+  "status": "not-started-preflight-not-ready",
+  "model_starts": 0,
+  "requested_run": {
+    "duration_seconds": 1800,
+    "minimum_warm_turns": 200,
+    "cold_starts": 10,
+    "maximum_swap_growth_mib": 2048,
+    "critical_pressure_level": 4
+  },
+  "first_run_evidence": {
+    "path": "scripts/benchmarks/live_translation/endurance-evidence.json",
+    "sha256": "998ebd4e5306f0d8b560f0987c0ecdaf9ca95491214dd16a18718b1de052601e",
+    "preserved_outcome": "Aborted after 412.966100625 seconds, 38 completed warm turns and 10 process-cold starts"
+  },
+  "preflight": {
+    "started_utc": "2026-11-08T13:38:55.101936+00:00",
+    "scope": "Read-only baseline, no models, microphone, playback or cache changes",
+    "first_run_reference_swap_mib": 18990.62,
+    "criteria": {
+      "seconds": 60.0,
+      "all_pressure_levels": 1,
+      "maximum_swap_range_mib": 128,
+      "maximum_absolute_net_swap_change_mib": 64,
+      "maximum_swap_mib": 18990.62
+    },
+    "samples": [
+      {
+        "monotonic": 0.378690583,
+        "pressure_level": 2,
+        "swap_used_mib": 18262.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 0.08964820800000001,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 1.484273458,
+        "pressure_level": 2,
+        "swap_used_mib": 18262.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 1.197882791,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 2.588226291,
+        "pressure_level": 2,
+        "swap_used_mib": 18262.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 2.296945833,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 3.686289125,
+        "pressure_level": 2,
+        "swap_used_mib": 18262.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 3.3668813330000003,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 4.760401833,
+        "pressure_level": 2,
+        "swap_used_mib": 18262.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 4.44293825,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 5.833666791,
+        "pressure_level": 2,
+        "swap_used_mib": 18262.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 5.528922791,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 6.93115225,
+        "pressure_level": 2,
+        "swap_used_mib": 18262.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 6.625945791,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 8.015952958,
+        "pressure_level": 2,
+        "swap_used_mib": 18262.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 7.696882125,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 9.089000875,
+        "pressure_level": 2,
+        "swap_used_mib": 18262.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 8.868535166000001,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 10.276826416,
+        "pressure_level": 2,
+        "swap_used_mib": 18262.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 9.984875958,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 11.377063333,
+        "pressure_level": 2,
+        "swap_used_mib": 18262.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 11.149177208,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 12.546310916,
+        "pressure_level": 2,
+        "swap_used_mib": 18262.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 12.226846625,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 13.61872925,
+        "pressure_level": 2,
+        "swap_used_mib": 18254.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 13.290564583,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 14.6801625,
+        "pressure_level": 2,
+        "swap_used_mib": 18254.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 14.369356625,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 15.758822041,
+        "pressure_level": 2,
+        "swap_used_mib": 18254.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 15.449809,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 16.845059958,
+        "pressure_level": 2,
+        "swap_used_mib": 18254.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 16.554506541,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 17.945246916,
+        "pressure_level": 2,
+        "swap_used_mib": 18254.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 17.696863375,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 19.090269375,
+        "pressure_level": 2,
+        "swap_used_mib": 18254.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 18.794051208,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 20.188162875,
+        "pressure_level": 2,
+        "swap_used_mib": 18254.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 19.875264499999997,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 21.265606,
+        "pressure_level": 2,
+        "swap_used_mib": 18254.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 21.055849499999997,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 22.460616416,
+        "pressure_level": 2,
+        "swap_used_mib": 18246.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 22.153605,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 23.5482695,
+        "pressure_level": 2,
+        "swap_used_mib": 18246.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 23.2141155,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 24.606606,
+        "pressure_level": 2,
+        "swap_used_mib": 18246.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 24.287707416,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 25.680593291,
+        "pressure_level": 2,
+        "swap_used_mib": 18238.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 25.397111415999998,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 26.788251208,
+        "pressure_level": 2,
+        "swap_used_mib": 18238.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 26.475255833,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 27.869293125,
+        "pressure_level": 2,
+        "swap_used_mib": 18238.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 27.549373375,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 28.939182208,
+        "pressure_level": 2,
+        "swap_used_mib": 18238.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 28.638255416,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 30.029222541,
+        "pressure_level": 2,
+        "swap_used_mib": 18238.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 29.748302790999997,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 31.149373125,
+        "pressure_level": 2,
+        "swap_used_mib": 18238.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 30.842838040999997,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 32.238134375,
+        "pressure_level": 2,
+        "swap_used_mib": 18238.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 31.953363165999995,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 33.353787041,
+        "pressure_level": 2,
+        "swap_used_mib": 18238.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 33.050916666,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 34.449299625,
+        "pressure_level": 2,
+        "swap_used_mib": 18238.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 34.136664333,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 35.530836666,
+        "pressure_level": 2,
+        "swap_used_mib": 18230.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 35.202576291,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 36.596105041,
+        "pressure_level": 2,
+        "swap_used_mib": 18230.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 36.278459416,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 37.668927041,
+        "pressure_level": 2,
+        "swap_used_mib": 18222.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 37.363757708,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 38.757987958,
+        "pressure_level": 2,
+        "swap_used_mib": 18222.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 38.442890291,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 39.835478166,
+        "pressure_level": 2,
+        "swap_used_mib": 18222.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 39.508060457999996,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 40.89727275,
+        "pressure_level": 2,
+        "swap_used_mib": 18222.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 40.950320915999995,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 42.359128541,
+        "pressure_level": 2,
+        "swap_used_mib": 18222.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 42.067203583,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 43.4594315,
+        "pressure_level": 2,
+        "swap_used_mib": 18222.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 43.159784791,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 44.556812125,
+        "pressure_level": 2,
+        "swap_used_mib": 18222.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 44.235899625,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 45.629353291,
+        "pressure_level": 2,
+        "swap_used_mib": 18214.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 45.323464416,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 46.71100575,
+        "pressure_level": 2,
+        "swap_used_mib": 18206.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 46.399643874999995,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 47.795055083,
+        "pressure_level": 2,
+        "swap_used_mib": 18206.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 47.5153095,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 48.915485,
+        "pressure_level": 2,
+        "swap_used_mib": 18182.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 48.666022,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 50.069473791,
+        "pressure_level": 2,
+        "swap_used_mib": 18182.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 49.825587625,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 51.233286,
+        "pressure_level": 2,
+        "swap_used_mib": 18182.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 50.986576,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 52.396565416,
+        "pressure_level": 2,
+        "swap_used_mib": 18182.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 52.086704166,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 53.483017333,
+        "pressure_level": 2,
+        "swap_used_mib": 18182.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 53.239152,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 54.635683916,
+        "pressure_level": 2,
+        "swap_used_mib": 18174.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 54.332949332999995,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 55.732476333,
+        "pressure_level": 2,
+        "swap_used_mib": 18174.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 55.420691416,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 56.810378625,
+        "pressure_level": 2,
+        "swap_used_mib": 18174.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 56.496591833,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 57.887160416,
+        "pressure_level": 2,
+        "swap_used_mib": 18174.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 57.569311291,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 58.963021875,
+        "pressure_level": 2,
+        "swap_used_mib": 18166.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 58.654605958,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 60.058038583,
+        "pressure_level": 2,
+        "swap_used_mib": 18158.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 59.785327333,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      },
+      {
+        "monotonic": 60.379025916,
+        "pressure_level": 2,
+        "swap_used_mib": 18158.94,
+        "helper_rss_bytes": 0,
+        "helper_cpu_percent": 0,
+        "elapsed_seconds": 60.075001833,
+        "compiler_process_counts": {
+          "xcodebuild": 0,
+          "swift-frontend": 0,
+          "swiftc": 0,
+          "clang": 0
+        }
+      }
+    ],
+    "status": "not-ready",
+    "reasons": [
+      "OS pressure was not normal throughout",
+      "Absolute net swap change exceeded 64 MiB"
+    ],
+    "ended_utc": "2026-11-08T13:39:55.191342+00:00",
+    "duration_seconds": 60.075001833,
+    "swap_range_mib": 104.0,
+    "net_swap_change_mib": -104.0,
+    "max_swap_mib": 18262.94
+  },
+  "observer": {
+    "path": "scripts/benchmarks/live_translation/observe_baseline.py",
+    "sha256": "79f38ed65223145d8ad03a08dae7b1eeb799d9657f623978430f546666e1f226",
+    "command": "build/lfm-realtime/venv/bin/python scripts/benchmarks/live_translation/observe_baseline.py --output build/lfm-realtime/endurance/baseline-20261108-b.json --seconds 60 --reference-swap-mib 18990.62"
+  },
+  "raw_artifact": {
+    "path": "build/lfm-realtime/endurance/baseline-20261108-b.json",
+    "sha256": "981f28783e9df389d2c62cc5d05ac7e35e538ce230548bdc631f4531890fe8a3"
+  },
+  "interpretation": "All 56 observations stayed at OS warning level 2, despite no compiler processes. Swap decreased by 104 MiB, exceeding the 64 MiB absolute net-change stability criterion. No model was loaded; no baseline was raised, no guard was relaxed and no additional performance claim is made.",
+  "remaining_gates": [
+    "100 successful warm observations per mode",
+    "30-minute endurance",
+    "human translation/voice qualification",
+    "acoustic latency and stop-to-silence",
+    "actual 128 GB machine measurements"
+  ]
+}
