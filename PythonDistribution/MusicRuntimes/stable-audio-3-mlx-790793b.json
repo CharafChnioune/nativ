@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "id": "stable-audio-3-mlx-790793b",
+  "profile_id": "stable-audio-3-small-local",
+  "provider": "stable_audio_mlx",
+  "python_version": "3.12",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "source": {
+    "url": "https://codeload.github.com/Stability-AI/stable-audio-3/tar.gz/790793b89ddceea612be9ce42ff6830d18f6fa57",
+    "revision": "790793b89ddceea612be9ce42ff6830d18f6fa57",
+    "sha256": "8ff51d41f60e947c749cec7d4103e6e8add83c303ef288193812d6248d431454",
+    "bytes": 52028026
+  },
+  "lock": {
+    "path": "locks/stable-audio-macos-arm64.txt",
+    "sha256": "b9babfbe145f5989fde692c69d6bd48dc685179094fa22a7427568b2bf0cc7d4"
+  },
+  "worker": {
+    "module": "nativ_music.workers",
+    "args": [
+      "--runtime-id",
+      "stable-audio-3-mlx-790793b"
+    ],
+    "protocol": 1
+  },
+  "models": {
+    "revision": "30cb2644da54bfa63275d1bc7f1fa67fc718680f",
+    "files": [
+      {
+        "path": "LICENSE.md",
+        "repo": "stabilityai/stable-audio-3-optimized",
+        "revision": "30cb2644da54bfa63275d1bc7f1fa67fc718680f",
+        "remote_path": "LICENSE.md",
+        "bytes": 11852,
+        "sha256": "d6f6b1a4dce5c852bd6d7d9482d002baf0ccdb71e662250b73be9eec8764ee8d"
+      },
+      {
+        "path": "LICENSE_GEMMA.md",
+        "repo": "stabilityai/stable-audio-3-optimized",
+        "revision": "30cb2644da54bfa63275d1bc7f1fa67fc718680f",
+        "remote_path": "LICENSE_GEMMA.md",
+        "bytes": 10541,
+        "sha256": "e77acc0d3163bb7534675045c584b4d04b387b529239fc4b3647da0a01ba4745"
+      },
+      {
+        "path": "MLX/dit_sm-music_f16.npz",
+        "repo": "stabilityai/stable-audio-3-optimized",
+        "revision": "30cb2644da54bfa63275d1bc7f1fa67fc718680f",
+        "remote_path": "MLX/dit_sm-music_f16.npz",
+        "bytes": 919193814,
+        "sha256": "8ed3f38e2597f361ee675051f1265d9aa2ae2fffce1c61acd2e9fe31e1db1cbc"
+      },
+      {
+        "path": "MLX/same_s_decoder_f32.npz",
+        "repo": "stabilityai/stable-audio-3-optimized",
+        "revision": "30cb2644da54bfa63275d1bc7f1fa67fc718680f",
+        "remote_path": "MLX/same_s_decoder_f32.npz",
+        "bytes": 218090820,
+        "sha256": "909928a8e6937c1ebe6ac4b729f0462bd3773704a11ea18278e42671dc69bfe4"
+      },
+      {
+        "path": "MLX/t5gemma_f16.npz",
+        "repo": "stabilityai/stable-audio-3-optimized",
+        "revision": "30cb2644da54bfa63275d1bc7f1fa67fc718680f",
+        "remote_path": "MLX/t5gemma_f16.npz",
+        "bytes": 567443068,
+        "sha256": "8deb20489f36d9aec539f26c9c67321f99bc5fe300d470435ed6e76be4f16bbd"
+      }
+    ],
+    "bytes": 1704750095
+  },
+  "licenses": [
+    "MIT",
+    "Stability-AI-Community",
+    "Gemma"
+  ],
+  "qualification": "unqualified",
+  "qualified_hardware": [],
+  "minimum_memory_bytes": 17179869184,
+  "execution_ceiling_seconds": 7200,
+  "model_identity": {
+    "repo": "stabilityai/stable-audio-3-small-music",
+    "revision": "8bdfb53c6b0fbc62113cd571fd37373efe15fa14"
+  },
+  "sampling": {
+    "steps": 8,
+    "cfg_scale": 1,
+    "free_models": true,
+    "decoder": "same-s",
+    "dit": "sm-music"
+  }
+}

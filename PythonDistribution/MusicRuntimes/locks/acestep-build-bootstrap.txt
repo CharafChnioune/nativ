@@ -1,0 +1,12 @@
+setuptools==71.1.0 \
+    --hash=sha256:032d42ee9fb536e33087fb66cac5f840eb9391ed05637b3f2a76a7c8fb477936 \
+    --hash=sha256:33874fdc59b3188304b2e7c80d9029097ea31627180896fb549c578ceb8a0855
+    # via
+    #   -r PythonDistribution/MusicRuntimes/locks/acestep.in
+    #   modelscope
+    #   tensorboard
+    #   torch
+wheel==0.45.1 \
+    --hash=sha256:661e1abd9198507b1409a20c02106d9670b2576e916d58f520316666abca6729 \
+    --hash=sha256:708e7481cc80179af0e556bbf0cc00b8444c7321e2700b8d8580231d13017248
+    # via -r PythonDistribution/MusicRuntimes/locks/acestep.in

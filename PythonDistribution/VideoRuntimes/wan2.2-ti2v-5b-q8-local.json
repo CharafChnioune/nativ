@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "python_version": "3.12",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "minimum_macos": "14.0",
+  "qualification": "unqualified",
+  "qualified_hardware": [],
+  "minimum_memory_bytes": null,
+  "execution_ceiling_seconds": 14400,
+  "worker": {
+    "module": "nativ_video.workers",
+    "protocol": 1,
+    "args": [
+      "--runtime-id",
+      "wan-mlx-gen-0.38.0"
+    ]
+  },
+  "codec_runtime": "ffmpeg-9.0.2-x264-b3560",
+  "licenses": [
+    {
+      "component": "runtime",
+      "spdx": "MIT",
+      "source": "https://github.com/lpalbou/mlx-gen/blob/99fb94dd3eaa9dd1931cd3cd8eae1ae3e20f2ef3/LICENSE"
+    },
+    {
+      "component": "Wan2.2 checkpoint",
+      "spdx": "Apache-2.0",
+      "source": "https://huggingface.co/AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit/blob/6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3/README.md",
+      "requires_acceptance": true
+    }
+  ],
+  "id": "wan-mlx-gen-0.38.0",
+  "profile_id": "wan2.2-ti2v-5b-q8-local",
+  "provider": "wan_mlx",
+  "source": null,
+  "source_revision": "99fb94dd3eaa9dd1931cd3cd8eae1ae3e20f2ef3",
+  "source_verification": {
+    "distribution": "mlx_gen-0.38.0-py3-none-any.whl",
+    "sha256": "bfb5a50420b3ea29388510ea5eed9657c648162180d2a7f4860e98d53770619a",
+    "python_files": 745,
+    "result": "all byte-identical to the pinned source commit",
+    "verified_at": "2026-11-08"
+  },
+  "lock": {
+    "path": "locks/wan-macos-arm64.txt",
+    "sha256": "b9ac62248463049cc44c0848e2f3c96ca7abf62f15c4a12f5755f40ba79f79d3"
+  },
+  "models": {
+    "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
+    "files": [
+      {
+        "path": "README.md",
+        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
+        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
+        "remote_path": "README.md",
+        "bytes": 4554,
+        "sha256": "6a77e71290d4eb61b405f547d9a7078ead95e1f5bf9c3b81258e2ba474205f31"
+      },
+      {
+        "path": "model_index.json",
+        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
+        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
+        "remote_path": "model_index.json",
+        "bytes": 499,
+        "sha256": "6a72faeb564b0e894aea8fc4ef27241106eb739e8584e869b61589a65473add7"
+      },
+      {
+        "path": "scheduler/scheduler_config.json",
+        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
+        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
+        "remote_path": "scheduler/scheduler_config.json",
+        "bytes": 820,
+        "sha256": "571a3eed68bcd943a61b9fea8efa9e141472216ada59f928c8b5128ce24b32e0"
+      },
+      {
+        "path": "text_encoder/config.json",
+        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
+        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
+        "remote_path": "text_encoder/config.json",
+        "bytes": 855,
+        "sha256": "a2bcb24699f6c009a2427432bdd483ef8b2b42a712abc9503759cdc77d171f07"
+      },
+      {
+        "path": "text_encoder/model-00001-of-00003.safetensors",
+        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
+        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
+        "remote_path": "text_encoder/model-00001-of-00003.safetensors",
+        "bytes": 4935812536,
+        "sha256": "a8e861969c7433e707cc5a74065d795d36cca07ec96eb6763eb4083df7248f58"
+      },
+      {
+        "path": "text_encoder/model-00002-of-00003.safetensors",
+        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
+        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
+        "remote_path": "text_encoder/model-00002-of-00003.safetensors",
+        "bytes": 4983103192,
+        "sha256": "d57d948ece4837d850b7a859a4415121d57cacf8b9ee1d4db200c67f592902d7"
+      },
+      {
+        "path": "text_encoder/model-00003-of-00003.safetensors",
+        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
+        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
+        "remote_path": "text_encoder/model-00003-of-00003.safetensors",
+        "bytes": 1442935480,
+        "sha256": "0da9ee284e21d1406df708788db1d502d95d75f69faa25cd26151bf8829b7c5f"
+      },
+      {
+        "path": "text_encoder/model.safetensors.index.json",
+        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
+        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
+        "remote_path": "text_encoder/model.safetensors.index.json",
+        "bytes": 22476,
+        "sha256": "31c4c7bcce679eaa0dd4667462394ddb013dc2f748e0bffc893dc9146a320dab"
+      },
+      {
+        "path": "tokenizer/tokenizer.json",
+        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
+        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
+        "remote_path": "tokenizer/tokenizer.json",
+        "bytes": 16837418,
+        "sha256": "e87c960c36d5fbf4e7e76c2469b7eab877be7f8c5992efbf97e44d3123cc6521"
+      },
+      {
+        "path": "tokenizer/tokenizer_config.json",
+        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
+        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
+        "remote_path": "tokenizer/tokenizer_config.json",
+        "bytes": 6922,
+        "sha256": "6622f4dea346e23b4813a0c9a70cb7c41210113eb240746b13fbe0ae06e49376"
+      },
+      {
+        "path": "transformer/0.safetensors",
+        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
+        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
+        "remote_path": "transformer/0.safetensors",
+        "bytes": 2143814575,
+        "sha256": "3252d7ac118bc33774e11dee2fef4c2ff6e9a5b302348b860318488db51473d7"
+      },
+      {
+        "path": "transformer/1.safetensors",
+        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
+        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
+        "remote_path": "transformer/1.safetensors",
+        "bytes": 2117693374,
+        "sha256": "113895039a17b78f4cfc408b75c5b90799de573ace006df7638182f8d488629d"
+      },
+      {
+        "path": "transformer/2.safetensors",
+        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
+        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
+        "remote_path": "transformer/2.safetensors",
+        "bytes": 1138634137,
+        "sha256": "7d03bae2c8a838a77f0d648b8d0c21799cefe5a7b19a3fc65c8e000bce927d3d"
+      },
+      {
+        "path": "transformer/model.safetensors.index.json",
+        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
+        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
+        "remote_path": "transformer/model.safetensors.index.json",
+        "bytes": 73940,
+        "sha256": "5bf095e55bd01fef2a9e91a89fa4facad2cee853beab265a2331a25c8fd2ffe6"
+      },
+      {
+        "path": "vae/0.safetensors",
+        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
+        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
+        "remote_path": "vae/0.safetensors",
+        "bytes": 1409401388,
+        "sha256": "8ba84d3014ef6a77ebdbbdc16c339054bdb298c37a992f0f3926fe6c5d6d4769"
+      },
+      {
+        "path": "vae/model.safetensors.index.json",
+        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
+        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
+        "remote_path": "vae/model.safetensors.index.json",
+        "bytes": 13977,
+        "sha256": "81e89534c9e7f1b3027ae06bb29d15ecda7af4c70876fa40011b7929c33b852f"
+      }
+    ],
+    "bytes": 18188356143,
+    "gated": false,
+    "integrity_resolved": true
+  },
+  "quantization": "mixed q8 transformer; text encoder and VAE source precision"
+}

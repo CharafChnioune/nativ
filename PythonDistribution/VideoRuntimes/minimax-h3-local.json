@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "python_version": "3.12",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "minimum_macos": "14.0",
+  "qualification": "unqualified",
+  "qualified_hardware": [],
+  "minimum_memory_bytes": null,
+  "execution_ceiling_seconds": 14400,
+  "worker": {
+    "module": "nativ_video.workers",
+    "protocol": 1,
+    "args": [
+      "--runtime-id",
+      "h3-mlx-vlm-0.7.12"
+    ]
+  },
+  "codec_runtime": "ffmpeg-9.0.2-x264-b3560",
+  "licenses": [
+    {
+      "component": "mlx-vlm runtime",
+      "spdx": "MIT",
+      "source": "https://github.com/Blaizzy/mlx-vlm/tree/7230940302cbe602054650f18a2f77db945bc57a"
+    },
+    {
+      "component": "MiniMax H3",
+      "source": "https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE",
+      "dated": "2026-08-02",
+      "excluded_territories": [
+        "EU",
+        "UK",
+        "Republic of Korea",
+        "USA"
+      ],
+      "separate_license_required_in_excluded_territories": true
+    }
+  ],
+  "id": "h3-mlx-vlm-0.7.12",
+  "profile_id": "minimax-h3-local",
+  "provider": "minimax_h3_mlx",
+  "source": null,
+  "source_revision": "7230940302cbe602054650f18a2f77db945bc57a",
+  "lock": {
+    "path": "locks/h3-macos-arm64.txt",
+    "sha256": "dd2086f129485decf3494e929093aae6db40c543e7e211075d11002a88da3c1e"
+  },
+  "models": {
+    "revision": null,
+    "files": [],
+    "bytes": null,
+    "gated": true,
+    "integrity_resolved": false
+  },
+  "separate_license_approved": false,
+  "gate": "fixture_only_until_territorial_license_and_hardware_qualification"
+}

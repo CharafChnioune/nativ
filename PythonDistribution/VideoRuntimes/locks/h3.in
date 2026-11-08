@@ -1,0 +1,7 @@
+# Advanced disabled H3 profile; no restricted weights are installed.
+mlx-vlm==0.7.12
+mlx==0.32.4
+mlx-metal==0.32.4
+numpy==2.4.4
+pillow==12.2.0
+transformers==5.15.1

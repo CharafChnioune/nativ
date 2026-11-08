@@ -1,0 +1,11 @@
+# Source-only ltx-core-mlx and ltx-pipelines-mlx 0.18.0 are built from the pinned source archive.
+mlx==0.32.4
+mlx-metal==0.32.4
+mlx-arsenal==0.18.0
+mlx-lm>=0.31.0
+safetensors>=0.4.0
+huggingface-hub>=0.26.0
+numpy==2.4.4
+pillow==12.2.0
+tqdm>=4.66.0
+hatchling
