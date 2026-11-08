@@ -4,10 +4,13 @@ private final class ShellOutputBuffer: @unchecked Sendable {
     private let lock = NSLock()
     private var data = Data()
 
-    func append(_ chunk: Data) {
+    @discardableResult
+    func capture(_ readData: () -> Data) -> Bool {
         lock.lock()
         defer { lock.unlock() }
+        let chunk = readData()
         data.append(chunk)
+        return !chunk.isEmpty
     }
 
     func snapshot() -> Data {
@@ -68,10 +71,16 @@ enum ShellEnvironment {
 
         let output = ShellOutputBuffer()
         stdout.fileHandleForReading.readabilityHandler = { handle in
-            let chunk = handle.availableData
-            guard !chunk.isEmpty else { return }
-            output.append(chunk)
+            guard output.capture({ handle.availableData }) else {
+                handle.readabilityHandler = nil
+                return
+            }
         }
+
+        let exited = DispatchSemaphore(value: 0)
+        // Completion must not depend on a different worker's run loop.
+        process.terminationHandler = { _ in exited.signal() }
+        defer { process.terminationHandler = nil }
 
         do {
             try process.run()
@@ -80,11 +89,6 @@ enum ShellEnvironment {
             return [:]
         }
 
-        let exited = DispatchSemaphore(value: 0)
-        DispatchQueue.global(qos: .utility).async {
-            process.waitUntilExit()
-            exited.signal()
-        }
         if exited.wait(timeout: .now() + timeout) == .timedOut {
             process.terminate()
             process.waitUntilExit()
@@ -92,8 +96,7 @@ enum ShellEnvironment {
 
         // Drain whatever remains in the pipe after the handler stops.
         stdout.fileHandleForReading.readabilityHandler = nil
-        let remainder = stdout.fileHandleForReading.readDataToEndOfFile()
-        output.append(remainder)
+        output.capture { stdout.fileHandleForReading.readDataToEndOfFile() }
         let data = output.snapshot()
 
         return parseEnvironment(String(decoding: data, as: UTF8.self), names: names)
