@@ -21,8 +21,13 @@ public struct TranslationContentGuard: Sendable {
     let words = Self.tokens(translation)
     let letters = translation.unicodeScalars.filter { CharacterSet.letters.contains($0) }.count
     guard words.count >= 5, letters >= 24, let hypothesis = languageDetector(translation),
-      hypothesis.confidence.isFinite, hypothesis.confidence >= 0.98,
-      Self.base(hypothesis.language) != Self.base(targetLanguage) else { return }
+      hypothesis.confidence.isFinite else { return }
+    let detected = Self.base(hypothesis.language), target = Self.base(targetLanguage)
+    // The lower threshold is backed only by the NL/EN draft-corpus experiment:
+    // 54 eligible source-as-wrong-target texts caught, no rejected draft references.
+    // These OS scores are heuristic hints, not calibrated probabilities or qualification.
+    let threshold = Set([detected, target]) == Set(["nl", "en"]) ? 0.90 : 0.98
+    guard hypothesis.confidence >= threshold, detected != target else { return }
     throw Self.failure("The model appears to have used a different target language. This turn was stopped; retry or explicitly choose another model.")
   }
 

@@ -26,10 +26,13 @@ De bronvergelijking dekt momenteel alleen Nederlands–Engels:
   de dekking vallen of een herhaalverzoek veroorzaken.
 
 Taalherkenning is injecteerbaar. Standaard levert `NLLanguageRecognizer` een lokale
-hint. Alleen langere uitingen met ten minste vijf woorden, 24 letters en
-confidence ≥0,98 worden op een andere doeltaal geweigerd. Korte namen, losse
-woorden en onzekere uitingen worden niet op die basis afgekeurd. Confidence
-is geen gemeten vertaalkwaliteit en taalherkenning kan zich vergissen.
+hint. Alleen langere uitingen met ten minste vijf woorden en 24 letters worden
+op een andere doeltaal geweigerd: bij verwarring tussen Nederlands en Engels
+vanaf score `0,90`, bij andere taalcombinaties vanaf `0,98`. De lagere grens is
+beperkt tot de [gemeten NL/EN-conceptteksten](translation-language-guard.md);
+die meting kwalificeert geen model of talenpaar. Korte namen, losse woorden en
+onzekere uitingen worden niet op die basis afgekeurd. De score is geen
+gekalibreerde kans of gemeten vertaalkwaliteit en taalherkenning kan zich vergissen.
 
 Omni levert in deze integratie geen brontranscript. Twee passes controleren de
 doeltaal vóór `/tts`; tekst blijft daarvoor tentatief. Direct Omni kan audio al

@@ -84,6 +84,41 @@ final class TranslationContentGuardTests: XCTestCase {
         try uncertain.validateOutput("Dit is een lange zin met een leenwoord.", targetLanguage: "nl")
     }
 
+    func testMeasuredDutchEnglishMismatchThresholdRejectsAtPointNineInBothDirections() {
+        for (detected, target) in [("en-US", "nl-NL"), ("nl-NL", "en-GB")] {
+            for score in [0.90, 0.916333, 0.9768291115760803] {
+                let checked = TranslationContentGuard(languageDetector: { _ in .init(language: detected, confidence: score) })
+                XCTAssertThrowsError(try checked.validateOutput("This deliberately long sentence tests the injected language hint.", targetLanguage: target)) { error in
+                    XCTAssertEqual((error as? TranslationFailure)?.code, .unsupportedOutput)
+                }
+            }
+        }
+    }
+
+    func testDutchEnglishMismatchBelowMeasuredThresholdAndShortTextStillAbstain() throws {
+        let below = TranslationContentGuard(languageDetector: { _ in .init(language: "en", confidence: 0.89) })
+        try below.validateOutput("This deliberately long sentence tests an uncertain language hint.", targetLanguage: "nl")
+        let confident = TranslationContentGuard(languageDetector: { _ in .init(language: "en", confidence: 0.99) })
+        try confident.validateOutput("No, the other side.", targetLanguage: "nl")
+        try confident.validateOutput("Do not let me go.", targetLanguage: "nl")
+    }
+
+    func testMatchingLanguageIsAcceptedAcrossTheMeasuredThreshold() throws {
+        for score in [0.89, 0.90, 0.99] {
+            let checked = TranslationContentGuard(languageDetector: { _ in .init(language: "en-US", confidence: score) })
+            try checked.validateOutput("Please bring the original document to our office tomorrow morning.", targetLanguage: "en-GB")
+        }
+    }
+
+    func testOtherLanguagePairsKeepTheConservativeThreshold() throws {
+        for (detected, target) in [("de", "en"), ("en", "fr"), ("fr", "nl")] {
+            let moderate = TranslationContentGuard(languageDetector: { _ in .init(language: detected, confidence: 0.95) })
+            try moderate.validateOutput("This deliberately long sentence tests another language pair.", targetLanguage: target)
+            let confident = TranslationContentGuard(languageDetector: { _ in .init(language: detected, confidence: 0.98) })
+            XCTAssertThrowsError(try confident.validateOutput("This deliberately long sentence tests another language pair.", targetLanguage: target))
+        }
+    }
+
     func testGuardsNeverRewriteOrIncludeSensitiveTextInFailures() {
         do {
             try guardrail.validate(source: "Mijn code is 9274.", translation: "My code is 9275.", sourceLanguage: "nl", targetLanguage: "en")
