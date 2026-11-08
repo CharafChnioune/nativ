@@ -582,7 +582,7 @@ final class AudioAnalyticsStore: ObservableObject {
             ))
             ?? FileManager.default.temporaryDirectory
         return applicationSupport
-            .appendingPathComponent("Nativ", isDirectory: true)
+            .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
             .appendingPathComponent("Voice Analytics.json")
     }
 

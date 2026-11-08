@@ -159,7 +159,7 @@ final class RoutineStore: ObservableObject {
             create: true
         )) ?? FileManager.default.homeDirectoryForCurrentUser
         let directory = base
-            .appendingPathComponent("Nativ", isDirectory: true)
+            .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
             .appendingPathComponent("Routines", isDirectory: true)
         try? FileManager.default.createDirectory(
             at: directory,

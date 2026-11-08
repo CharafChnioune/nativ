@@ -47,6 +47,10 @@ curl \
 
 [[ -s "$appcast_path" ]] || fail "published appcast is empty: $appcast_url"
 xmllint --noout "$appcast_path"
+if [[ "$appcast_url" == https://github.com/CharafChnioune/nativ/releases/* ]]; then
+    script_directory="$(cd "$(dirname "$0")" && pwd -P)"
+    python3 "$script_directory/sparkle_feed.py" verify "$appcast_path"
+fi
 if [[ -n "$expected_appcast_path" ]] && ! cmp -s "$expected_appcast_path" "$appcast_path"; then
     fail "published appcast does not match $expected_appcast_path: $appcast_url"
 fi

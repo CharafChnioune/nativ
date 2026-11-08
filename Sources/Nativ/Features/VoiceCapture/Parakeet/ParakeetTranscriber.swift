@@ -22,7 +22,15 @@ enum DefaultSpeechModel {
 actor ParakeetTranscriber {
     static let shared = ParakeetTranscriber()
     private let directory: URL?
-    private var session: Session?
+    // Objective-C class discovery realizes actor metadata even below @available.
+    // Keep CoreAI-backed value metadata out of this actor's stored layout so
+    // XCTest/app runtime reflection on macOS 26 does not resolve macOS 27 symbols.
+    // Only availability-guarded actor methods access the concrete session.
+    private var sessionStorage: Any?
+    private var session: Session? {
+        get { sessionStorage as? Session }
+        set { sessionStorage = newValue }
+    }
     private var isPrepared = false
     // Actors are reentrant at CoreAI awaits. Explicitly serialize whole utterances.
     private var busy = false

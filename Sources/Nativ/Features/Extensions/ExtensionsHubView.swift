@@ -222,7 +222,7 @@ private struct ExtensionRow: View {
                 }
                 Spacer(minLength: 12)
                 Toggle(
-                    "",
+                    "Enable \(record.manifest.displayName)",
                     isOn: Binding(
                         get: { record.isEnabled },
                         set: { manager.setEnabled($0, extensionID: record.id) }

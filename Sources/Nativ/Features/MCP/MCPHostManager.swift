@@ -644,7 +644,7 @@ final class MCPHostManager: ObservableObject {
             return nil
         }
         return support
-            .appendingPathComponent("Nativ", isDirectory: true)
+            .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
             .appendingPathComponent("MCP", isDirectory: true)
             .appendingPathComponent(slug(id), isDirectory: true)
     }

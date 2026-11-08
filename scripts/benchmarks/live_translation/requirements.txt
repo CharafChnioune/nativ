@@ -1,0 +1,2 @@
+# Probe-only dependency, separate from the app Python runtime.
+websockets==15.0.1

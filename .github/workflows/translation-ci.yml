@@ -1,0 +1,109 @@
+name: Live Translate validation
+on:
+  push:
+    branches: [main, 'codex/**', 'sync/**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: translate-validation-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  identity:
+    if: github.repository == 'CharafChnioune/nativ'
+    runs-on: ubuntu-latest
+    outputs:
+      head: ${{ steps.identity.outputs.head }}
+      base: ${{ steps.identity.outputs.base }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Record exact combined source and base
+        id: identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          base="${PR_BASE:-$(gh api repos/CharafChnioune/nativ/commits/main --jq .sha)}"
+          git merge-base --is-ancestor "$base" HEAD
+          echo "head=$EXPECTED_HEAD" >> "$GITHUB_OUTPUT"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+  python:
+    name: Python regressions
+    needs: identity
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.identity.outputs.head }}
+          persist-credentials: false
+      - run: python3 -m unittest discover -s scripts/tests -v
+      - run: python3 scripts/fork_release.py sources
+  swift:
+    name: Translation contracts
+    needs: identity
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.identity.outputs.head }}
+          persist-credentials: false
+      - run: swift test --parallel
+  macos:
+    name: Native app and regressions
+    needs: identity
+    runs-on: macos-26
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.identity.outputs.head }}
+          persist-credentials: false
+      - run: brew install xcodegen cmake
+      - run: xcodebuild -downloadComponent MetalToolchain
+      - name: Build pinned native helper and app
+        run: make xcode-build
+      - name: Run all configured app tests
+        run: |
+          xcodebuild -project Nativ.xcodeproj -scheme Nativ -configuration Debug \
+            -derivedDataPath build/NativDevelopmentDerivedData \
+            -resultBundlePath build/TranslationTests.xcresult \
+            CODE_SIGNING_ALLOWED=NO NATIV_SKIP_PYTHON_RESOURCE_BUILD=YES test
+          python3 scripts/verify_translation_test_results.py build/TranslationTests.xcresult
+      - name: Keep native test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: native-validation-${{ needs.identity.outputs.head }}-attempt-${{ github.run_attempt }}
+          path: build/TranslationTests.xcresult
+          if-no-files-found: error
+  gate:
+    name: Required validation gate
+    if: always() && github.repository == 'CharafChnioune/nativ'
+    needs: [identity, python, swift, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ needs.identity.outputs.head || github.sha }}
+          persist-credentials: false
+      - name: Fail closed for skipped, missing, cancelled, failed or stale validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ needs.identity.outputs.head }}
+          BASE_SHA: ${{ needs.identity.outputs.base }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          IDENTITY_RESULT: ${{ needs.identity.result }}
+          RESULTS: '{"python":"${{ needs.python.result }}","swift":"${{ needs.swift.result }}","macos":"${{ needs.macos.result }}"}'
+        run: |
+          test "$IDENTITY_RESULT" = success
+          python3 scripts/sync_upstream.py gate --results "$RESULTS" --head "$HEAD_SHA" --base "$BASE_SHA" --pr "$PR_NUMBER"

@@ -14,6 +14,11 @@ final class SoftwareUpdaterTests: XCTestCase {
     private func updater(_ defaults: UserDefaults, version: String = "0.3.7", build: String = "100") -> SoftwareUpdater {
         SoftwareUpdater(defaults: defaults, info: [
             "NativReleaseVersion": version, "CFBundleShortVersionString": version, "CFBundleVersion": build,
+            "CFBundleIdentifier": NativBuildIdentity.namespace,
+            "SUFeedURL": "https://github.com/CharafChnioune/nativ/releases/latest/download/appcast.xml",
+            "NativPreviewFeedURL": "https://github.com/CharafChnioune/nativ/releases/download/preview/appcast.xml",
+            "SUPublicEDKey": Data(repeating: 1, count: 32).base64EncodedString(),
+            "SURequireSignedFeed": true, "SUVerifyUpdateBeforeExtraction": true,
         ])
     }
 
@@ -23,7 +28,7 @@ final class SoftwareUpdaterTests: XCTestCase {
         var properties: [String: Any] = [
             "sparkle:version": build,
             "sparkle:shortVersionString": version,
-            "enclosure": ["url": "https://example.com/Nativ.dmg", "length": "100"],
+            "enclosure": ["url": "https://github.com/CharafChnioune/nativ/releases/download/v\(version)/Nativ-\(version).dmg", "length": "100"],
         ]
         properties["sparkle:channel"] = channel
         return SUAppcastItem(dictionary: properties)!
@@ -66,13 +71,13 @@ final class SoftwareUpdaterTests: XCTestCase {
         defaults.set("unknown-future-channel", forKey: SoftwareUpdateChannel.storageKey)
         let current = updater(defaults)
         XCTAssertEqual(current.channel, .stable)
-        XCTAssertNil(current.feedURLString(for: current.updater))
+        XCTAssertEqual(current.feedURLString(for: current.updater), "https://github.com/CharafChnioune/nativ/releases/latest/download/appcast.xml")
         XCTAssertEqual(current.allowedChannels(for: current.updater), [])
         current.setChannel(.releaseCandidates)
         let restored = updater(defaults)
         XCTAssertEqual(restored.channel, .releaseCandidates)
         XCTAssertEqual(restored.allowedChannels(for: restored.updater), ["rc"])
-        XCTAssertEqual(restored.feedURLString(for: restored.updater), "https://github.com/Neywa-Labs/nativ/releases/download/preview/appcast.xml")
+        XCTAssertEqual(restored.feedURLString(for: restored.updater), "https://github.com/CharafChnioune/nativ/releases/download/preview/appcast.xml")
         restored.setChannel(.stable)
         XCTAssertEqual(updater(defaults).channel, .stable)
     }
@@ -122,5 +127,44 @@ final class SoftwareUpdaterTests: XCTestCase {
         XCTAssertEqual(ReleaseVersion.displayString(in: ["CFBundleShortVersionString": "0.3.7"]), "0.3.7")
         XCTAssertEqual(ReleaseVersion.displayString(in: ["CFBundleShortVersionString": "0.4.0", "NativReleaseVersion": "0.4.0rc1"]), "0.4.0rc1")
         XCTAssertEqual(ReleaseVersion.displayString(in: ["CFBundleShortVersionString": "0.4.0", "NativReleaseVersion": "$(NATIV_RELEASE_VERSION)"]), "0.4.0")
+    }
+
+    func testMissingOrUpstreamIdentityDisablesUpdates() {
+        let unavailable = SoftwareUpdater(defaults: defaults(), info: ["CFBundleVersion": "1"])
+        unavailable.start()
+        XCTAssertFalse(unavailable.isConfigured)
+        XCTAssertFalse(unavailable.canChangeChannel)
+        XCTAssertNil(unavailable.feedURLString(for: unavailable.updater))
+        XCTAssertTrue(unavailable.channelDescription.contains("unavailable"))
+        var info: [String: Any] = [
+            "CFBundleIdentifier": NativBuildIdentity.namespace,
+            "SUFeedURL": "https://github.com/CharafChnioune/nativ/releases/latest/download/appcast.xml",
+            "NativPreviewFeedURL": "https://github.com/CharafChnioune/nativ/releases/download/preview/appcast.xml",
+            "SUPublicEDKey": Data(repeating: 1, count: 32).base64EncodedString(),
+            "SURequireSignedFeed": true, "SUVerifyUpdateBeforeExtraction": true,
+        ]
+        XCTAssertNotNil(NativUpdateConfiguration(info: info))
+        for key in ["SURequireSignedFeed", "SUVerifyUpdateBeforeExtraction"] {
+            var changed = info
+            changed[key] = false
+            XCTAssertNil(NativUpdateConfiguration(info: changed))
+            changed.removeValue(forKey: key)
+            XCTAssertNil(NativUpdateConfiguration(info: changed))
+        }
+        for key in ["SUFeedURL", "NativPreviewFeedURL"] {
+            var changed = info
+            changed[key] = "https://github.com/Neywa-Labs/nativ/releases/latest/download/appcast.xml"
+            XCTAssertNil(NativUpdateConfiguration(info: changed))
+        }
+        info["SUPublicEDKey"] = NativUpdateConfiguration.upstreamPublicKey
+        XCTAssertNil(NativUpdateConfiguration(info: info))
+    }
+
+    func testUpstreamArchiveCannotBeSelectedFromAnyFeed() {
+        let upstream = SUAppcastItem(dictionary: [
+            "sparkle:version": "999", "sparkle:shortVersionString": "9.0.0",
+            "enclosure": ["url": "https://github.com/Neywa-Labs/nativ/releases/download/v9.0.0/Nativ-9.0.0.dmg", "length": "100"],
+        ])!
+        XCTAssertNil(updater(defaults()).bestUpdate(in: [upstream]))
     }
 }

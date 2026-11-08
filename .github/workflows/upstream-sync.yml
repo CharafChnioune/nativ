@@ -1,0 +1,83 @@
+name: Discover upstream updates
+on:
+  schedule:
+    - cron: "43 6 * * *"
+  workflow_dispatch:
+    inputs:
+      upstream_sha:
+        description: "Optional exact upstream main SHA; empty discovers latest stable release"
+        default: ""
+      reviewed_patch_sha256:
+        description: "After reviewing the blocked patch, its exact SHA256; protected environment approval also required"
+        default: ""
+permissions:
+  contents: read
+concurrency:
+  group: fork-upstream-discovery
+  cancel-in-progress: false
+jobs:
+  discover:
+    if: github.repository == 'CharafChnioune/nativ' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      status: ${{ steps.discover.outputs.status }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Discover and prepare without executing imported code
+        id: discover
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UPSTREAM_SHA: ${{ inputs.upstream_sha }}
+          REVIEWED_PATCH: ${{ inputs.reviewed_patch_sha256 }}
+        run: python3 scripts/sync_upstream.py discover --upstream-sha "$UPSTREAM_SHA" --reviewed-patch-sha256 "$REVIEWED_PATCH" --output sync-report
+      - name: Retain report and blocked patch even without Issues
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: upstream-review-${{ github.run_id }}
+          path: sync-report/
+          if-no-files-found: error
+          retention-days: 90
+  publish-candidate:
+    needs: discover
+    if: needs.discover.outputs.status == 'ready'
+    environment: fork-sync
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: upstream-review-${{ github.run_id }}
+          path: sync-report
+      - name: Narrow fork installation token
+        if: vars.FORK_SYNC_APP_ID != ''
+        id: app-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2
+        with:
+          app-id: ${{ vars.FORK_SYNC_APP_ID }}
+          private-key: ${{ secrets.FORK_SYNC_APP_PRIVATE_KEY }}
+          owner: CharafChnioune
+          repositories: nativ
+          permission-contents: write
+          permission-pull-requests: write
+          permission-workflows: ${{ inputs.reviewed_patch_sha256 != '' && 'write' || '' }}
+      - name: Recheck patch and base, push immutable candidate, open draft PR
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token || github.token }}
+          REVIEWED_PATCH: ${{ inputs.reviewed_patch_sha256 }}
+        run: python3 scripts/sync_upstream.py publish --input sync-report --reviewed-patch-sha256 "$REVIEWED_PATCH"
+      - name: Explain token-trigger requirements
+        if: vars.FORK_SYNC_APP_ID == ''
+        run: |
+          echo 'GITHUB_TOKEN mode: approve the draft PR workflow runs in its merge box. Push events do not start recursive runs. This job never waits for unavailable checks and never merges.' >> "$GITHUB_STEP_SUMMARY"

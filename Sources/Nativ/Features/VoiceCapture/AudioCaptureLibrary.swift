@@ -196,6 +196,10 @@ final class AudioCaptureLibrary: ObservableObject {
     var transcriptionConfigurationProvider:
         (@MainActor @Sendable () -> VoiceTranscriptionConfiguration?)?
 
+    private var audioLease: AudioSessionLease?
+    private let playbackOwner = AudioSessionOwner(name: "Audio library playback")
+    private var playbackRequestID = UUID()
+    private var playbackRequestTask: Task<Void, Never>?
     private var audioPlayer: AVAudioPlayer?
     private lazy var playbackDelegate: AudioPlaybackDelegate = {
         let delegate = AudioPlaybackDelegate()
@@ -224,6 +228,7 @@ final class AudioCaptureLibrary: ObservableObject {
         guard let self else { return false }
         return self.phase == .idle && !self.processingRecordIDs.contains(recordID)
     }, preferences: .standard)
+    private var captureRequestID = UUID()
     private var isShuttingDown = false
     private var elapsedTask: Task<Void, Never>?
     private var captureStartedAt: Date?
@@ -300,8 +305,10 @@ final class AudioCaptureLibrary: ObservableObject {
     }
 
     isolated deinit {
+        playbackRequestTask?.cancel()
         playbackTask?.cancel()
         audioPlayer?.stop()
+        if let audioLease { AudioSessionCoordinator.shared.release(audioLease) }
     }
 
     func start() {
@@ -376,7 +383,7 @@ final class AudioCaptureLibrary: ObservableObject {
                 create: true
             )
             let directory = applicationSupport
-                .appendingPathComponent("Nativ", isDirectory: true)
+                .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
                 .appendingPathComponent("Audio Library", isDirectory: true)
             try FileManager.default.createDirectory(
                 at: directory,
@@ -403,6 +410,8 @@ final class AudioCaptureLibrary: ObservableObject {
             return
         }
 
+        let captureID = UUID()
+        captureRequestID = captureID
         clearLastError()
         speakerRecognition.pauseMeetingUpdates()
         guard (try? AudioInputDeviceResolver.captureDeviceID(
@@ -422,6 +431,7 @@ final class AudioCaptureLibrary: ObservableObject {
             fail(AudioCaptureLibraryError.microphonePermissionRequired)
             return
         }
+        guard captureRequestID == captureID, !isShuttingDown else { return }
         if activeIncludesSystemAudio,
            !NativSystemPermissionController.requestScreenCaptureAccess()
         {
@@ -461,6 +471,7 @@ final class AudioCaptureLibrary: ObservableObject {
             case .dictation:
                 return
             }
+            guard captureRequestID == captureID, !isShuttingDown else { return }
             captureStartedAt = Date()
             elapsed = 0
             phase = .recording
@@ -468,6 +479,7 @@ final class AudioCaptureLibrary: ObservableObject {
             recordingOverlay.didStartRecording()
             startElapsedUpdates()
         } catch {
+            guard captureRequestID == captureID, !isShuttingDown else { return }
             if Self.isScreenCapturePermissionError(error) {
                 // ScreenCaptureKit presents the native permission dialog itself.
                 // Do not stack a second Nativ alert underneath it.
@@ -721,6 +733,10 @@ final class AudioCaptureLibrary: ObservableObject {
     }
 
     func togglePlayback(for record: AudioTranscriptionRecord) {
+        requestPlayback { [weak self] in self?.togglePlaybackWithLease(for: record) }
+    }
+
+    private func togglePlaybackWithLease(for record: AudioTranscriptionRecord) {
         playback.excerpt = nil
         if playingRecordID == record.id {
             if isPlaybackPaused {
@@ -739,6 +755,10 @@ final class AudioCaptureLibrary: ObservableObject {
     }
 
     func seekPlayback(for record: AudioTranscriptionRecord, to time: TimeInterval) {
+        requestPlayback { [weak self] in self?.seekPlaybackWithLease(for: record, to: time) }
+    }
+
+    private func seekPlaybackWithLease(for record: AudioTranscriptionRecord, to time: TimeInterval) {
         guard time.isFinite else { return }
         playback.excerpt = nil
         if playingRecordID != record.id {
@@ -753,6 +773,10 @@ final class AudioCaptureLibrary: ObservableObject {
     /// Review samples use the same player as the full recording. The requested
     /// bounds are clipped to the decoded duration; no audio file is created.
     func toggleExcerptPlayback(for record: AudioTranscriptionRecord, start: TimeInterval, end: TimeInterval) {
+        requestPlayback { [weak self] in self?.toggleExcerptPlaybackWithLease(for: record, start: start, end: end) }
+    }
+
+    private func toggleExcerptPlaybackWithLease(for record: AudioTranscriptionRecord, start: TimeInterval, end: TimeInterval) {
         guard start.isFinite, end.isFinite, end > max(0, start) else { return }
         guard playingRecordID == record.id, let audioPlayer else {
             startPlayback(for: record, at: start, excerptEnd: end)
@@ -797,7 +821,7 @@ final class AudioCaptureLibrary: ObservableObject {
     }
 
     private func startPlayback(for record: AudioTranscriptionRecord, at time: TimeInterval = 0, excerptEnd: TimeInterval? = nil) {
-        stopPlayback()
+        stopPlayback(releasingLease: false)
         guard let url = audioURL(for: record) else {
             lastErrorMessage = AudioCaptureLibraryError.recordingUnavailable.localizedDescription
             return
@@ -845,11 +869,49 @@ final class AudioCaptureLibrary: ObservableObject {
         }
     }
 
-    func stopPlayback() {
+    private func requestPlayback(_ action: @escaping @MainActor () -> Void) {
+        playbackRequestTask?.cancel()
+        let id = UUID()
+        playbackRequestID = id
+        playbackRequestTask = Task { [weak self] in
+            guard let self else { return }
+            do {
+                if self.audioLease == nil {
+                    let lease = try await AudioSessionCoordinator.shared.acquire(owner: self.playbackOwner, resources: [.playback])
+                    guard self.playbackRequestID == id, !Task.isCancelled else {
+                        AudioSessionCoordinator.shared.release(lease)
+                        return
+                    }
+                    self.audioLease = lease
+                }
+                guard self.playbackRequestID == id, !Task.isCancelled else { return }
+                action()
+                if self.audioPlayer == nil || self.isPlaybackPaused { self.releasePlaybackLease() }
+            } catch {
+                guard self.playbackRequestID == id, !Task.isCancelled else { return }
+                self.lastErrorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func releasePlaybackLease() {
+        if let audioLease { AudioSessionCoordinator.shared.release(audioLease) }
+        audioLease = nil
+    }
+
+    func stopPlayback() { stopPlayback(releasingLease: true) }
+
+    private func stopPlayback(releasingLease: Bool) {
+        if releasingLease {
+            playbackRequestID = UUID()
+            playbackRequestTask?.cancel()
+            playbackRequestTask = nil
+        }
         playbackTask?.cancel()
         playbackTask = nil
         audioPlayer?.stop()
         audioPlayer = nil
+        if releasingLease { releasePlaybackLease() }
         playingRecordID = nil
         isPlaybackPaused = false
         playback.reset()
@@ -1217,6 +1279,7 @@ final class AudioCaptureLibrary: ObservableObject {
     }
 
     private func resetCaptureState(hideOverlay: Bool = true) {
+        captureRequestID = UUID()
         stopElapsedUpdates()
         if hideOverlay {
             recordingOverlay.hide()

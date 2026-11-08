@@ -1,0 +1,22 @@
+{
+  "status": "passed",
+  "timestamp_utc": "2026-11-08T16:32:58.399245+00:00",
+  "scope": "signed archive and signed XML over loopback; no application install, notarization or publication",
+  "sparkle_version": "2.9.4",
+  "tools_archive_sha256": "cb6fdbdc8884f15d62a616e79face92b08322410fd2d425edc6596ccbf4ba3b0",
+  "keychain_account": "io.github.charafchnioune.nativ",
+  "public_key": "YAX1zGfcsvfAec12FrJ0y+q0tsiqe6F65Y2Fvs36AR8=",
+  "checks": [
+    "archive_signature_verified",
+    "feed_signature_verified",
+    "loopback_download_verified",
+    "tampered_archive_rejected",
+    "tampered_feed_rejected",
+    "postprocessed_rc_feed_signature_verified",
+    "composed_preview_feed_signature_verified",
+    "tampered_publisher_and_preview_feeds_rejected"
+  ],
+  "archive_sha256": "7552b854788231e683794da6be7e1967e09a558761199a2a29f98592990c848c",
+  "feed_sha256": "25fdfb1f9e796d31549923c75e8d6ad43c40e0dc56adbf299ce6b1d77c9ba92e",
+  "private_key_exported": false
+}

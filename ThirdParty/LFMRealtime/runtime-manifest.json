@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "runtime": {
+    "repository": "https://github.com/ggml-org/llama.cpp.git",
+    "commit": "cd959bae99ff4bed22bef2604f45241c09bbb8c8",
+    "version": "0.9.0",
+    "architecture": "arm64",
+    "backend": "Metal",
+    "license": "MIT",
+    "executable": "bin/llama-server",
+    "buildFlags": [
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DCMAKE_OSX_ARCHITECTURES=arm64",
+      "-DGGML_METAL=ON",
+      "-DGGML_METAL_EMBED_LIBRARY=ON",
+      "-DGGML_NATIVE=OFF",
+      "-DBUILD_SHARED_LIBS=OFF",
+      "-DLLAMA_BUILD_TESTS=OFF",
+      "-DLLAMA_BUILD_EXAMPLES=OFF",
+      "-DLLAMA_BUILD_TOOLS=ON",
+      "-DLLAMA_CURL=OFF",
+      "-DLLAMA_OPENSSL=OFF"
+    ],
+    "patches": [
+      {
+        "filename": "reject-browser-origins.patch",
+        "sha256": "77cb10eff2c10e4d0d5b2919cc7853956304550954f5108052078297811513c1",
+        "purpose": "Reject every nonempty Origin for native-only loopback HTTP/WebSocket requests."
+      }
+    ],
+    "validatedVersion": "0.9.0-dev (build 12110, commit cd959bae9)"
+  },
+  "model": {
+    "repository": "LiquidAI/LFM3-Omni-2B-GGUF",
+    "revision": "d508b88f08a5b4286f2d2805a6a8d69a0ff44c72",
+    "license": "LFM Open License v1.0 (lfm1.0)",
+    "artifacts": {
+      "Q8_0": {
+        "filename": "LFM3-Omni-2B-Q8_0.gguf",
+        "size": 1846240768,
+        "sha256": "59118f661eaacb93d204723d76355b53347f0940b508c11412f6290fd49158d4"
+      },
+      "Q4_K_M": {
+        "filename": "LFM3-Omni-2B-Q4_K_M.gguf",
+        "size": 1099630080,
+        "sha256": "9f8d30e9d4fd7a9349d586e077988229b3ca0a0e4ad730897563d1eccc9893e2"
+      },
+      "projector": {
+        "filename": "mmproj-LFM3-Omni-2B-Q8_0.gguf",
+        "size": 506842528,
+        "sha256": "8a25f9d1931244429de404fccacfb7fb933970a36aa5688d2f5069f29c6b27b1"
+      }
+    }
+  },
+  "protocol": {
+    "endpoint": "/v1/realtime",
+    "input": "PCM16 little-endian mono; rate negotiated from session.created",
+    "output": "PCM16 little-endian mono; rate negotiated from session.created",
+    "ttsEndpoint": "/tts",
+    "ttsOutput": "FLOAT32 little-endian mono; Content-Type supplies rate",
+    "reasoning": "off",
+    "turnDetection": "client commit",
+    "fullDuplex": false,
+    "sourceTranscript": false
+  },
+  "qualification": {
+    "status": "experimental-unqualified",
+    "languagePair": [
+      "nl",
+      "en"
+    ],
+    "defaultEligible": false,
+    "reason": "Synthetic technical probes cannot qualify human bilingual fidelity or conversation latency."
+  },
+  "licenses": [
+    {
+      "filename": "licenses/LICENSE-LFM-1.0",
+      "sha256": "4d28ca14dedc0b3d0fcc2b3339f0e79931faa33874f3d24f522183a8fc70068c",
+      "source": "https://huggingface.co/LiquidAI/LFM3-Omni-2B-GGUF/resolve/d508b88f08a5b4286f2d2805a6a8d69a0ff44c72/LICENSE"
+    },
+    {
+      "filename": "licenses/LICENSE-llama.cpp",
+      "sha256": "94f29bbed6a22c35b992c5c6ebf0e7c92f13b836b90f36f461c9cf2f0f1d010d",
+      "source": "https://raw.githubusercontent.com/ggml-org/llama.cpp/cd959bae99ff4bed22bef2604f45241c09bbb8c8/LICENSE"
+    }
+  ]
+}

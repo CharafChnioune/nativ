@@ -1,0 +1,134 @@
+{
+  "date": "2026-11-08",
+  "native": {
+    "result": "Passed",
+    "total_test_cases": 1802,
+    "passed_test_cases": 1794,
+    "skipped_test_cases": 8,
+    "failed_test_cases": 0,
+    "passed_invocations_including_parameter_variants": 1799,
+    "required_classes_passed_cases": {
+      "AudioSessionCoordinatorTests": 4,
+      "LiveTranslationIntegrationTests": 3,
+      "SoftwareUpdaterTests": 12,
+      "TranslationAudioTests": 10,
+      "TranslationDownloadReservationsTests": 3,
+      "TranslationHostOperationGateTests": 4,
+      "TranslationLocalTransportTests": 5,
+      "TranslationModelStoreTests": 3,
+      "TranslationResourceAssessmentTests": 4,
+      "TranslationRuntimeTests": 6,
+      "TranslationWhisperPreparationTests": 2
+    },
+    "skipped_optional_integration_cases": [
+      "AudioDiarizationTests.testDiarizedTextOnlyModelWithRealServer()",
+      "AudioDiarizationTests.testServerWithRealModel()",
+      "AudioSummaryReferenceTests.testSavedMeetingSummaryWithLocalModel()",
+      "ChatCompactionTests.testLiveCompactionAndReplay()",
+      "NativAudioClientTests.testSpeakerEndpointsWithRealServer()",
+      "ParakeetTests.testDefaultModelTranscribesSpeech()",
+      "TranslationRuntimeTests.testExplicitLocalRuntimeIntegration()",
+      "TranslationWhisperPreparationTests.testPinnedArtifactsPrepareWithoutChangingSourceSnapshot()"
+    ],
+    "log_sha256": "9d86a80c7da076c54f19fbe141618e00e16ddd978b3fbfff4f5e5c1b03ee880f",
+    "toolchain": "Xcode 27.2 / Swift 6.4.2 / macOS 26.6 / arm64",
+    "source_note": "Historical full native suite before the later scroll fixture and subprocess completion corrections. Source snapshot outside Desktop avoided TCC-blocked startup. The final Whisper EOF-only formatting correction was rebuilt and checked separately. Subsequent exact-source subprocess tests are recorded below; final full-suite CI must be read on the current PR head.",
+    "final_whisper_file_recheck": {
+      "passed": 2,
+      "skipped": 1,
+      "failed": 0,
+      "log": "native-whisper-final.log"
+    },
+    "scroll_fixture_follow_up": {
+      "production_code_changed": false,
+      "canonical_and_tested_source_sha256": "91d1a1505345fc63656d8782c3f7634eacd4e46f878fbc45985c5aa7878e194b",
+      "controlled_consumption_boundary_before": {
+        "runs": 3,
+        "failed": 2
+      },
+      "controlled_consumption_boundary_after": {
+        "runs": 5,
+        "failed": 0
+      },
+      "canonical_targeted_repetitions": {
+        "passed": 10,
+        "failed": 0
+      },
+      "full_scrolling_class": {
+        "passed": 15,
+        "skipped": 0,
+        "failed": 0,
+        "seconds": 47.415
+      },
+      "logs": [
+        "scroll-consumption-diagnostic.log",
+        "scroll-consumption-green.log",
+        "scroll-jump-green.log",
+        "scroll-class-green.log"
+      ],
+      "note": "Bounded display passes observe two consecutive visible frames without reissuing the scroll request. The controlled boundary reproduced transient geometry, not the exact original CI timing. Final full-suite CI must be evaluated on the PR's current head."
+    },
+    "source_commit": "e1cf3640ef066cf3bd7e1f149701c6294bf5a0f9",
+    "subprocess_follow_up": {
+      "canonical_equals_tested_snapshot": true,
+      "sha256": {
+        "Sources/Nativ/Features/Extensions/CustomTool.swift": "a4907266514d16592206aec3a8dbd78f30c58679d5c30c2c8e0bd5e98262dce1",
+        "Sources/Nativ/Utilities/ShellEnvironment.swift": "6ba8caa59d9eecdd2b7980d97cb9e377c3696d20f9bfb5e2745a67f6c009020c",
+        "Tests/NativTests/CustomToolTests.swift": "ffc91fc08e342a3aa192b931a4656748d52c6a4559aea7e06f6fb49e6331a18f",
+        "Tests/NativTests/ShellEnvironmentTests.swift": "38139cf040803b5788971de2102d25fd27ba4435c1b5f33e83c1737c86fdbf10"
+      },
+      "log": "custom-tool-validated.log",
+      "logical_tests": 21,
+      "failures": 0,
+      "skips": 0,
+      "seconds": 30.849,
+      "syntax_attempts_within_original_test": 10,
+      "early_eof_execution_timeout_test_seconds": 30.064,
+      "timeout_seconds_unchanged": {
+        "environment": 3,
+        "syntax": 10,
+        "execution": 30
+      },
+      "source_commit": "28cabb68f57e8ab5e01cb19eaf3c690d37c7349d",
+      "variants": {
+        "original": {
+          "runs": 20,
+          "failed": 5
+        },
+        "eof_only": {
+          "runs": 20,
+          "failed": 5
+        },
+        "completion_callback_and_eof": {
+          "runs": 100,
+          "failed": 0
+        }
+      },
+      "note": "Three additional logical regression cases. Inner syntax repetitions are not new test cases. No deadline or expected error was weakened."
+    }
+  },
+  "swiftpm": {
+    "passed": 53,
+    "failed": 0,
+    "note": "24 XCTest and 29 Swift Testing; overlaps native framework target, do not add as distinct total."
+  },
+  "python": {
+    "total": 123,
+    "passed": 122,
+    "skipped": 1,
+    "failed": 0,
+    "seconds": 11.862
+  },
+  "scope_limit": "No human voice, 128GB hardware, acoustic stop-latency or signed-update qualification.",
+  "app_source_commit": "28cabb68f57e8ab5e01cb19eaf3c690d37c7349d",
+  "build": {
+    "result": "BUILD SUCCEEDED",
+    "log": "development-build-subprocess-final.log",
+    "source_commit": "28cabb68f57e8ab5e01cb19eaf3c690d37c7349d"
+  },
+  "prior_build": {
+    "result": "BUILD SUCCEEDED",
+    "log": "development-build-verified-revision.log",
+    "source_commit": "e1cf3640ef066cf3bd7e1f149701c6294bf5a0f9"
+  }
+}

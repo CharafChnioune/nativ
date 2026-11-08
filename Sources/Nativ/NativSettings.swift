@@ -17,7 +17,7 @@ struct ServerAPIKeychain: ServerAPICredentialStoring {
     let account: String
 
     init(
-        service: String = "dev.local.Nativ.server-api-key",
+        service: String = NativBuildIdentity.identifier("server-api-key"),
         account: String = "nativ-server"
     ) {
         self.service = service
@@ -97,7 +97,7 @@ struct HuggingFaceCredentialKeychain: HuggingFaceCredentialStoring {
     let account: String
 
     init(
-        service: String = "dev.local.Nativ.huggingface-token",
+        service: String = NativBuildIdentity.identifier("huggingface-token"),
         account: String = "nativ-huggingface"
     ) {
         self.service = service
@@ -714,7 +714,7 @@ struct NativSettings: Codable, Equatable {
         serverAPIKey: String? = nil,
         huggingFaceToken: String? = nil,
         serverHost: String = Self.defaultServerHost,
-        serverPort: Int = 8080,
+        serverPort: Int = NativBuildIdentity.defaultServerPort,
         maxTokens: Int = 2048,
         maxKVSize: Int = 0,
         compactionEnabled: Bool = true,
@@ -1704,7 +1704,7 @@ struct NativSettings: Codable, Equatable {
         let baseURL = applicationSupport ?? FileManager.default.homeDirectoryForCurrentUser
         return
             baseURL
-            .appendingPathComponent("Nativ", isDirectory: true)
+            .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
             .appendingPathComponent("Settings.plist")
     }
 }

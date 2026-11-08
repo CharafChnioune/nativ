@@ -92,7 +92,7 @@ struct ChatAttachmentPreviewFile: Sendable {
         try Task.checkCancellation()
 
         let directoryURL = temporaryDirectory
-            .appending(path: "NativChatPreviews", directoryHint: .isDirectory)
+            .appending(path: "io.github.charafchnioune.nativ.ChatPreviews", directoryHint: .isDirectory)
             .appending(path: UUID().uuidString, directoryHint: .isDirectory)
         let url = directoryURL.appending(
             path: safeFilename(attachment.filename),

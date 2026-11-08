@@ -73,6 +73,19 @@ final class ShellEnvironmentTests: XCTestCase {
         XCTAssertLessThan(Date().timeIntervalSince(start), 5)
     }
 
+    func testEnvironmentPreservesTrailingDataFromShortLivedProcesses() {
+        let expected = String(repeating: "value-", count: 4096) + "environment-tail"
+        for _ in 0 ..< 10 {
+            let result = ShellEnvironment.environment(
+                names: ["NATIV_TEST_TRAILING"],
+                executablePath: "/bin/zsh",
+                arguments: ["-c", "printf '%s\\0' 'NATIV_TEST_TRAILING=\(expected)'"],
+                timeout: 3
+            )
+            XCTAssertEqual(result, ["NATIV_TEST_TRAILING": expected])
+        }
+    }
+
     func testEnvironmentReturnsEmptyForMissingExecutable() {
         let result = ShellEnvironment.environment(
             names: ["HF_HOME"],

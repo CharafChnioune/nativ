@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "date_utc": "2026-11-08T18:09:56.047914+00:00",
+  "scope": "Gerichte regressiecontrole van supervisor-eigenaarschap, volledige listenerpoort en Whisper-taalclaims. Geen modelinference, appkwalificatie of volledige native-suiteclaim.",
+  "base_commit": "c249f990422003a8152786ed2f2528a799620225",
+  "tested_worktree_sha256": {
+    "Sources/Nativ/Features/LiveTranslation/TranslationCascadeRuntime.swift": "101e4ec80018541bec5bf810c3f44d888599fd51fb50786e774761074f8b4714",
+    "Sources/Nativ/Features/LiveTranslation/TranslationStageCatalog.swift": "90be91ef94d444adfe5e6edd88332d197e15d54c17590520aa3e66ff9208562c",
+    "Tests/NativTests/TranslationCascadeRuntimeTests.swift": "b02ba229d345775bd7654ed55da421ee9597a5c82f07dd811b78fef6f275a559",
+    "Tests/NativTests/TranslationStageCatalogTests.swift": "34d2d9d02fe6c0e1eab34dd7235177d761aabb83c501d326bb194853203cafee",
+    "scripts/verify_translation_test_results.py": "667a00418cd6c9ab573106351be7cbe2bf78805ca597ea74872d5723a3dc2f48",
+    "scripts/tests/test_translation_test_evidence.py": "b5775a0f908d7fb90b75c07626f0d5a4b5e3250c9f0d9824a96e9923aead67bf"
+  },
+  "native_environment": {
+    "snapshot": "/Users/charaf/Library/Developer/NativLiveTranslationValidation/20261108-1352",
+    "scheme": "Nativ",
+    "configuration": "Debug",
+    "destination": "platform=macOS,arch=arm64",
+    "jobs": 2,
+    "code_signing_allowed": false,
+    "reuse_prepared_python_runtime": true
+  },
+  "red": {
+    "native": {
+      "total": 17,
+      "passed": 12,
+      "failed": 5,
+      "skipped": 0,
+      "expected_failures": [
+        "Stop keerde terug terwijl de eigen Python-child nog leefde; nieuwe admission overlapte die child.",
+        "Listener accepteerde onvolledige poortfragmenten zonder delimiter.",
+        "Whisper-loaderprecedentie, 99/100 talen en ontbrekende/onbekende metadata."
+      ],
+      "wall_seconds": 121.663,
+      "result_bundle": "/Users/charaf/Library/Developer/NativLiveTranslationValidation/20261108-1352/build/RuntimeCatalogRegressionRed.xcresult"
+    },
+    "gate": {
+      "tests": 8,
+      "failed_subtests": 5,
+      "reason": "Een groene bestaande klasse maskeerde de vijf ontbrekende kritieke cases."
+    }
+  },
+  "green": {
+    "native": {
+      "total": 17,
+      "passed": 17,
+      "failed": 0,
+      "skipped": 0,
+      "wall_seconds": 55.284,
+      "fixture_test_seconds": 4.541,
+      "result_bundle": "/Users/charaf/Library/Developer/NativLiveTranslationValidation/20261108-1352/build/RuntimeCatalogRegressionGreen.xcresult"
+    },
+    "gate": {
+      "tests": 8,
+      "failed": 0,
+      "required_classes": 18,
+      "required_cases": 12
+    },
+    "python": {
+      "total": 172,
+      "passed": 171,
+      "failed": 0,
+      "skipped": 1,
+      "seconds": 9.237,
+      "skip": "Opt-in test voor de gebouwde MLX-runtime zonder ingestelde runtimefixture."
+    }
+  },
+  "fixture": {
+    "supervisor": "Daadwerkelijke gebundelde C-supervisor gekopieerd naar een eigen tijdelijke layout.",
+    "python": "Private shellfixture installeert SIGTERM-ignore, registreert eigen child/supervisor-PIDs en exec /bin/sleep 60; geen kleinkinderen.",
+    "checks": [
+      "Stop blijft pending terwijl de child leeft.",
+      "Nieuwe start wacht op de vorige shutdown.",
+      "Child en supervisor zijn beide dood vóór stop terugkeert.",
+      "Nieuwe admission ziet geen levende vorige child/supervisor.",
+      "Alle geregistreerde fixture-PIDs zijn na cleanup dood; watchdog niet gebruikt."
+    ],
+    "watchdog_seconds": 15,
+    "cleanup_scope": "Uitsluitend door deze tijdelijke fixture geregistreerde PIDs.",
+    "supervisor_source_sha256": "fed53e55f5c4c8757c8ebe3a626d773bf60676508e8198966ac0f13a4de5dddd",
+    "supervisor_binary_sha256": "59f66f74a8c0fe930a46141b29dca595601ae0286565a7c28206a7005b4acb9d"
+  },
+  "logs": {
+    "build/validation/runtime-catalog-regression-red.log": "c14872ef86e00758add1d4e825272ead89247df33f33c8649003be078fbb499b",
+    "build/validation/runtime-catalog-regression-green.log": "6becbdfea229668203c976617ba4b4d62e129d02e1feb7d887440bf4248491ae",
+    "build/validation/runtime-catalog-gate-red.log": "8de1c2011449851c1978368b179d525fb64986b4d0d55ea8b769674b057c9cdd",
+    "build/validation/runtime-catalog-gate-green.log": "09d5707794f7119c04e269ef4e00ea366ba65a710a7681745d618086d8a55d3b",
+    "build/validation/runtime-catalog-python-regressions.log": "635807c227f55cdf0a8c2e76252f28855652f0aa7d108d085d4c20013e6075e2"
+  }
+}

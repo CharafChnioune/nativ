@@ -132,7 +132,7 @@ public struct NativExtensionManifest: Codable, Hashable, Identifiable, Sendable 
         included: Bool,
         enabledByDefault: Bool? = nil,
         runtime: NativExtensionRuntimeKind,
-        extensionPoint: String = "com.nativ.extension",
+        extensionPoint: String = "io.github.charafchnioune.nativ.nativ-extension",
         runtimeBundleIdentifier: String? = nil,
         contributions: NativExtensionContributions = .init(),
         permissions: [NativExtensionPermission] = []

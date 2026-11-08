@@ -30,6 +30,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 PYTHON_DISTRIBUTION_ROOT = REPO_ROOT / "PythonDistribution"
 LAUNCHER_SOURCE = PYTHON_DISTRIBUTION_ROOT / "Launcher" / "mlx_vlm_server_launcher.c"
 OVERLAY_SERVER = PYTHON_DISTRIBUTION_ROOT / "Overlay" / "nativ_server.py"
+OVERLAY_TRANSLATION = PYTHON_DISTRIBUTION_ROOT / "Overlay" / "nativ_translation_local.py"
 MODEL_CAPABILITIES_MANIFEST_GENERATOR = Path(__file__).with_name(
     "generate_model_capabilities_manifest.py"
 )
@@ -311,6 +312,7 @@ def build_signature(
         ),
         "launcher_sha256": file_sha256(LAUNCHER_SOURCE),
         "overlay_server_sha256": file_sha256(OVERLAY_SERVER),
+        "overlay_translation_sha256": file_sha256(OVERLAY_TRANSLATION),
         "model_capabilities_manifest_generator_sha256": file_sha256(
             MODEL_CAPABILITIES_MANIFEST_GENERATOR
         ),
@@ -619,9 +621,10 @@ def site_packages_dir(output: Path) -> Path:
 
 
 def install_overlay(output: Path) -> None:
-    destination = site_packages_dir(output) / OVERLAY_SERVER.name
-    log(f"Installing metrics overlay {OVERLAY_SERVER.name}")
-    shutil.copy2(OVERLAY_SERVER, destination)
+    for source in (OVERLAY_SERVER, OVERLAY_TRANSLATION):
+        destination = site_packages_dir(output) / source.name
+        log(f"Installing runtime overlay {source.name}")
+        shutil.copy2(source, destination)
 
 
 def install_model_capabilities_manifest(output: Path) -> None:
@@ -649,7 +652,7 @@ def verify_distribution(output: Path, *, expect_mlx_vlm: bool) -> None:
                 str(python),
                 "-c",
                 "import importlib.util; "
-                "raise SystemExit(0 if importlib.util.find_spec('nativ_server') else 1)",
+                "raise SystemExit(0 if importlib.util.find_spec('nativ_server') and importlib.util.find_spec('nativ_translation_local') else 1)",
             ]
         )
         manifest_path = output / MANIFEST_FILENAME

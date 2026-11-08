@@ -239,7 +239,7 @@ protocol WebSearchCredentialStoring {
 }
 
 struct KeychainWebSearchCredentialStore: WebSearchCredentialStoring {
-    private let servicePrefix = "dev.local.Nativ.web-search."
+    private let servicePrefix = "io.github.charafchnioune.nativ.web-search."
 
     func load(for provider: WebSearchProvider) throws -> String? {
         try keychain(for: provider).load()

@@ -309,7 +309,7 @@ protocol CustomToolCredentialStoring {
 struct CustomToolKeychain: CustomToolCredentialStoring {
     let service: String
 
-    init(service: String = "dev.local.Nativ.custom-http-tool") {
+    init(service: String = "io.github.charafchnioune.nativ.custom-http-tool") {
         self.service = service
     }
 
@@ -461,13 +461,16 @@ private enum CustomToolScriptRunner {
             self.limit = limit
         }
 
-        func append(_ chunk: Data) {
-            guard !chunk.isEmpty else { return }
+        @discardableResult
+        func capture(_ readData: () -> Data) -> Bool {
             lock.lock()
+            defer { lock.unlock() }
+            // Keep the read and append atomic with the final pipe drain.
+            let chunk = readData()
             if data.count < limit {
                 data.append(chunk.prefix(limit - data.count))
             }
-            lock.unlock()
+            return !chunk.isEmpty
         }
 
         func text() -> String {
@@ -600,11 +603,23 @@ private enum CustomToolScriptRunner {
         process.standardError = standardError
 
         standardOutput.fileHandleForReading.readabilityHandler = { handle in
-            outputBuffer.append(handle.availableData)
+            guard outputBuffer.capture({ handle.availableData }) else {
+                handle.readabilityHandler = nil
+                return
+            }
         }
         standardError.fileHandleForReading.readabilityHandler = { handle in
-            errorBuffer.append(handle.availableData)
+            guard errorBuffer.capture({ handle.availableData }) else {
+                handle.readabilityHandler = nil
+                return
+            }
         }
+
+        let exited = DispatchSemaphore(value: 0)
+        // Register completion before launching off the main thread; waiting on
+        // another worker's run loop can outlive an already exited short task.
+        process.terminationHandler = { _ in exited.signal() }
+        defer { process.terminationHandler = nil }
 
         do {
             try process.run()
@@ -613,11 +628,6 @@ private enum CustomToolScriptRunner {
             }
             try standardInput.fileHandleForWriting.close()
 
-            let exited = DispatchSemaphore(value: 0)
-            DispatchQueue.global(qos: .userInitiated).async {
-                process.waitUntilExit()
-                exited.signal()
-            }
             guard exited.wait(timeout: .now() + timeout) == .success else {
                 process.terminate()
                 if process.isRunning {
@@ -629,8 +639,8 @@ private enum CustomToolScriptRunner {
 
             standardOutput.fileHandleForReading.readabilityHandler = nil
             standardError.fileHandleForReading.readabilityHandler = nil
-            outputBuffer.append(standardOutput.fileHandleForReading.readDataToEndOfFile())
-            errorBuffer.append(standardError.fileHandleForReading.readDataToEndOfFile())
+            outputBuffer.capture { standardOutput.fileHandleForReading.readDataToEndOfFile() }
+            errorBuffer.capture { standardError.fileHandleForReading.readDataToEndOfFile() }
             return ProcessResult(
                 status: process.terminationStatus,
                 stdout: outputBuffer.text(),

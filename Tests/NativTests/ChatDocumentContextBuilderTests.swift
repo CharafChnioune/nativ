@@ -44,12 +44,13 @@ final class ChatDocumentContextBuilderTests: XCTestCase {
             let wire = try NativResponsesClient(baseURL: server, tenant: "test").makeResponseRequest(
                 next, input: input, compactThreshold: 96000
             )
-            let sent = try XCTUnwrap(MLXJSONValue(jsonData: XCTUnwrap(wire.httpBody))["input"]?.arrayValue)
-            XCTAssertEqual(Array(sent.prefix(input.count)), input)
+            let body = try MLXJSONValue(jsonData: XCTUnwrap(wire.httpBody))
+            let sent = try XCTUnwrap(body["input"]?.arrayValue)
+            XCTAssertEqual(sent, input, "Fresh excerpts stay outside the saved conversation input")
             if let context = next.transientContext {
-                XCTAssertEqual(sent.last?["content"], .string(context), "Send the fresh excerpts with the saved summary")
+                XCTAssertEqual(body["transient_context"], .string(context), "Send the fresh excerpts with the saved summary")
             } else {
-                XCTAssertEqual(sent, input)
+                XCTAssertNil(body["transient_context"])
             }
         }
         var edited = followUp

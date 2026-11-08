@@ -21,7 +21,7 @@ final class ChatSearchStore {
     }
 
     static var defaultURL: URL {
-        URL.applicationSupportDirectory.appending(path: "Nativ/Chat/Search.sqlite")
+        NativBuildIdentity.applicationSupportDirectory().appending(path: "Chat/Search.sqlite")
     }
 
     private let url: URL

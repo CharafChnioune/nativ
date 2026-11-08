@@ -3,7 +3,7 @@ import SwiftUI
 
 extension Notification.Name {
     static let fileReadConfigurationDidChange = Notification.Name(
-        "dev.local.Nativ.file-read-configuration-did-change"
+        "io.github.charafchnioune.nativ.file-read-configuration-did-change"
     )
 }
 

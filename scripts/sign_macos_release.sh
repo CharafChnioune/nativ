@@ -18,7 +18,7 @@ Options:
                              settings.
   --provisioning-profile PATH
                              Profile to embed in an app. Developer ID signing
-                             defaults to Nativ's checked-in encoded profile.
+                             requires the owner's explicit profile.
   --no-timestamp             Disable the secure timestamp for local development
                              testing. This selects Apple Development for Team ID
                              resolution and is rejected for Developer ID
@@ -256,6 +256,8 @@ resolve_app_entitlements() {
             "$resolved_entitlements_file"
     fi
 
+    # Match literal unresolved Xcode build-setting syntax.
+    # shellcheck disable=SC2016
     if grep -q '\$(' "$resolved_entitlements_file"; then
         fail "app entitlements still contain unresolved Xcode build settings"
     fi
@@ -264,7 +266,6 @@ resolve_app_entitlements() {
 
 prepare_provisioning_profile() {
     local target="$1"
-    local encoded_profile="$repository_root/Configuration/Nativ_Developer_ID.provisionprofile.base64"
 
     if [[ -n "$provisioning_profile" ]]; then
         case "$provisioning_profile" in
@@ -274,14 +275,7 @@ prepare_provisioning_profile() {
         [[ -f "$resolved_provisioning_profile" ]] || \
             fail "provisioning profile not found: $resolved_provisioning_profile"
     elif [[ "$is_developer_id" == true ]]; then
-        [[ -f "$encoded_profile" ]] || \
-            fail "encoded Developer ID provisioning profile is missing: $encoded_profile"
-        decoded_profile_file="$(
-            mktemp "${TMPDIR:-/tmp}/nativ-developer-id.XXXXXX.provisionprofile"
-        )"
-        /usr/bin/base64 -D -i "$encoded_profile" -o "$decoded_profile_file" || \
-            fail "could not decode the Developer ID provisioning profile"
-        resolved_provisioning_profile="$decoded_profile_file"
+        fail "fork Developer ID signing requires --provisioning-profile or NATIV_PROVISIONING_PROFILE; inherited profiles are never selected"
     else
         # Apple Development signatures do not require an embedded Developer ID
         # provisioning profile. Return success explicitly: a bare `return`

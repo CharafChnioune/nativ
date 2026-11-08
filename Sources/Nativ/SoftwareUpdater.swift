@@ -32,14 +32,19 @@ final class SoftwareUpdater: NSObject, ObservableObject, SPUUpdaterDelegate {
     )
     private let defaults: UserDefaults
     private let installedVersion: String
+    private let updateConfiguration: NativUpdateConfiguration?
+    var isConfigured: Bool { updateConfiguration != nil }
     private static let pendingBuildKey = "softwareUpdatePendingBuild"
     @Published private(set) var channel: SoftwareUpdateChannel
     @Published private(set) var sessionInProgress = false
     @Published private(set) var hasPendingUpdate: Bool
 
-    var canChangeChannel: Bool { !sessionInProgress && !hasPendingUpdate }
+    var canChangeChannel: Bool { isConfigured && !sessionInProgress && !hasPendingUpdate }
 
     var channelDescription: String {
+        guard isConfigured else {
+            return "Fork updates are unavailable until this build has its own update feeds and signing key."
+        }
         if !canChangeChannel {
             return "Finish checking for updates before changing this setting."
         }
@@ -56,6 +61,7 @@ final class SoftwareUpdater: NSObject, ObservableObject, SPUUpdaterDelegate {
     init(defaults: UserDefaults = .standard, info: [String: Any]? = Bundle.main.infoDictionary) {
         self.defaults = defaults
         installedVersion = ReleaseVersion.displayString(in: info)
+        updateConfiguration = NativUpdateConfiguration(info: info)
         channel = defaults.string(forKey: SoftwareUpdateChannel.storageKey)
             .flatMap(SoftwareUpdateChannel.init(rawValue:)) ?? .stable
         let pendingBuild = defaults.string(forKey: Self.pendingBuildKey)
@@ -72,11 +78,12 @@ final class SoftwareUpdater: NSObject, ObservableObject, SPUUpdaterDelegate {
     }
 
     func start() {
+        guard isConfigured else { return }
         updaterController.startUpdater()
     }
 
     func setChannel(_ channel: SoftwareUpdateChannel) {
-        guard !updater.sessionInProgress, !hasPendingUpdate, self.channel != channel else { return }
+        guard isConfigured, !updater.sessionInProgress, !hasPendingUpdate, self.channel != channel else { return }
         self.channel = channel
         defaults.set(channel.rawValue, forKey: SoftwareUpdateChannel.storageKey)
         updater.resetUpdateCycleAfterShortDelay()
@@ -85,7 +92,8 @@ final class SoftwareUpdater: NSObject, ObservableObject, SPUUpdaterDelegate {
     func allowedChannels(for updater: SPUUpdater) -> Set<String> { channel.allowedChannels }
 
     func feedURLString(for updater: SPUUpdater) -> String? {
-        channel == .releaseCandidates ? "https://github.com/Neywa-Labs/nativ/releases/download/preview/appcast.xml" : nil
+        guard let updateConfiguration else { return nil }
+        return (channel == .releaseCandidates ? updateConfiguration.previewFeed : updateConfiguration.stableFeed).absoluteString
     }
 
     func bestValidUpdate(in appcast: SUAppcast, for updater: SPUUpdater) -> SUAppcastItem? {
@@ -96,7 +104,8 @@ final class SoftwareUpdater: NSObject, ObservableObject, SPUUpdaterDelegate {
         // Sparkle already filters OS requirements, skipped updates, and channels.
         // Compare public versions first: timestamps alone can rank a backport above an RC.
         items.filter {
-            channel.permits(version: $0.displayVersionString, channel: $0.channel, installedVersion: installedVersion)
+            isConfigured && Self.isForkArchive($0.fileURL)
+                && channel.permits(version: $0.displayVersionString, channel: $0.channel, installedVersion: installedVersion)
         }.max { left, right in
             let lhs = ReleaseVersion(left.displayVersionString)!
             let rhs = ReleaseVersion(right.displayVersionString)!
@@ -104,6 +113,13 @@ final class SoftwareUpdater: NSObject, ObservableObject, SPUUpdaterDelegate {
             return SUStandardVersionComparator.default.compareVersion(left.versionString, toVersion: right.versionString)
                 == .orderedAscending
         }
+    }
+
+    private static func isForkArchive(_ url: URL?) -> Bool {
+        guard let url else { return false }
+        return url.scheme == "https" && url.host == "github.com"
+            && url.path.hasPrefix("/" + NativBuildIdentity.repository + "/releases/download/")
+            && url.user == nil && url.password == nil && url.port == nil && url.fragment == nil
     }
 
     // Sparkle can resume a downloaded update without re-running channel selection.

@@ -1,3 +1,10 @@
+> **Independent Live Translate fork:** this repository is `CharafChnioune/nativ`, based on
+> `Neywa-Labs/nativ`. The native translation preview is experimental; no voice or language
+> pair is qualified yet. Read [Live Translate](Docs/features/live-translation.md) and
+> [fork build/update setup](Docs/development/fork-maintenance.md). There is no signed fork
+> update channel until owner credentials are configured. The upstream links below describe
+> the original project and do not download this fork's translation build.
+
 <p align="center">
   <a href="https://runnativ.ai">
     <img src="Design/NativBannerLocalAI.png" alt="Nativ — Local AI. Native to your Mac. Download for macOS." width="100%">

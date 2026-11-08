@@ -377,7 +377,7 @@ final class ChatProjectStore: ObservableObject {
             ).first ?? fileManager.temporaryDirectory
         return
             applicationSupport
-            .appendingPathComponent("Nativ", isDirectory: true)
+            .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
             .appendingPathComponent("Projects", isDirectory: true)
             .appendingPathComponent("projects.json")
     }

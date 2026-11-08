@@ -24,6 +24,8 @@ final class ChatResponseSpeech {
     private(set) var downloadProgress: Double?
     var errorMessage: String?
 
+    @ObservationIgnored private var audioLease: AudioSessionLease?
+    @ObservationIgnored private let audioOwner = AudioSessionOwner(name: "Chat read aloud")
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored private var playback: (any ChatSpeechPlayback)?
     @ObservationIgnored private var requestID: UUID?
@@ -74,8 +76,12 @@ final class ChatResponseSpeech {
         self.now = now
     }
 
-    deinit {
+    isolated deinit {
         cacheExpiryTask?.cancel()
+        task?.cancel()
+        playback?.onFinish = nil
+        playback?.stop()
+        if let audioLease { AudioSessionCoordinator.shared.release(audioLease) }
     }
 
     func toggle(
@@ -143,6 +149,12 @@ final class ChatResponseSpeech {
                 }
                 try Task.checkCancellation()
                 guard let self, self.requestID == requestID else { return }
+                let lease = try await AudioSessionCoordinator.shared.acquire(owner: self.audioOwner, resources: [.playback])
+                guard self.requestID == requestID, !Task.isCancelled else {
+                    AudioSessionCoordinator.shared.release(lease)
+                    return
+                }
+                self.audioLease = lease
                 let playback = try self.makePlayback(data)
                 playback.onFinish = { [weak self] error in
                     guard let self, self.requestID == requestID else { return }
@@ -177,6 +189,8 @@ final class ChatResponseSpeech {
         playback?.onFinish = nil
         playback?.stop()
         playback = nil
+        if let audioLease { AudioSessionCoordinator.shared.release(audioLease) }
+        audioLease = nil
         messageID = nil
         preparingModelID = nil
         downloadProgress = nil

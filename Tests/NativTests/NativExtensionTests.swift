@@ -22,19 +22,19 @@ final class NativExtensionManifestTests: XCTestCase {
             manifest,
             hostVersion: "0.1.0"
         )
-        XCTAssertEqual(manifest.id, "com.nativ.voice-dictation")
+        XCTAssertEqual(manifest.id, "io.github.charafchnioune.nativ.voice-dictation")
         XCTAssertEqual(manifest.displayName, "Audio")
         XCTAssertTrue(manifest.included)
         XCTAssertEqual(manifest.enabledByDefault, false)
         XCTAssertEqual(
             manifest.contributions.sidebar.map(\.id),
-            ["com.nativ.voice-dictation.audio"]
+            ["io.github.charafchnioune.nativ.voice-dictation.audio"]
         )
         XCTAssertEqual(
             manifest.contributions.shortcuts.map(\.id),
             [
-                "com.nativ.voice-dictation.transcribe",
-                "com.nativ.voice-dictation.retranscribe",
+                "io.github.charafchnioune.nativ.voice-dictation.transcribe",
+                "io.github.charafchnioune.nativ.voice-dictation.retranscribe",
             ]
         )
         XCTAssertTrue(manifest.permissions.contains(.systemAudioCapture))

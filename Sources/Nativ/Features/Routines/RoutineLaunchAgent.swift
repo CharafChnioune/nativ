@@ -2,9 +2,9 @@ import AppKit
 import Foundation
 
 enum RoutineLaunchAgent {
-    private static let labelPrefix = "dev.local.Nativ.routine."
+    private static let labelPrefix = "io.github.charafchnioune.nativ.routine."
     private static let reconciliationQueue = DispatchQueue(
-        label: "dev.local.Nativ.routine-launch-agent",
+        label: "io.github.charafchnioune.nativ.routine-launch-agent",
         qos: .utility
     )
 

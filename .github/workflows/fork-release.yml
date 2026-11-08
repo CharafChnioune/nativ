@@ -1,0 +1,113 @@
+name: Publish fork macOS release
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: "Exact validated combined main SHA"
+        required: true
+      tag:
+        description: "Existing immutable fork version tag at that SHA, e.g. v1.0.0"
+        required: true
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: fork-release-publisher
+  cancel-in-progress: false
+jobs:
+  unsigned:
+    if: github.repository == 'CharafChnioune/nativ' && github.ref == 'refs/heads/main'
+    runs-on: macos-26
+    timeout-minutes: 120
+    outputs:
+      version: ${{ steps.metadata.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Verify exact tag, main and completed required validation
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ inputs.commit }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
+          python3 scripts/fork_release.py preflight --sha "$RELEASE_SHA" --tag "$RELEASE_TAG"
+      - name: Configure public fork release metadata
+        id: metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ inputs.commit }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          FORK_SPARKLE_PUBLIC_KEY: ${{ vars.FORK_SPARKLE_PUBLIC_KEY }}
+          FORK_GITHUB_APP_CLIENT_ID: ${{ vars.FORK_GITHUB_APP_CLIENT_ID }}
+          FORK_GITHUB_APP_SLUG: ${{ vars.FORK_GITHUB_APP_SLUG }}
+        run: |
+          python3 scripts/configure_fork_release.py --commit "$RELEASE_SHA" --tag "$RELEASE_TAG"
+          echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
+      - run: brew install xcodegen cmake
+      - run: xcodebuild -downloadComponent MetalToolchain
+      - name: Build without signing or publication credentials
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          version="${RELEASE_TAG#v}"
+          marketing="${version%%rc*}"
+          scripts/archive_macos_release.sh --marketing-version "$marketing" --release-version "$version" --build-number "$FORK_BUILD_NUMBER" --archive-path dist/fork.xcarchive
+      - name: Validate actual unsigned bundle identity
+        env:
+          RELEASE_SHA: ${{ inputs.commit }}
+        run: |
+          python3 scripts/fork_release.py bundle dist/fork.xcarchive/Products/Applications/Nativ.app --sha "$RELEASE_SHA"
+          ditto -c -k --sequesterRsrc --keepParent dist/fork.xcarchive/Products/Applications/Nativ.app dist/unsigned-fork.zip
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: unsigned-fork-${{ inputs.commit }}
+          path: dist/unsigned-fork.zip
+          if-no-files-found: error
+          retention-days: 7
+  sign-publish:
+    needs: unsigned
+    environment: fork-release
+    runs-on: macos-26
+    timeout-minutes: 90
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Check out trusted publisher, never candidate build scripts
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: unsigned-fork-${{ inputs.commit }}
+          path: dist
+      - name: Prepare verified Sparkle tools before exposing signing credentials
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/sparkle-release-tools.zip"
+          curl --fail --location --retry 3 --output "$archive" \
+            https://github.com/sparkle-project/Sparkle/releases/download/2.9.4/Sparkle-for-Swift-Package-Manager.zip
+          echo "cb6fdbdc8884f15d62a616e79face92b08322410fd2d425edc6596ccbf4ba3b0  $archive" | shasum -a 256 --check
+          ditto -x -k "$archive" "$RUNNER_TEMP/sparkle-release-tools"
+          test -x "$RUNNER_TEMP/sparkle-release-tools/bin/generate_appcast"
+          test -x "$RUNNER_TEMP/sparkle-release-tools/bin/sign_update"
+          echo "SPARKLE_GENERATE_APPCAST=$RUNNER_TEMP/sparkle-release-tools/bin/generate_appcast" >> "$GITHUB_ENV"
+          echo "SPARKLE_SIGN_UPDATE=$RUNNER_TEMP/sparkle-release-tools/bin/sign_update" >> "$GITHUB_ENV"
+      - name: Sign verified bundle, notarize and publish the fork channel
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ inputs.commit }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          APPLE_TEAM_ID: ${{ vars.FORK_APPLE_TEAM_ID }}
+          DEVELOPER_ID_APPLICATION_P12_BASE64: ${{ secrets.FORK_DEVELOPER_ID_APPLICATION_P12_BASE64 }}
+          DEVELOPER_ID_APPLICATION_P12_PASSWORD: ${{ secrets.FORK_DEVELOPER_ID_APPLICATION_P12_PASSWORD }}
+          PROVISIONING_PROFILE_BASE64: ${{ secrets.FORK_PROVISIONING_PROFILE_BASE64 }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.FORK_SPARKLE_PRIVATE_KEY }}
+          APPLE_API_KEY_P8_BASE64: ${{ secrets.FORK_APPLE_API_KEY_P8_BASE64 }}
+          NOTARY_KEY_ID: ${{ secrets.FORK_APPLE_API_KEY_ID }}
+          NOTARY_ISSUER: ${{ secrets.FORK_APPLE_API_ISSUER_ID }}
+        run: scripts/publish_fork_release.sh dist/unsigned-fork.zip

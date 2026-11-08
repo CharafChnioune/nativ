@@ -148,7 +148,7 @@ enum HuggingFaceTokenMetadataCache {
         ).first
         let baseURL = applicationSupport ?? FileManager.default.homeDirectoryForCurrentUser
         return baseURL
-            .appendingPathComponent("Nativ", isDirectory: true)
+            .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
             .appendingPathComponent("HuggingFaceTokenMetadata.plist")
     }
 }

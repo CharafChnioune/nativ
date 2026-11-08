@@ -1,0 +1,110 @@
+{
+  "date": "2026-11-08",
+  "source_commit": "68535271b2f0ab4baacd4e08981b213c21499141",
+  "tested_source_sha256": {
+    "Sources/Nativ/Features/LiveTranslation/TranslationModelStore.swift": "d8582f69b15371b4144320c306a5aeb48e750beaf3a35b8b9fc12b078270e701",
+    "Tests/NativTests/TranslationModelStoreTests.swift": "dc6cee6b3196444b5f626d7009f6dbf7ecf63507875673cad74b9ab354ea3300",
+    "Sources/NativTranslationKit/TranslationContentGuard.swift": "f07e06a022efb94fdfe0bef99424a9e33c15eb9b20f8c4e7c7b3512fdb809c5c",
+    "Tests/NativTranslationKitTests/TranslationContentGuardTests.swift": "628553e7d0458aa3ea815e9e94e6b43d1a6795e65e344aa6739eabffe58e10cc"
+  },
+  "app_metadata_note": "Host tests were rebuilt from these source bytes with development-hash-and-language-guards metadata. This is not the earlier f7 signed preview.",
+  "result": "Passed",
+  "native_tests": {
+    "totalTestCount": 1,
+    "passedTests": 1,
+    "failedTests": 0,
+    "skippedTests": 0
+  },
+  "strategy": "sequential",
+  "recognition": {
+    "model_id": "mlx-community/whisper-large-v3-turbo",
+    "revision": "a4aaeec0636e6fef84abdcbe3544cb2bf7e9f6fb"
+  },
+  "translation": {
+    "model_id": "mlx-community/gemma-4-e4b-it-4bit",
+    "revision": "475b9088d29754a3379866cf5aeb6b41acd313c2"
+  },
+  "speech": {
+    "model": "LFM3-Omni-2B Q8_0",
+    "revision": "d508b88f08a5b4286f2d2805a6a8d69a0ff44c72",
+    "model_artifact": {
+      "filename": "LFM3-Omni-2B-Q8_0.gguf",
+      "size": 1846240768,
+      "sha256": "59118f661eaacb93d204723d76355b53347f0940b508c11412f6290fd49158d4"
+    },
+    "projector_artifact": {
+      "filename": "mmproj-LFM3-Omni-2B-Q8_0.gguf",
+      "size": 506842528,
+      "sha256": "8a25f9d1931244429de404fccacfb7fb933970a36aa5688d2f5069f29c6b27b1"
+    },
+    "llama_cpp_commit": "cd959bae99ff4bed22bef2604f45241c09bbb8c8"
+  },
+  "fixtures": [
+    {
+      "source": "nl",
+      "target": "en",
+      "synthetic": true,
+      "artifact": {
+        "filename": "synthetic-nl.wav",
+        "size": 83136,
+        "sha256": "1fcaaca892f61ae35e2c8a23c6919b1488c82cb0573c59f065ba14832e3abd0a"
+      }
+    },
+    {
+      "source": "en",
+      "target": "nl",
+      "synthetic": true,
+      "artifact": {
+        "filename": "synthetic-en.wav",
+        "size": 99142,
+        "sha256": "780e5ac06f1fdd319089b9c86df25076733e6226b242c12fd9e389aba8eb50fa"
+      }
+    }
+  ],
+  "turns": [
+    {
+      "language_pair": "nl-en",
+      "received_pcm_bytes": 384000,
+      "commit_to_first_received_pcm_seconds": 15.909829791,
+      "turn_completed": true,
+      "actual_source_and_target_text": "Nonempty text asserted by native test, not emitted in this log; no content-quality verdict inferred."
+    },
+    {
+      "language_pair": "en-nl",
+      "received_pcm_bytes": 360960,
+      "commit_to_first_received_pcm_seconds": 6.586236791,
+      "turn_completed": true,
+      "actual_source_and_target_text": "Nonempty text asserted by native test, not emitted in this log; no content-quality verdict inferred."
+    }
+  ],
+  "test_seconds": 29.923,
+  "wrapper_seconds": 46.284,
+  "sampled_system": {
+    "interval_seconds": 2,
+    "baseline_swap_mib": 11289.0,
+    "peak_swap_mib": 11890.25,
+    "swap_growth_mib": 601.25,
+    "pressure_levels": [
+      1,
+      2
+    ]
+  },
+  "guards": {
+    "normal_baseline_required": true,
+    "global_swap_growth_limit_bytes": 1073741824,
+    "stage_seconds": 60,
+    "total_seconds": 420
+  },
+  "owned_helpers_absent_after_completion": true,
+  "official_nativ_server_untouched": true,
+  "manifest_sha256": "618256cc6c4e816b03cb6a3eefe4562dc2d1edc4f6d40b81f1bb5ec59ee4eccd",
+  "log_sha256": "4bde5795c2086bdcf73df0b214d593374e25c264814b0212c91cd767e9cea017",
+  "local_result_bundle": "/Users/charaf/Library/Developer/NativLiveTranslationValidation/20261108-1352/build/HostCascadeE4BQ8Sequential-20261108-hash-fixed.xcresult",
+  "local_log": "build/validation/host-cascade-e4b-q8-hash-fixed.log",
+  "prior_failed_attempt": {
+    "evidence": "translation-hash-memory-evidence.json",
+    "models_loaded": false,
+    "cause": "Unbounded autoreleased hash buffers during integrity checking; fixed before this completed run."
+  },
+  "scope_limit": "Two synthetic technical turns on a 16 GiB Mac: genuine native production providers, owned processes and stage leases, real ASR/LLM/LFM speech output. Not human meaning/voice qualification, spoken-content assessment, p50/p95, microphone/acoustic latency, 128 GiB validation or a qualified default. Observed first-PCM delays exceed live goals."
+}

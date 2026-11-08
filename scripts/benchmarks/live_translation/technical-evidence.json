@@ -1,0 +1,749 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-11-08",
+  "hardware": {
+    "model": "MacBook Air Mac17,3",
+    "chip": "Apple M5 (10 cores, 4 performance + 6 efficiency)",
+    "ramBytes": 17179869184,
+    "macOS": "26.6 (25G72)"
+  },
+  "classification": "Synthetic technical probes only; no fidelity, voice-language or acoustic/performance qualification. Concurrent compilation/system workloads may contend.",
+  "helper": {
+    "runtimeCommit": "cd959bae99ff4bed22bef2604f45241c09bbb8c8",
+    "patches": [
+      {
+        "filename": "reject-browser-origins.patch",
+        "sha256": "77cb10eff2c10e4d0d5b2919cc7853956304550954f5108052078297811513c1",
+        "purpose": "Reject every nonempty Origin for native-only loopback HTTP/WebSocket requests."
+      }
+    ],
+    "version": "version: 0.9.0-dev (build 12110, commit cd959bae9)\nbuilt with AppleClang 21.0.0.21000401 for Darwin arm64",
+    "helper": "/Users/charaf/Desktop/code/nativ/build/lfm-realtime/runtime/bin/llama-server",
+    "sha256": "360abd72ac928837ec91216a66d919e36abef8e2f38304c9f438f529ceeb6c80",
+    "dependencies": "/Users/charaf/Desktop/code/nativ/build/lfm-realtime/runtime/bin/llama-server:\n\t/System/Library/Frameworks/Accelerate.framework/Versions/A/Accelerate (compatibility version 1.0.0, current version 4.0.0)\n\t/usr/lib/libSystem.B.dylib (compatibility version 1.0.0, current version 1359.40.3)\n\t/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation (compatibility version 300.0.0, current version 5027.1.8)\n\t/System/Library/Frameworks/Metal.framework/Versions/A/Metal (compatibility version 1.0.0, current version 383.1.0)\n\t/System/Library/Frameworks/MetalKit.framework/Versions/A/MetalKit (compatibility version 1.0.0, current version 174.4.0)\n\t/usr/lib/libc++.1.dylib (compatibility version 1.0.0, current version 2200.32.0)\n\t/System/Library/Frameworks/CoreFoundation.framework/Versions/A/CoreFoundation (compatibility version 150.0.0, current version 5027.1.8)\n\t/usr/lib/libobjc.A.dylib (compatibility version 1.0.0, current version 228.0.0)\n"
+  },
+  "profiles": [
+    {
+      "profile": "Q8_0 automatic direction; original dynamic build, no Origin patch",
+      "evidenceDirectory": "build/lfm-realtime/probes/q8-initial",
+      "coldReadinessSeconds": 25.058473291,
+      "peakSampledRSSBytes": 1395523584,
+      "memoryCaveat": "Helper process RSS sampled every 0.5 seconds; excludes a full system/Metal memory footprint assessment.",
+      "unauthenticatedHTTPStatus": 401,
+      "websocketSecurity": null,
+      "foreignOriginHTTPStatus": null,
+      "helperExitCode": 0,
+      "turns": [
+        {
+          "sourceLanguage": "nl",
+          "mode": "direct",
+          "inputWAVSHA256": "1fcaaca892f61ae35e2c8a23c6919b1488c82cb0573c59f065ba14832e3abd0a",
+          "inputOrigin": "Original synthetic macOS say: Xander(nl), Samantha(en); excluded from quality qualification",
+          "instructions": null,
+          "inputRate": 16000,
+          "outputRate": 24000,
+          "sourceSeconds": 2.47,
+          "text": "The pickup is at half past four, not at four.",
+          "firstTextSeconds": 2.172607083999999,
+          "firstAudioSeconds": 3.7325597920000035,
+          "doneSeconds": 9.462114875000005,
+          "audioBytes": 184320,
+          "audioBeforeDone": true,
+          "status": "completed",
+          "errors": [],
+          "eventTypes": [
+            "input_audio_buffer.committed",
+            "conversation.item.added",
+            "conversation.item.done",
+            "response.created",
+            "response.output_item.added",
+            "response.content_part.added",
+            "response.output_text.delta",
+            "response.output_audio.delta",
+            "response.output_text.done",
+            "response.content_part.done",
+            "response.output_audio.done",
+            "response.output_item.done",
+            "response.done"
+          ],
+          "audioSignal": {
+            "sample_count": 92160,
+            "peak": 0.208892822265625,
+            "rms": 0.029602361038015636
+          }
+        },
+        {
+          "sourceLanguage": "nl",
+          "mode": "two-pass",
+          "inputWAVSHA256": "1fcaaca892f61ae35e2c8a23c6919b1488c82cb0573c59f065ba14832e3abd0a",
+          "inputOrigin": "Original synthetic macOS say: Xander(nl), Samantha(en); excluded from quality qualification",
+          "instructions": null,
+          "inputRate": 16000,
+          "outputRate": 24000,
+          "sourceSeconds": 2.47,
+          "text": "The pickup is at half past three, not at four.",
+          "firstTextSeconds": 0.7852656670000044,
+          "firstAudioSeconds": null,
+          "doneSeconds": 1.4751652919999998,
+          "audioBytes": 0,
+          "audioBeforeDone": false,
+          "status": "completed",
+          "errors": [],
+          "eventTypes": [
+            "input_audio_buffer.committed",
+            "conversation.item.added",
+            "conversation.item.done",
+            "response.created",
+            "response.output_item.added",
+            "response.content_part.added",
+            "response.output_text.delta",
+            "response.output_text.done",
+            "response.content_part.done",
+            "response.output_item.done",
+            "response.done"
+          ],
+          "audioSignal": {
+            "sample_count": 0,
+            "peak": 0,
+            "rms": 0
+          },
+          "tts": {
+            "language": "en",
+            "content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+            "first_audio_seconds": 0.32318145800000053,
+            "done_seconds": 6.032292333000001,
+            "audio_bytes": 337920,
+            "audio_before_done": true,
+            "errors": [],
+            "audioSignal": {
+              "sample_count": 84480,
+              "peak": 0.3539592921733856,
+              "rms": 0.050801236068152344
+            }
+          }
+        },
+        {
+          "sourceLanguage": "en",
+          "mode": "direct",
+          "inputWAVSHA256": "780e5ac06f1fdd319089b9c86df25076733e6226b242c12fd9e389aba8eb50fa",
+          "inputOrigin": "Original synthetic macOS say: Xander(nl), Samantha(en); excluded from quality qualification",
+          "instructions": null,
+          "inputRate": 16000,
+          "outputRate": 24000,
+          "sourceSeconds": 2.9701875,
+          "text": "Please book two seats for Friday, not for Thursday.",
+          "firstTextSeconds": 1.9851932909999945,
+          "firstAudioSeconds": 2.225789791000004,
+          "doneSeconds": 11.629609249999994,
+          "audioBytes": 211200,
+          "audioBeforeDone": true,
+          "status": "completed",
+          "errors": [],
+          "eventTypes": [
+            "input_audio_buffer.committed",
+            "conversation.item.added",
+            "conversation.item.done",
+            "response.created",
+            "response.output_item.added",
+            "response.content_part.added",
+            "response.output_text.delta",
+            "response.output_audio.delta",
+            "response.output_text.done",
+            "response.content_part.done",
+            "response.output_audio.done",
+            "response.output_item.done",
+            "response.done"
+          ],
+          "audioSignal": {
+            "sample_count": 105600,
+            "peak": 0.269775390625,
+            "rms": 0.0362812550143843
+          }
+        },
+        {
+          "sourceLanguage": "en",
+          "mode": "two-pass",
+          "inputWAVSHA256": "780e5ac06f1fdd319089b9c86df25076733e6226b242c12fd9e389aba8eb50fa",
+          "inputOrigin": "Original synthetic macOS say: Xander(nl), Samantha(en); excluded from quality qualification",
+          "instructions": null,
+          "inputRate": 16000,
+          "outputRate": 24000,
+          "sourceSeconds": 2.9701875,
+          "text": "<tool_call>\n<function=book>\n<parameter=seats>\n2\n</parameter>\n<parameter=date>\nFriday\n</parameter>\n<parameter=not>\nThursday\n</parameter>\n</function>\n</tool_call>",
+          "firstTextSeconds": 0.6284089579999943,
+          "firstAudioSeconds": null,
+          "doneSeconds": 2.1785975829999984,
+          "audioBytes": 0,
+          "audioBeforeDone": false,
+          "status": "completed",
+          "errors": [],
+          "eventTypes": [
+            "input_audio_buffer.committed",
+            "conversation.item.added",
+            "conversation.item.done",
+            "response.created",
+            "response.output_item.added",
+            "response.content_part.added",
+            "response.output_text.delta",
+            "response.output_text.done",
+            "response.content_part.done",
+            "response.output_item.done",
+            "response.done"
+          ],
+          "audioSignal": {
+            "sample_count": 0,
+            "peak": 0,
+            "rms": 0
+          },
+          "tts": {
+            "language": "nl",
+            "content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+            "first_audio_seconds": 0.2573351660000043,
+            "done_seconds": 9.606007166000012,
+            "audio_bytes": 683520,
+            "audio_before_done": true,
+            "errors": [],
+            "audioSignal": {
+              "sample_count": 170880,
+              "peak": 0.6848792433738708,
+              "rms": 0.06208112428488111
+            }
+          }
+        }
+      ],
+      "directTTS": [
+        {
+          "mode": "tts",
+          "language": "nl",
+          "errors": [],
+          "input_text_origin": "synthetic-original",
+          "content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+          "first_audio_seconds": 0.4366767500000037,
+          "done_seconds": 5.663618209000006,
+          "audio_bytes": 337920,
+          "audio_before_done": true,
+          "chunkCount": 45,
+          "audioSignal": {
+            "sample_count": 84480,
+            "peak": 0.5431250929832458,
+            "rms": 0.06785190499037225
+          }
+        },
+        {
+          "mode": "tts",
+          "language": "en",
+          "errors": [],
+          "input_text_origin": "synthetic-original",
+          "content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+          "first_audio_seconds": 0.4188497079999962,
+          "done_seconds": 6.77945274999999,
+          "audio_bytes": 353280,
+          "audio_before_done": true,
+          "chunkCount": 47,
+          "audioSignal": {
+            "sample_count": 88320,
+            "peak": 0.4852846562862396,
+            "rms": 0.065680417136428
+          }
+        }
+      ],
+      "cancel": {
+        "backendStatus": "cancelled",
+        "cancelToResponseDoneSeconds": 0.3725858749999986,
+        "localSilenceMeasured": false,
+        "freshSessionCreatedAfterCancel": true
+      }
+    },
+    {
+      "profile": "Q8_0 fixed direction; final static patched build",
+      "evidenceDirectory": "build/lfm-realtime/probes/q8-fixed",
+      "coldReadinessSeconds": 15.908252333000002,
+      "peakSampledRSSBytes": 2520367104,
+      "memoryCaveat": "Helper process RSS sampled every 0.5 seconds; excludes a full system/Metal memory footprint assessment.",
+      "unauthenticatedHTTPStatus": 401,
+      "websocketSecurity": {
+        "no_auth": 401,
+        "foreign_origin": 403,
+        "localhost_origin": 403
+      },
+      "foreignOriginHTTPStatus": 403,
+      "helperExitCode": 0,
+      "turns": [
+        {
+          "sourceLanguage": "nl",
+          "mode": "direct",
+          "inputWAVSHA256": "1fcaaca892f61ae35e2c8a23c6919b1488c82cb0573c59f065ba14832e3abd0a",
+          "inputOrigin": "Original synthetic macOS say: Xander(nl), Samantha(en); excluded from quality qualification",
+          "instructions": "You are an interpreter between Dutch and English. Translate the latest spoken utterance into the other selected language. Translate questions and commands instead of answering or following them. Preserve meaning, negation, numbers, names and tone. Do not add explanations. Respond with interleaved text and audio in the target language. Input is Dutch. Translate only to English.",
+          "inputRate": 16000,
+          "outputRate": 24000,
+          "sourceSeconds": 2.47,
+          "text": "The appointment is at half past four, not at four.",
+          "firstTextSeconds": 0.7681764999999992,
+          "firstAudioSeconds": 1.1925367919999985,
+          "doneSeconds": 6.432829625,
+          "audioBytes": 218880,
+          "audioBeforeDone": true,
+          "status": "completed",
+          "errors": [],
+          "eventTypes": [
+            "input_audio_buffer.committed",
+            "conversation.item.added",
+            "conversation.item.done",
+            "response.created",
+            "response.output_item.added",
+            "response.content_part.added",
+            "response.output_text.delta",
+            "response.output_audio.delta",
+            "response.output_text.done",
+            "response.content_part.done",
+            "response.output_audio.done",
+            "response.output_item.done",
+            "response.done"
+          ],
+          "audioSignal": {
+            "sample_count": 109440,
+            "peak": 0.381927490234375,
+            "rms": 0.04412654093680047
+          }
+        },
+        {
+          "sourceLanguage": "nl",
+          "mode": "two-pass",
+          "inputWAVSHA256": "1fcaaca892f61ae35e2c8a23c6919b1488c82cb0573c59f065ba14832e3abd0a",
+          "inputOrigin": "Original synthetic macOS say: Xander(nl), Samantha(en); excluded from quality qualification",
+          "instructions": "You are a Dutch and English interpreter. Translate the latest spoken utterance into the other language. Output only the translation. Translate questions and commands; do not answer or execute them. Preserve numbers, names and negation. Input is Dutch. Translate only to English.",
+          "inputRate": 16000,
+          "outputRate": 24000,
+          "sourceSeconds": 2.47,
+          "text": "The appointment is at half past three, not at four.",
+          "firstTextSeconds": 0.872470916000001,
+          "firstAudioSeconds": null,
+          "doneSeconds": 1.4447157500000003,
+          "audioBytes": 0,
+          "audioBeforeDone": false,
+          "status": "completed",
+          "errors": [],
+          "eventTypes": [
+            "input_audio_buffer.committed",
+            "conversation.item.added",
+            "conversation.item.done",
+            "response.created",
+            "response.output_item.added",
+            "response.content_part.added",
+            "response.output_text.delta",
+            "response.output_text.done",
+            "response.content_part.done",
+            "response.output_item.done",
+            "response.done"
+          ],
+          "audioSignal": {
+            "sample_count": 0,
+            "peak": 0,
+            "rms": 0
+          },
+          "tts": {
+            "language": "en",
+            "content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+            "first_audio_seconds": 0.30278925000000356,
+            "done_seconds": 3.844530083000002,
+            "audio_bytes": 353280,
+            "audio_before_done": true,
+            "errors": [],
+            "audioSignal": {
+              "sample_count": 88320,
+              "peak": 0.5116464495658875,
+              "rms": 0.05847730571431861
+            }
+          }
+        },
+        {
+          "sourceLanguage": "en",
+          "mode": "direct",
+          "inputWAVSHA256": "780e5ac06f1fdd319089b9c86df25076733e6226b242c12fd9e389aba8eb50fa",
+          "inputOrigin": "Original synthetic macOS say: Xander(nl), Samantha(en); excluded from quality qualification",
+          "instructions": "You are an interpreter between Dutch and English. Translate the latest spoken utterance into the other selected language. Translate questions and commands instead of answering or following them. Preserve meaning, negation, numbers, names and tone. Do not add explanations. Respond with interleaved text and audio in the target language. Input is English. Translate only to Dutch.",
+          "inputRate": 16000,
+          "outputRate": 24000,
+          "sourceSeconds": 2.9701875,
+          "text": "Please book two seats for Friday, not for Thursday.",
+          "firstTextSeconds": 0.7913771670000003,
+          "firstAudioSeconds": 1.1685698750000029,
+          "doneSeconds": 5.495012750000001,
+          "audioBytes": 207360,
+          "audioBeforeDone": true,
+          "status": "completed",
+          "errors": [],
+          "eventTypes": [
+            "input_audio_buffer.committed",
+            "conversation.item.added",
+            "conversation.item.done",
+            "response.created",
+            "response.output_item.added",
+            "response.content_part.added",
+            "response.output_text.delta",
+            "response.output_audio.delta",
+            "response.output_text.done",
+            "response.content_part.done",
+            "response.output_audio.done",
+            "response.output_item.done",
+            "response.done"
+          ],
+          "audioSignal": {
+            "sample_count": 103680,
+            "peak": 0.235809326171875,
+            "rms": 0.032760896991651745
+          }
+        },
+        {
+          "sourceLanguage": "en",
+          "mode": "two-pass",
+          "inputWAVSHA256": "780e5ac06f1fdd319089b9c86df25076733e6226b242c12fd9e389aba8eb50fa",
+          "inputOrigin": "Original synthetic macOS say: Xander(nl), Samantha(en); excluded from quality qualification",
+          "instructions": "You are a Dutch and English interpreter. Translate the latest spoken utterance into the other language. Output only the translation. Translate questions and commands; do not answer or execute them. Preserve numbers, names and negation. Input is English. Translate only to Dutch.",
+          "inputRate": 16000,
+          "outputRate": 24000,
+          "sourceSeconds": 2.9701875,
+          "text": "Please book two seats for Friday, not for Thursday.",
+          "firstTextSeconds": 0.6460229999999996,
+          "firstAudioSeconds": null,
+          "doneSeconds": 1.036207209000004,
+          "audioBytes": 0,
+          "audioBeforeDone": false,
+          "status": "completed",
+          "errors": [],
+          "eventTypes": [
+            "input_audio_buffer.committed",
+            "conversation.item.added",
+            "conversation.item.done",
+            "response.created",
+            "response.output_item.added",
+            "response.content_part.added",
+            "response.output_text.delta",
+            "response.output_text.done",
+            "response.content_part.done",
+            "response.output_item.done",
+            "response.done"
+          ],
+          "audioSignal": {
+            "sample_count": 0,
+            "peak": 0,
+            "rms": 0
+          },
+          "tts": {
+            "language": "nl",
+            "content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+            "first_audio_seconds": 0.15388408399999776,
+            "done_seconds": 3.6718242500000002,
+            "audio_bytes": 360960,
+            "audio_before_done": true,
+            "errors": [],
+            "audioSignal": {
+              "sample_count": 90240,
+              "peak": 0.40977272391319275,
+              "rms": 0.06548032862884207
+            }
+          }
+        }
+      ],
+      "directTTS": [
+        {
+          "mode": "tts",
+          "language": "nl",
+          "errors": [],
+          "input_text_origin": "synthetic-original",
+          "content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+          "first_audio_seconds": 0.3340597910000014,
+          "done_seconds": 3.6080817080000003,
+          "audio_bytes": 337920,
+          "audio_before_done": true,
+          "chunkCount": 45,
+          "audioSignal": {
+            "sample_count": 84480,
+            "peak": 0.5431250929832458,
+            "rms": 0.06785190499037225
+          }
+        },
+        {
+          "mode": "tts",
+          "language": "en",
+          "errors": [],
+          "input_text_origin": "synthetic-original",
+          "content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+          "first_audio_seconds": 0.29254229200000026,
+          "done_seconds": 3.608471833000003,
+          "audio_bytes": 353280,
+          "audio_before_done": true,
+          "chunkCount": 47,
+          "audioSignal": {
+            "sample_count": 88320,
+            "peak": 0.4852846562862396,
+            "rms": 0.065680417136428
+          }
+        }
+      ],
+      "cancel": {
+        "backendStatus": "cancelled",
+        "cancelToResponseDoneSeconds": 0.19597191700000138,
+        "localSilenceMeasured": false,
+        "freshSessionCreatedAfterCancel": true
+      }
+    },
+    {
+      "profile": "Q4_K_M fixed direction; final static patched build",
+      "evidenceDirectory": "build/lfm-realtime/probes/q4-fixed",
+      "coldReadinessSeconds": 5.193580541999999,
+      "peakSampledRSSBytes": 1807089664,
+      "memoryCaveat": "Helper process RSS sampled every 0.5 seconds; excludes a full system/Metal memory footprint assessment.",
+      "unauthenticatedHTTPStatus": 401,
+      "websocketSecurity": {
+        "no_auth": 401,
+        "foreign_origin": 403,
+        "localhost_origin": 403
+      },
+      "foreignOriginHTTPStatus": 403,
+      "helperExitCode": 0,
+      "turns": [
+        {
+          "sourceLanguage": "nl",
+          "mode": "direct",
+          "inputWAVSHA256": "1fcaaca892f61ae35e2c8a23c6919b1488c82cb0573c59f065ba14832e3abd0a",
+          "inputOrigin": "Original synthetic macOS say: Xander(nl), Samantha(en); excluded from quality qualification",
+          "instructions": "You are an interpreter between Dutch and English. Translate the latest spoken utterance into the other selected language. Translate questions and commands instead of answering or following them. Preserve meaning, negation, numbers, names and tone. Do not add explanations. Respond with interleaved text and audio in the target language. Input is Dutch. Translate only to English.",
+          "inputRate": 16000,
+          "outputRate": 24000,
+          "sourceSeconds": 2.47,
+          "text": "The appointment is at half past four, not at four o'clock.",
+          "firstTextSeconds": 1.2767232500000016,
+          "firstAudioSeconds": 1.6301598330000004,
+          "doneSeconds": 5.729432291000002,
+          "audioBytes": 257280,
+          "audioBeforeDone": true,
+          "status": "completed",
+          "errors": [],
+          "eventTypes": [
+            "input_audio_buffer.committed",
+            "conversation.item.added",
+            "conversation.item.done",
+            "response.created",
+            "response.output_item.added",
+            "response.content_part.added",
+            "response.output_text.delta",
+            "response.output_audio.delta",
+            "response.output_text.done",
+            "response.content_part.done",
+            "response.output_audio.done",
+            "response.output_item.done",
+            "response.done"
+          ],
+          "audioSignal": {
+            "sample_count": 128640,
+            "peak": 0.25531005859375,
+            "rms": 0.03637159636552601
+          }
+        },
+        {
+          "sourceLanguage": "nl",
+          "mode": "two-pass",
+          "inputWAVSHA256": "1fcaaca892f61ae35e2c8a23c6919b1488c82cb0573c59f065ba14832e3abd0a",
+          "inputOrigin": "Original synthetic macOS say: Xander(nl), Samantha(en); excluded from quality qualification",
+          "instructions": "You are a Dutch and English interpreter. Translate the latest spoken utterance into the other language. Output only the translation. Translate questions and commands; do not answer or execute them. Preserve numbers, names and negation. Input is Dutch. Translate only to English.",
+          "inputRate": 16000,
+          "outputRate": 24000,
+          "sourceSeconds": 2.47,
+          "text": "The appointment is at half past four, not at four o'clock.",
+          "firstTextSeconds": 0.6265849169999989,
+          "firstAudioSeconds": null,
+          "doneSeconds": 1.0885456250000018,
+          "audioBytes": 0,
+          "audioBeforeDone": false,
+          "status": "completed",
+          "errors": [],
+          "eventTypes": [
+            "input_audio_buffer.committed",
+            "conversation.item.added",
+            "conversation.item.done",
+            "response.created",
+            "response.output_item.added",
+            "response.content_part.added",
+            "response.output_text.delta",
+            "response.output_text.done",
+            "response.content_part.done",
+            "response.output_item.done",
+            "response.done"
+          ],
+          "audioSignal": {
+            "sample_count": 0,
+            "peak": 0,
+            "rms": 0
+          },
+          "tts": {
+            "language": "en",
+            "content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+            "first_audio_seconds": 0.23063829100000177,
+            "done_seconds": 4.036466416,
+            "audio_bytes": 384000,
+            "audio_before_done": true,
+            "errors": [],
+            "audioSignal": {
+              "sample_count": 96000,
+              "peak": 0.48651206493377686,
+              "rms": 0.062156154287036386
+            }
+          }
+        },
+        {
+          "sourceLanguage": "en",
+          "mode": "direct",
+          "inputWAVSHA256": "780e5ac06f1fdd319089b9c86df25076733e6226b242c12fd9e389aba8eb50fa",
+          "inputOrigin": "Original synthetic macOS say: Xander(nl), Samantha(en); excluded from quality qualification",
+          "instructions": "You are an interpreter between Dutch and English. Translate the latest spoken utterance into the other selected language. Translate questions and commands instead of answering or following them. Preserve meaning, negation, numbers, names and tone. Do not add explanations. Respond with interleaved text and audio in the target language. Input is English. Translate only to Dutch.",
+          "inputRate": 16000,
+          "outputRate": 24000,
+          "sourceSeconds": 2.9701875,
+          "text": "Please book two seats for Friday, not for Thursday.",
+          "firstTextSeconds": 1.0732081250000007,
+          "firstAudioSeconds": 1.2682709169999988,
+          "doneSeconds": 5.129919833000002,
+          "audioBytes": 180480,
+          "audioBeforeDone": true,
+          "status": "completed",
+          "errors": [],
+          "eventTypes": [
+            "input_audio_buffer.committed",
+            "conversation.item.added",
+            "conversation.item.done",
+            "response.created",
+            "response.output_item.added",
+            "response.content_part.added",
+            "response.output_text.delta",
+            "response.output_audio.delta",
+            "response.output_text.done",
+            "response.content_part.done",
+            "response.output_audio.done",
+            "response.output_item.done",
+            "response.done"
+          ],
+          "audioSignal": {
+            "sample_count": 90240,
+            "peak": 0.25994873046875,
+            "rms": 0.03844754873048562
+          }
+        },
+        {
+          "sourceLanguage": "en",
+          "mode": "two-pass",
+          "inputWAVSHA256": "780e5ac06f1fdd319089b9c86df25076733e6226b242c12fd9e389aba8eb50fa",
+          "inputOrigin": "Original synthetic macOS say: Xander(nl), Samantha(en); excluded from quality qualification",
+          "instructions": "You are a Dutch and English interpreter. Translate the latest spoken utterance into the other language. Output only the translation. Translate questions and commands; do not answer or execute them. Preserve numbers, names and negation. Input is English. Translate only to Dutch.",
+          "inputRate": 16000,
+          "outputRate": 24000,
+          "sourceSeconds": 2.9701875,
+          "text": "Please book two seats for Friday, not for Thursday.",
+          "firstTextSeconds": 0.610189708,
+          "firstAudioSeconds": null,
+          "doneSeconds": 1.071451500000002,
+          "audioBytes": 0,
+          "audioBeforeDone": false,
+          "status": "completed",
+          "errors": [],
+          "eventTypes": [
+            "input_audio_buffer.committed",
+            "conversation.item.added",
+            "conversation.item.done",
+            "response.created",
+            "response.output_item.added",
+            "response.content_part.added",
+            "response.output_text.delta",
+            "response.output_text.done",
+            "response.content_part.done",
+            "response.output_item.done",
+            "response.done"
+          ],
+          "audioSignal": {
+            "sample_count": 0,
+            "peak": 0,
+            "rms": 0
+          },
+          "tts": {
+            "language": "nl",
+            "content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+            "first_audio_seconds": 0.37831875000000537,
+            "done_seconds": 4.357893541999999,
+            "audio_bytes": 322560,
+            "audio_before_done": true,
+            "errors": [],
+            "audioSignal": {
+              "sample_count": 80640,
+              "peak": 0.3642013967037201,
+              "rms": 0.05762490240205006
+            }
+          }
+        }
+      ],
+      "directTTS": [
+        {
+          "mode": "tts",
+          "language": "nl",
+          "errors": [],
+          "input_text_origin": "synthetic-original",
+          "content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+          "first_audio_seconds": 0.2974318750000009,
+          "done_seconds": 6.328223667000003,
+          "audio_bytes": 353280,
+          "audio_signal": {
+            "sample_count": 88320,
+            "peak": 0.4809146821498871,
+            "rms": 0.05812249348073115
+          },
+          "audio_before_done": true,
+          "chunkCount": 47,
+          "audioSignal": {
+            "sample_count": 88320,
+            "peak": 0.4809146821498871,
+            "rms": 0.05812249348073115
+          }
+        },
+        {
+          "mode": "tts",
+          "language": "en",
+          "errors": [],
+          "input_text_origin": "synthetic-original",
+          "content_type": "audio/pcm;rate=24000;encoding=float;bits=32",
+          "first_audio_seconds": 0.4636190419999977,
+          "done_seconds": 7.73820525,
+          "audio_bytes": 353280,
+          "audio_signal": {
+            "sample_count": 88320,
+            "peak": 0.38592997193336487,
+            "rms": 0.054500225460141764
+          },
+          "audio_before_done": true,
+          "chunkCount": 47,
+          "audioSignal": {
+            "sample_count": 88320,
+            "peak": 0.38592997193336487,
+            "rms": 0.054500225460141764
+          }
+        }
+      ],
+      "cancel": {
+        "backendStatus": "cancelled",
+        "cancelToResponseDoneSeconds": 0.0797059170000054,
+        "localSilenceMeasured": false,
+        "freshSessionCreatedAfterCancel": true
+      }
+    }
+  ],
+  "unrunGates": [
+    "60 consenting human recordings and competent bilingual reference/text/spoken review",
+    "noise, code switching and automatic-direction recording qualification",
+    "100 warm turn measurements and 10 cold starts",
+    "capture/endpointing/jitter/playback end-to-end latency",
+    "local cancel-to-audible-silence <=150 ms",
+    "30 minute session and context rollover/queue/memory bounds",
+    "mic/system-audio/headphone/AEC/source-overlap testing",
+    "local cascade C (delegated separately)",
+    "native packaged/signed app integration"
+  ]
+}

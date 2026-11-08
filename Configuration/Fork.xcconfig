@@ -1,0 +1,20 @@
+// Public fork identity. Private signing/update keys belong in ignored local config or CI secrets.
+NATIV_PRODUCT_NAME = Nativ
+NATIV_BUNDLE_IDENTIFIER = io.github.charafchnioune.nativ
+NATIV_SERVER_KIT_BUNDLE_IDENTIFIER = $(NATIV_BUNDLE_IDENTIFIER).NativServerKit
+NATIV_EXTENSION_SDK_BUNDLE_IDENTIFIER = $(NATIV_BUNDLE_IDENTIFIER).NativExtensionSDK
+NATIV_TRANSLATION_KIT_BUNDLE_IDENTIFIER = $(NATIV_BUNDLE_IDENTIFIER).NativTranslationKit
+NATIV_VOICE_EXTENSION_BUNDLE_IDENTIFIER = $(NATIV_BUNDLE_IDENTIFIER).VoiceDictationExtension
+NATIV_TRANSLATION_EXTENSION_BUNDLE_IDENTIFIER = $(NATIV_BUNDLE_IDENTIFIER).LiveTranslationExtension
+// Empty expansion prevents xcconfig's // comment syntax from truncating URLs.
+NATIV_STABLE_FEED_URL = https:/$()/github.com/CharafChnioune/nativ/releases/latest/download/appcast.xml
+NATIV_PREVIEW_FEED_URL = https:/$()/github.com/CharafChnioune/nativ/releases/download/preview/appcast.xml
+NATIV_SPARKLE_PUBLIC_KEY = YAX1zGfcsvfAec12FrJ0y+q0tsiqe6F65Y2Fvs36AR8=
+NATIV_GITHUB_APP_CLIENT_ID =
+NATIV_GITHUB_APP_SLUG =
+NATIV_UPSTREAM_SHA = 5cb79ed65659414774745c1331cce08397d16055
+NATIV_UPSTREAM_TAG = v0.4.5
+NATIV_FORK_REVISION = development
+DEVELOPMENT_TEAM =
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = -

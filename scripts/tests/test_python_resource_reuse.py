@@ -5,12 +5,34 @@ import sys
 import tempfile
 import unittest
 from unittest.mock import Mock, patch
+from types import SimpleNamespace
 
 SCRIPTS = Path(__file__).resolve().parents[2] / "PythonDistribution" / "Scripts"
 sys.path.insert(0, str(SCRIPTS))
 builder = importlib.import_module("build_mlx_vlm_server")
 resource = importlib.import_module("build_xcode_framework_resource")
 sys.path.pop(0)
+
+
+class TranslationOverlayPackagingTests(unittest.TestCase):
+    def test_runtime_packages_both_overlays(self):
+        with tempfile.TemporaryDirectory() as directory:
+            destination = Path(directory)
+            with patch.object(builder, "site_packages_dir", return_value=destination):
+                builder.install_overlay(destination)
+            for source in (builder.OVERLAY_SERVER, builder.OVERLAY_TRANSLATION):
+                self.assertEqual((destination / source.name).read_bytes(), source.read_bytes())
+
+    def test_translation_overlay_change_invalidates_cached_runtime(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "nativ_translation_local.py"
+            arguments = dict(asset=SimpleNamespace(name="fixture"), python_version="3.12.13", pbs_release="fixture", target="arm64", requirements=None, mlx_vlm_source=None, mlx_audio_source=None, skip_install=False)
+            with patch.object(builder, "OVERLAY_TRANSLATION", source):
+                source.write_text("version = 1")
+                before = builder.build_signature(**arguments)
+                source.write_text("version = 2")
+                after = builder.build_signature(**arguments)
+            self.assertNotEqual(before["overlay_translation_sha256"], after["overlay_translation_sha256"])
 
 
 class PythonResourceReuseTests(unittest.TestCase):

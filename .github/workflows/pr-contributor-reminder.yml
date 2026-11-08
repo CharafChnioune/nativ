@@ -31,7 +31,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Update signed-commit reminder
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
         with:
           script: |
             const excludedUsers = new Set(
@@ -127,7 +127,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Update CI failure reminder
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b
         with:
           script: |
             const excludedUsers = new Set(

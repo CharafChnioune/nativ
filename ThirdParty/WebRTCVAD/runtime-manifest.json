@@ -1,0 +1,9 @@
+{
+  "upstream": "https://github.com/dpirch/libfvad",
+  "commit": "532ab666c20d3cfda38bca63abbb0f152706c369",
+  "archive_sha256": "a72a440f1a4e6abe0204027ec3484f23b75395808df3fdf1274e78e1d4623a97",
+  "license": "BSD-3-Clause; WebRTC PATENTS grant; see LICENSE, PATENTS, AUTHORS",
+  "local_changes": [
+    "module.modulemap and this manifest; C/header sources unchanged"
+  ]
+}

@@ -230,7 +230,7 @@ final class NativAnalyticsStore {
         ).first ?? FileManager.default.homeDirectoryForCurrentUser
 
         return applicationSupport
-            .appendingPathComponent("Nativ", isDirectory: true)
+            .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
             .appendingPathComponent("Analytics.sqlite3")
     }
 

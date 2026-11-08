@@ -596,7 +596,7 @@ final class MediaAssetStore: @unchecked Sendable {
             let support = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
                 ?? fileManager.temporaryDirectory
             self.rootDirectory = support
-                .appendingPathComponent("Nativ", isDirectory: true)
+                .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
                 .appendingPathComponent("MediaAssets", isDirectory: true)
         }
     }
@@ -943,12 +943,12 @@ struct ChatSessionStore {
             let support = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
                 ?? fileManager.temporaryDirectory
             self.chatDirectory = support
-                .appendingPathComponent("Nativ", isDirectory: true)
+                .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
                 .appendingPathComponent("Chat", isDirectory: true)
             let caches = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first
                 ?? fileManager.temporaryDirectory
             self.legacyChatDirectory = caches
-                .appendingPathComponent("Nativ", isDirectory: true)
+                .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
                 .appendingPathComponent("Chat", isDirectory: true)
         }
     }

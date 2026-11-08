@@ -509,7 +509,7 @@ struct NativAllTimeStats: Codable, Sendable {
     private static func legacyStorageURL() -> URL {
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
-        let bundleID = Bundle.main.bundleIdentifier ?? "dev.local.Nativ"
+        let bundleID = Bundle.main.bundleIdentifier ?? "io.github.charafchnioune.nativ"
         return caches
             .appendingPathComponent(bundleID, isDirectory: true)
             .appendingPathComponent("NativStats.plist")

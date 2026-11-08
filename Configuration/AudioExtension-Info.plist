@@ -23,7 +23,7 @@
 	<key>EXAppExtensionAttributes</key>
 	<dict>
 		<key>EXExtensionPointIdentifier</key>
-		<string>dev.local.Nativ.nativ-extension</string>
+		<string>$(NATIV_BUNDLE_IDENTIFIER).nativ-extension</string>
 	</dict>
 </dict>
 </plist>

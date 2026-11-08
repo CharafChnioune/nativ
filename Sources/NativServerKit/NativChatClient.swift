@@ -717,6 +717,7 @@ public final class NativChatClient: @unchecked Sendable {
     private let apiKey: String?
     private let session: URLSession
     private let timeout: TimeInterval
+    private let localOnly: Bool
 
 
     public static let defaultIdleTimeout: TimeInterval = 600
@@ -730,17 +731,20 @@ public final class NativChatClient: @unchecked Sendable {
         baseURL: URL = URL(string: "http://127.0.0.1:8080")!,
         apiKey: String? = nil,
         idleTimeout: TimeInterval = NativChatClient.defaultIdleTimeout,
-        resourceTimeout: TimeInterval = NativChatClient.defaultResourceTimeout
+        resourceTimeout: TimeInterval = NativChatClient.defaultResourceTimeout,
+        localOnly: Bool = false
     ) {
         self.baseURL = baseURL
         self.apiKey = apiKey
         self.timeout = idleTimeout
+        self.localOnly = localOnly
 
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = idleTimeout
         configuration.timeoutIntervalForResource = resourceTimeout
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        self.session = URLSession(configuration: configuration)
+        if localOnly { NativLoopbackEndpoint.configure(configuration) }
+        self.session = URLSession(configuration: configuration, delegate: localOnly ? NativLocalOnlyRedirectDelegate() : nil, delegateQueue: nil)
     }
 
     deinit {
@@ -976,6 +980,7 @@ public final class NativChatClient: @unchecked Sendable {
     }
 
     func makeURLRequest(payload: MLXChatCompletionRequest, accepts: String) throws -> URLRequest {
+        if localOnly { try NativLoopbackEndpoint.validate(baseURL) }
         var request = URLRequest(url: baseURL.appendingPathComponent("v1/chat/completions"))
         request.httpMethod = "POST"
         request.timeoutInterval = timeout
@@ -990,6 +995,7 @@ public final class NativChatClient: @unchecked Sendable {
     func makePromptTokenCountURLRequest(
         for request: MLXChatCompletionRequest
     ) throws -> URLRequest {
+        if localOnly { try NativLoopbackEndpoint.validate(baseURL) }
         var urlRequest = URLRequest(
             url: baseURL.appendingPathComponent("v1/responses/input_tokens")
         )

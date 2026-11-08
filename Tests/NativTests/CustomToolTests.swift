@@ -156,11 +156,67 @@ final class CustomToolTests: XCTestCase {
             parametersJSON: CustomTool.defaultParametersJSON
         )
 
+        // Repeated short-lived processes exercise completion arriving before
+        // the caller begins waiting, without relaxing the expected error.
+        for _ in 0 ..< 10 {
+            do {
+                _ = try await CustomToolExecutor.execute(tool, argumentsJSON: "{}")
+                XCTFail("Expected the syntax check to fail")
+            } catch let error as CustomToolError {
+                guard case .scriptFailed = error else {
+                    return XCTFail("Unexpected error: \(error)")
+                }
+            }
+        }
+    }
+
+    func testShortLivedScriptsPreserveTrailingOutputAndError() async throws {
+        let stdout = String(repeating: "output-", count: 4096) + "stdout-tail"
+        let echo = try CustomTool.make(
+            name: "Output tail",
+            summary: "Writes more than one pipe buffer before exiting.",
+            kind: .script,
+            script: "printf '%s' '\(stdout)'",
+            scriptLanguage: .shell,
+            parametersJSON: CustomTool.defaultParametersJSON
+        )
+        let result = try await CustomToolExecutor.execute(echo, argumentsJSON: "{}")
+        XCTAssertEqual(result, stdout)
+
+        let stderr = String(repeating: "error-", count: 4096) + "stderr-tail"
+        let failure = try CustomTool.make(
+            name: "Error tail",
+            summary: "Reports the complete error before exiting.",
+            kind: .script,
+            script: "printf '%s' '\(stderr)' >&2\nexit 9",
+            scriptLanguage: .shell,
+            parametersJSON: CustomTool.defaultParametersJSON
+        )
+        do {
+            _ = try await CustomToolExecutor.execute(failure, argumentsJSON: "{}")
+            XCTFail("Expected the script's nonzero exit status")
+        } catch let error as CustomToolError {
+            guard case let .scriptFailed(message) = error else {
+                return XCTFail("Unexpected error: \(error)")
+            }
+            XCTAssertEqual(message, stderr)
+        }
+    }
+
+    func testClosingOutputDoesNotBypassExecutionTimeout() async throws {
+        let tool = try CustomTool.make(
+            name: "Closed output",
+            summary: "Remains alive after both output pipes reach EOF.",
+            kind: .script,
+            script: "exec 1>&- 2>&-\nexec /bin/sleep 60",
+            scriptLanguage: .shell,
+            parametersJSON: CustomTool.defaultParametersJSON
+        )
         do {
             _ = try await CustomToolExecutor.execute(tool, argumentsJSON: "{}")
-            XCTFail("Expected the syntax check to fail")
+            XCTFail("EOF must not be treated as successful process completion")
         } catch let error as CustomToolError {
-            guard case .scriptFailed = error else {
+            guard case .scriptTimedOut = error else {
                 return XCTFail("Unexpected error: \(error)")
             }
         }

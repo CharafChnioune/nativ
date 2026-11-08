@@ -1,0 +1,81 @@
+{
+  "date": "2026-11-08",
+  "original_source_commit": "f7a0550a05da68d416ea695ae9488df7786b5517",
+  "cause": "On macOS FileHandle.read returns autoreleased storage. The synchronous SHA256 loop retained each chunk in the caller autorelease pool while checking approximately 9 GiB of selected artifacts before model loading.",
+  "bounded_hash_only_reproducer": {
+    "chunk_bytes": 1048576,
+    "input": "First 32/256 MiB of pinned LFM3-Omni Q8 model, read as opaque bytes; no model loaded",
+    "measurement": "getrusage(RUSAGE_SELF).ru_maxrss in bytes; isolated processes, outer autoreleasepool",
+    "results": [
+      {
+        "mode": "original",
+        "bytes": 33554432,
+        "initialMaxRSSBytes": 5783552,
+        "duringPoolMaxRSSBytes": 39927808,
+        "sha256": "f787a80fdecd2d3a503646f2624d9b60363bc5707b7d82bb60f29ccb619913fc"
+      },
+      {
+        "mode": "original",
+        "bytes": 268435456,
+        "initialMaxRSSBytes": 5783552,
+        "duringPoolMaxRSSBytes": 275726336,
+        "sha256": "c4f5f34165f1ef3f6e15df99ba3d81e2ae2f8e029236da330abae3e9e66335b0"
+      },
+      {
+        "mode": "bounded",
+        "bytes": 268435456,
+        "initialMaxRSSBytes": 5783552,
+        "duringPoolMaxRSSBytes": 8388608,
+        "sha256": "c4f5f34165f1ef3f6e15df99ba3d81e2ae2f8e029236da330abae3e9e66335b0"
+      }
+    ],
+    "reproducer_sha256": "b6db4af8e6e5ed96d3c40cac811745cc3be17994f88fbfdd5f2dbb0cc17c82f9"
+  },
+  "failed_native_host_run": {
+    "result": "Failed before model loading",
+    "test_seconds": 10.789,
+    "completed_turns": 0,
+    "model_inference_started": false,
+    "sampled_system": {
+      "baseline_swap_mib": 11316.0,
+      "peak_swap_mib": 14827.06,
+      "swap_growth_mib": 3511.06,
+      "peak_pressure_level": 4
+    },
+    "log_sha256": "2728041716606afc9052482be6462bf14b5b048c623ace67e2197d5926cee4c9",
+    "caveat": "Global swap and pressure include the whole machine; no model-only memory requirement is inferred."
+  },
+  "fix": "Drain a local autoreleasepool after each read and SHA256 update. Preserve full artifact verification and check Task cancellation before each chunk. Model pressure and timeout guards remain unchanged.",
+  "regression_tests": [
+    "TranslationModelStoreTests.testLargeArtifactRetainsFullSHA256VerificationAcrossChunks",
+    "TranslationModelStoreTests.testAlreadyCancelledVerificationDoesNotReturnAValidHash"
+  ],
+  "test_status": "Native targeted run passed: 5 ModelStore and 14 ContentGuard cases; 19 total, zero failures/skips.",
+  "native_targeted_source_sha256": {
+    "Sources/Nativ/Features/LiveTranslation/TranslationModelStore.swift": "d8582f69b15371b4144320c306a5aeb48e750beaf3a35b8b9fc12b078270e701",
+    "Tests/NativTests/TranslationModelStoreTests.swift": "dc6cee6b3196444b5f626d7009f6dbf7ecf63507875673cad74b9ab354ea3300",
+    "Sources/NativTranslationKit/TranslationContentGuard.swift": "f07e06a022efb94fdfe0bef99424a9e33c15eb9b20f8c4e7c7b3512fdb809c5c",
+    "Tests/NativTranslationKitTests/TranslationContentGuardTests.swift": "628553e7d0458aa3ea815e9e94e6b43d1a6795e65e344aa6739eabffe58e10cc"
+  },
+  "native_targeted_validation": {
+    "source_commit": "68535271b2f0ab4baacd4e08981b213c21499141",
+    "result": "Passed",
+    "total_test_cases": 19,
+    "passed": 19,
+    "failed": 0,
+    "skipped": 0,
+    "model_store_cases": 5,
+    "content_guard_cases": 14,
+    "log_sha256": "3cd07a028d9b7a0adf1ac2c69ce4e3c48d6de9a267b9b360bec230ea1f34d225"
+  },
+  "completed_host_follow_up": {
+    "app_source_commit": "68535271b2f0ab4baacd4e08981b213c21499141",
+    "evidence": "translation-host-cascade-content-evidence.json",
+    "result": "Passed",
+    "completed_turns": 2,
+    "finite_nonzero_audio_verified": true,
+    "actual_source_and_target_text_retained": true,
+    "model_pressure_guards_changed": false,
+    "scope": "Two explicit synthetic turns; not a human voice or general interpretation qualification."
+  }
+}

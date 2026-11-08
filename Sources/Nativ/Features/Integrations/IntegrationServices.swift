@@ -334,7 +334,7 @@ struct IntegrationProfileManager {
 
     private var integrationsSupportURL: URL {
         applicationSupportDirectory
-            .appendingPathComponent("Nativ", isDirectory: true)
+            .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
             .appendingPathComponent("Integrations", isDirectory: true)
     }
 

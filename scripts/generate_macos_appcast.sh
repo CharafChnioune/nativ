@@ -14,7 +14,7 @@ Options:
   --release-notes PATH  Markdown, HTML, or plain-text release notes to embed.
   --output PATH         Output feed. Defaults to dist/release/appcast.xml.
   --account NAME        Sparkle signing-key Keychain account. Defaults to
-                        Marvis-Labs. Ignored when SPARKLE_PRIVATE_KEY is set.
+                        io.github.charafchnioune.nativ. Ignored when SPARKLE_PRIVATE_KEY is set.
   --private-key PATH    Read the exported Sparkle private key from a file.
   --derived-data PATH   DerivedData used to locate generate_appcast. Defaults
                         to build/XcodeDerivedData.
@@ -36,7 +36,7 @@ repository_root="$(cd "$script_directory/.." && pwd -P)"
 release_notes=""
 release_tag=""
 output_path="dist/release/appcast.xml"
-account="${SPARKLE_KEY_ACCOUNT:-Marvis-Labs}"
+account="${SPARKLE_KEY_ACCOUNT:-io.github.charafchnioune.nativ}"
 private_key_path=""
 derived_data_path="${NATIV_DERIVED_DATA:-build/XcodeDerivedData}"
 
@@ -118,6 +118,8 @@ if [[ -z "$generate_appcast" ]]; then
     generate_appcast="$derived_data_path/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_appcast"
 fi
 [[ -x "$generate_appcast" ]] || fail "Sparkle generate_appcast not found at $generate_appcast; resolve packages or set SPARKLE_GENERATE_APPCAST"
+export SPARKLE_SIGN_UPDATE="${SPARKLE_SIGN_UPDATE:-$(dirname "$generate_appcast")/sign_update}"
+[[ -x "$SPARKLE_SIGN_UPDATE" ]] || fail "Verified Sparkle sign_update was not prepared"
 
 temporary_directory="$(mktemp -d "${TMPDIR:-/tmp}/nativ-appcast.XXXXXX")"
 mount_path="$temporary_directory/mount"
@@ -171,7 +173,8 @@ if [[ -n "$release_notes" ]]; then
     cp "$release_notes" "${staged_archive%.*}.$notes_extension"
 fi
 
-github_repository="${NATIV_GITHUB_REPOSITORY:-${GITHUB_REPOSITORY:-Neywa-Labs/nativ}}"
+github_repository="${NATIV_GITHUB_REPOSITORY:-${GITHUB_REPOSITORY:-}}"
+[[ "$github_repository" == "CharafChnioune/nativ" ]] || fail "pass the explicit fork repository via NATIV_GITHUB_REPOSITORY=CharafChnioune/nativ"
 [[ "$github_repository" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || \
     fail "invalid GitHub repository: $github_repository"
 download_prefix="https://github.com/${github_repository}/releases/download/${release_tag}/"
@@ -209,10 +212,11 @@ grep -Fq "<sparkle:shortVersionString>$version</sparkle:shortVersionString>" "$g
 grep -Fq "<sparkle:version>$build_number</sparkle:version>" "$generated_appcast" || \
     fail "generated feed does not contain build $build_number"
 
-# The archive retains its numeric marketing version; display the full RC label
-# in the feed without changing the signed archive or its enclosure signature.
-python3 "$script_directory/macos_release.py" finalize-appcast "$generated_appcast" \
-    --tag "$release_tag" --repository "$github_repository"
+# Sign the final RC/display metadata, after verifying and replacing any signature
+# generate_appcast already added. The enclosure still authenticates the archive.
+feed_arguments=(finalize "$generated_appcast" --tag "$release_tag" --repository "$github_repository" --account "$account")
+if [[ -n "$private_key_path" ]]; then feed_arguments+=(--private-key "$private_key_path"); fi
+python3 "$script_directory/sparkle_feed.py" "${feed_arguments[@]}"
 
 mv "$generated_appcast" "$output_path"
 echo "Sparkle appcast: $output_path"

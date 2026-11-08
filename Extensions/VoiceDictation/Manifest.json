@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "com.nativ.voice-dictation",
+  "id": "io.github.charafchnioune.nativ.voice-dictation",
   "version": "1.0.0",
   "minimumNativVersion": "0.1.0",
   "displayName": "Audio",
@@ -10,12 +10,12 @@
   "included": true,
   "enabledByDefault": false,
   "runtime": "extensionFoundation",
-  "extensionPoint": "com.nativ.extension",
-  "runtimeBundleIdentifier": "dev.local.Nativ.VoiceDictationExtension",
+  "extensionPoint": "io.github.charafchnioune.nativ.nativ-extension",
+  "runtimeBundleIdentifier": "io.github.charafchnioune.nativ.VoiceDictationExtension",
   "contributions": {
     "sidebar": [
       {
-        "id": "com.nativ.voice-dictation.audio",
+        "id": "io.github.charafchnioune.nativ.voice-dictation.audio",
         "title": "Audio",
         "systemImage": "waveform.badge.mic",
         "order": 250
@@ -23,34 +23,34 @@
     ],
     "commands": [
       {
-        "id": "com.nativ.voice-dictation.show-recordings",
+        "id": "io.github.charafchnioune.nativ.voice-dictation.show-recordings",
         "title": "Show Audio Library",
         "systemImage": "waveform"
       }
     ],
     "shortcuts": [
       {
-        "id": "com.nativ.voice-dictation.transcribe",
+        "id": "io.github.charafchnioune.nativ.voice-dictation.transcribe",
         "title": "Transcribe",
         "defaultShortcut": "Fn+Control"
       },
       {
-        "id": "com.nativ.voice-dictation.retranscribe",
+        "id": "io.github.charafchnioune.nativ.voice-dictation.retranscribe",
         "title": "Retranscribe",
         "defaultShortcut": "Fn+R"
       }
     ],
     "settings": [
       {
-        "id": "com.nativ.voice-dictation.model",
+        "id": "io.github.charafchnioune.nativ.voice-dictation.model",
         "title": "Speech-to-text model"
       },
       {
-        "id": "com.nativ.voice-dictation.animation",
+        "id": "io.github.charafchnioune.nativ.voice-dictation.animation",
         "title": "Animation"
       },
       {
-        "id": "com.nativ.voice-dictation.shortcuts",
+        "id": "io.github.charafchnioune.nativ.voice-dictation.shortcuts",
         "title": "Shortcuts"
       }
     ]

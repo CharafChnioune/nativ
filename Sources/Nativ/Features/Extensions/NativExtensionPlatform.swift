@@ -79,8 +79,8 @@ enum NativExtensionPackageError: LocalizedError {
 
 @MainActor
 final class NativExtensionManager: ObservableObject {
-    static let voiceDictationID = "com.nativ.voice-dictation"
-    static let voiceAudioPageID = "com.nativ.voice-dictation.audio"
+    static let voiceDictationID = "io.github.charafchnioune.nativ.voice-dictation"
+    static let voiceAudioPageID = "io.github.charafchnioune.nativ.voice-dictation.audio"
 
     @Published private(set) var records: [NativExtensionRecord] = [] {
         didSet {
@@ -778,7 +778,7 @@ final class NativExtensionManager: ObservableObject {
             fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
         return applicationSupport
-            .appendingPathComponent("Nativ", isDirectory: true)
+            .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
             .appendingPathComponent("Extensions", isDirectory: true)
     }
 }

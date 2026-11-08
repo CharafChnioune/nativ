@@ -1,0 +1,200 @@
+{
+  "date": "2026-11-08",
+  "hardware": "Apple M5, 16 GiB unified memory",
+  "qualification": false,
+  "fixture_kind": "same two original synthetic WAVs as Omni capability probe; no human recording",
+  "runs": [
+    {
+      "status": "aborted-unqualified",
+      "qualified": false,
+      "gemma_revision": "475b9088d29754a3379866cf5aeb6b41acd313c2",
+      "whisper_revision": "a4aaeec0636e6fef84abdcbe3544cb2bf7e9f6fb",
+      "omni_revision": "d508b88f08a5b4286f2d2805a6a8d69a0ff44c72",
+      "helper_commit": "cd959bae99ff4bed22bef2604f45241c09bbb8c8",
+      "peak_sampled_combined_rss_bytes": 2699444224,
+      "initial_memory_free_percent": 33,
+      "minimum_memory_free_percent": 4,
+      "limitations": [
+        "Two synthetic turns only; no listener, acoustic latency, warm percentiles or endurance qualification.",
+        "RSS sums and MLX allocator values are separate observations, not a full unified-memory accounting."
+      ],
+      "reason": "system memory pressure guard reached; profile not qualified",
+      "elapsed_seconds": 15.627261084,
+      "owned_processes_stopped": true,
+      "run": "probe",
+      "legacy_guard": true,
+      "completed_turns": 0,
+      "stages": [
+        {
+          "stage": "runtime",
+          "monotonic": 924906.583384041,
+          "rss_peak_bytes": 93290496,
+          "mlx_active_bytes": 1032,
+          "mlx_peak_bytes": 1032,
+          "packages": {
+            "mlx": "0.32.4",
+            "mlx-vlm": "0.7.12",
+            "mlx-audio": "0.6.4",
+            "transformers": "5.15.1"
+          }
+        },
+        {
+          "stage": "whisper_loaded",
+          "monotonic": 924908.159807416,
+          "rss_peak_bytes": 411467776,
+          "mlx_active_bytes": 1618396392,
+          "mlx_peak_bytes": 1618396392,
+          "seconds": 1.576162917073816
+        }
+      ]
+    },
+    {
+      "status": "aborted-unqualified",
+      "qualified": false,
+      "mode": "captions-only",
+      "gemma_revision": "475b9088d29754a3379866cf5aeb6b41acd313c2",
+      "whisper_revision": "a4aaeec0636e6fef84abdcbe3544cb2bf7e9f6fb",
+      "omni_revision": "d508b88f08a5b4286f2d2805a6a8d69a0ff44c72",
+      "helper_commit": "cd959bae99ff4bed22bef2604f45241c09bbb8c8",
+      "peak_sampled_combined_rss_bytes": 709345280,
+      "initial_memory_free_percent": 45,
+      "minimum_memory_free_percent": 5,
+      "limitations": [
+        "Two synthetic turns only; no listener, acoustic latency, warm percentiles or endurance qualification.",
+        "RSS sums and MLX allocator values are separate observations, not a full unified-memory accounting."
+      ],
+      "reason": "system memory pressure guard reached; profile not qualified",
+      "elapsed_seconds": 5.939621083,
+      "owned_processes_stopped": true,
+      "run": "caption-probe",
+      "legacy_guard": true,
+      "completed_turns": 0,
+      "stages": [
+        {
+          "stage": "runtime",
+          "monotonic": 925243.401754041,
+          "rss_peak_bytes": 101449728,
+          "mlx_active_bytes": 1032,
+          "mlx_peak_bytes": 1032,
+          "packages": {
+            "mlx": "0.32.4",
+            "mlx-vlm": "0.7.12",
+            "mlx-audio": "0.6.4",
+            "transformers": "5.15.1"
+          }
+        },
+        {
+          "stage": "whisper_loaded",
+          "monotonic": 925244.740666666,
+          "rss_peak_bytes": 687636480,
+          "mlx_active_bytes": 1618395784,
+          "mlx_peak_bytes": 1618396440,
+          "seconds": 1.3387051250319928
+        }
+      ]
+    },
+    {
+      "status": "aborted-unqualified",
+      "qualified": false,
+      "mode": "captions-only",
+      "gemma_revision": "475b9088d29754a3379866cf5aeb6b41acd313c2",
+      "whisper_revision": "a4aaeec0636e6fef84abdcbe3544cb2bf7e9f6fb",
+      "omni_revision": "d508b88f08a5b4286f2d2805a6a8d69a0ff44c72",
+      "helper_commit": "cd959bae99ff4bed22bef2604f45241c09bbb8c8",
+      "peak_sampled_combined_rss_bytes": 721190912,
+      "initial_memory_free_percent": 45,
+      "minimum_memory_free_percent": 18,
+      "initial_os_pressure_level": 1,
+      "maximum_os_pressure_level": 4,
+      "initial_swap_used_mib": 18559.94,
+      "peak_swap_growth_mib": 786.1200000000026,
+      "limitations": [
+        "Two synthetic turns only; no listener, acoustic latency, warm percentiles or endurance qualification.",
+        "RSS sums and MLX allocator values are separate observations, not a full unified-memory accounting."
+      ],
+      "reason": "OS critical memory pressure reached; profile not qualified",
+      "elapsed_seconds": 3.776684542,
+      "owned_processes_stopped": true,
+      "run": "caption-pressure-probe",
+      "legacy_guard": false,
+      "completed_turns": 0,
+      "stages": [
+        {
+          "stage": "runtime",
+          "monotonic": 925477.095044916,
+          "rss_peak_bytes": 100925440,
+          "mlx_active_bytes": 1032,
+          "mlx_peak_bytes": 1032,
+          "packages": {
+            "mlx": "0.32.4",
+            "mlx-vlm": "0.7.12",
+            "mlx-audio": "0.6.4",
+            "transformers": "5.15.1"
+          }
+        },
+        {
+          "stage": "whisper_loaded",
+          "monotonic": 925477.891621208,
+          "rss_peak_bytes": 693420032,
+          "mlx_active_bytes": 1618395784,
+          "mlx_peak_bytes": 1618396440,
+          "seconds": 0.7964262920431793
+        }
+      ]
+    },
+    {
+      "status": "aborted-unqualified",
+      "qualified": false,
+      "mode": "captions-only",
+      "gemma_variant": "E2B",
+      "gemma_revision": "238767527555cb75a05732a84dff5d6ba0dd6809",
+      "omni_quantization": "Q8_0",
+      "whisper_revision": "a4aaeec0636e6fef84abdcbe3544cb2bf7e9f6fb",
+      "omni_revision": "d508b88f08a5b4286f2d2805a6a8d69a0ff44c72",
+      "helper_commit": "cd959bae99ff4bed22bef2604f45241c09bbb8c8",
+      "peak_sampled_combined_rss_bytes": 531054592,
+      "initial_memory_free_percent": 44,
+      "minimum_memory_free_percent": 24,
+      "initial_os_pressure_level": 1,
+      "maximum_os_pressure_level": 4,
+      "initial_swap_used_mib": 18447.25,
+      "peak_swap_growth_mib": 480.3100000000013,
+      "limitations": [
+        "Two synthetic turns only; no listener, acoustic latency, warm percentiles or endurance qualification.",
+        "RSS sums and MLX allocator values are separate observations, not a full unified-memory accounting."
+      ],
+      "reason": "OS critical memory pressure reached; profile not qualified",
+      "elapsed_seconds": 3.184979625,
+      "owned_processes_stopped": true,
+      "run": "e2b-caption-pressure-probe",
+      "legacy_guard": false,
+      "completed_turns": 0,
+      "stages": [
+        {
+          "stage": "runtime",
+          "monotonic": 925980.680158208,
+          "rss_peak_bytes": 101761024,
+          "mlx_active_bytes": 1032,
+          "mlx_peak_bytes": 1032,
+          "packages": {
+            "mlx": "0.32.4",
+            "mlx-vlm": "0.7.12",
+            "mlx-audio": "0.6.4",
+            "transformers": "5.15.1"
+          }
+        },
+        {
+          "stage": "whisper_loaded",
+          "monotonic": 925981.713907791,
+          "rss_peak_bytes": 615743488,
+          "mlx_active_bytes": 1618395784,
+          "mlx_peak_bytes": 1618396440,
+          "seconds": 1.0335717500420287
+        }
+      ]
+    }
+  ],
+  "interpretation": "Early free-percentage guards are inconclusive. Later OS critical-pressure aborts describe only the measured background load, not a universal 16-GiB limit. No cascade turn completed; latency and quality are not measured.",
+  "app_model_cache_modified": false,
+  "loading_path": "Direct mlx_vlm.load; managed Nativ 64 MiB batched-evaluation overlay was not exercised. This is not a completed host-server fit test."
+}
