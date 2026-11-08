@@ -155,9 +155,12 @@ build and targeted test after a single EOF whitespace cleanup also passed (two
 Whisper tests passed, one explicit artifact skip). The embedded app revision is
 `e1cf3640ef066cf3bd7e1f149701c6294bf5a0f9`; the
 [development bundle evidence](../development/development-bundle-evidence.json)
-records verified compile-input identity and isolated embedded components. Final preview signing, the second
-endurance cohort and development PR remain pending in the
-[acceptance matrix](../development/live-translation-acceptance.md).
+records verified compile-input identity and isolated embedded components. The final preview passed Apple Development deep/strict verification and visibly opened.
+Accessible extension labels and shared idle language direction across two windows were
+observed in that build. [Draft PR #1](https://github.com/CharafChnioune/nativ/pull/1) is open.
+The second endurance cohort was not started because its separate memory baseline
+remained under warning pressure; the [acceptance matrix](../development/live-translation-acceptance.md)
+records the remaining qualification and distribution gates.
 
 See [runtime evidence](../development/translation-runtime.md),
 [repository audit](../development/live-translation-audit.md) and
