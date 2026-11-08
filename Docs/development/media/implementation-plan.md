@@ -124,3 +124,21 @@ Provider code and manifests are committed separately from the common scheduler a
 ### Source freeze
 
 All implementation workstreams are frozen after independent review. Final repairs cover bounded native upload replies, durable rejection of definitively refused requests, per-intent recovery isolation, ACE musical hints, installer-parent death cleanup and true compute-lease retention. Local-only qualification drivers remain deliberate opt-in. The lightweight full Python checkpoint executed 323 tests with one existing MLX-only integration skip; additional process/native review regressions are included in the final run. The final build, packaged-import proof, full Xcode test result and required CI gate are authoritative for delivery. No model output or paid provider has been qualified.
+
+### Final lifecycle and packaging repairs
+
+The first complete native run reported four failures; these were repaired rather
+than waived. A retained parent Process stdin duplicated the Translate compute
+lease, and a background Combine callback inferred MainActor isolation in the
+Artifacts index. Both now have regressions. The video marker fixture now uses
+actual bundled raw encoders and frame-accurate AVFoundation seeking; the pending
+start cancellation test waits for observed milestones instead of fixed yields.
+
+A final real C-extension probe found that the signed source Python could not load
+newly installed native wheels with a different signing identity. Music and Video
+builders now locally sign only their confined private interpreter copy before
+pip; source app bytes remain unchanged. The compact before/after receipt is in
+`evidence/runtime-signing-probe.json`. This verifies interpreter compatibility,
+not a complete model-runtime installation or inference. An independent reviewer
+checked the containment and signing change. Final exact-revision results and the
+merge receipt are recorded in PR #2; heavy hardware and release gates remain open.

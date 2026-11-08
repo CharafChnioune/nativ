@@ -1,0 +1,13 @@
+{
+  "scope": "Real tiny native-extension compatibility on Apple Silicon; no model download/inference or paid calls.",
+  "before_exit_code": 1,
+  "before_failure": "Different Team IDs: hardened copied Python rejected an ad-hoc native extension.",
+  "after_exit_code": 0,
+  "after_native_result": "&lt;probe&gt;",
+  "source_sha256_before": "1f7af032985fec1ab7fc4c8da9d2420dbb0ced00459ffd2da00e003a015761f5",
+  "source_sha256_after": "1f7af032985fec1ab7fc4c8da9d2420dbb0ced00459ffd2da00e003a015761f5",
+  "helper_sha256": "4f171e7c81d606743a4307ae81915769c402dbf78ed2d62ee4b67c0c0ea85c23",
+  "copy_signature": "Ad hoc, options=0; no Team identity, no hardened runtime flag.",
+  "independent_review": "Containment, caller placement, receipt ordering and real before/after evidence reviewed without a new blocker.",
+  "limits": "Tiny C-extension compatibility only. No models, paid calls, full runtime dependency installation or stronger-Mac inference performed."
+}

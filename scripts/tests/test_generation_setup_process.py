@@ -100,7 +100,10 @@ class SetupProcessTests(unittest.TestCase):
                 prefix=root/'python';site=prefix/'lib/python3.12/site-packages'
                 for name in ('nativ_generation','nativ_'+kind.lower()):
                     (site/name).mkdir(parents=True);(site/name/'__init__.py').write_text('')
-                shutil.copy2(OVERLAY/'nativ_generation/setup_command.py',site/'nativ_generation/setup_command.py')
+                # Match the packaged prefix: both setup ownership and local
+                # interpreter signing helpers must resolve without a checkout.
+                for helper in ('setup_command.py', 'runtime_signing.py'):
+                    shutil.copy2(OVERLAY/'nativ_generation'/helper,site/'nativ_generation'/helper)
                 (prefix/'bin').mkdir();launcher=prefix/'bin/python3'
                 launcher.write_text('#!/bin/sh\nif [ "$1" = "-c" ]; then echo 3.12; exit 0; fi\nexec '+shlex.quote(sys.executable)+' -I -c "pass"\n')
                 launcher.chmod(0o755)
@@ -113,5 +116,10 @@ class SetupProcessTests(unittest.TestCase):
                         compute_lease_fd=lease.fileno())
                 self.assertTrue((destination/'nativ-runtime.json').is_file())
                 self.assertTrue((destination/'python/lib/python3.12/site-packages/nativ_generation/setup_command.py').is_file())
+                self.assertTrue((destination/'python/lib/python3.12/site-packages/nativ_generation/runtime_signing.py').is_file())
+                receipt=json.loads((destination/'nativ-runtime.json').read_text())
+                self.assertEqual(receipt['runtime_signing_sha256'],hashlib.sha256((OVERLAY/'nativ_generation/runtime_signing.py').read_bytes()).hexdigest())
+                self.assertEqual(receipt['builder_sha256'],hashlib.sha256(source.read_bytes()).hexdigest())
+                self.assertEqual(receipt['interpreter_sha256'],hashlib.sha256((destination/'python/bin/python3').read_bytes()).hexdigest())
 
 if __name__=='__main__':unittest.main()

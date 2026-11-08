@@ -162,6 +162,12 @@ def build_runtime(manifest,destination,python_prefix,cancel,emit,*,compute_lease
     stage.mkdir(parents=True)
     try:
         shutil.copytree(prefix,stage/'python',symlinks=True)
+        candidates=[ROOT.parent/'Overlay',*sorted((prefix/'lib').glob('python*/site-packages'))]
+        signing_helper=next((root/'nativ_generation/runtime_signing.py' for root in candidates if (root/'nativ_generation/runtime_signing.py').is_file()),None)
+        if signing_helper is None:raise ValueError('The trusted Python prefix is missing its managed interpreter signing helper')
+        spec=importlib.util.spec_from_file_location('nativ_owned_runtime_signing',signing_helper)
+        signing=importlib.util.module_from_spec(spec);spec.loader.exec_module(signing)
+        signing.prepare_interpreter(stage,prefix,cancel)
         if True:
             for site in (stage/'python/lib').glob('python*/site-packages'):
                 for child in site.iterdir():
@@ -205,7 +211,8 @@ def build_runtime(manifest,destination,python_prefix,cancel,emit,*,compute_lease
         overlay=overlay_source(prefix)
         for package in ('nativ_video','nativ_generation'):
             shutil.copytree(overlay/package,site/package,dirs_exist_ok=True,ignore=shutil.ignore_patterns('__pycache__','*.pyc'))
-        (stage/'nativ-runtime.json').write_text(json.dumps(dict(id=manifest['id'],lock_sha256=manifest['lock']['sha256'],qualification='unqualified'))+'\n')
+        (stage/'nativ-runtime.json').write_text(json.dumps(dict(id=manifest['id'],lock_sha256=manifest['lock']['sha256'],qualification='unqualified',
+            builder_sha256=digest(__file__),runtime_signing_sha256=digest(signing_helper),interpreter_sha256=digest(stage/'python/bin/python3')))+'\n')
         stage.replace(destination);emit('runtime_built',1.0)
     except BaseException:
         # Leave only this known private candidate for review/explicit repair; never touch completed runtimes.
