@@ -1,0 +1,120 @@
+{
+  "date": "2026-11-08",
+  "result": "Passed",
+  "total_test_cases": 1860,
+  "passed_test_cases": 1852,
+  "failed_test_cases": 0,
+  "skipped_test_cases": 8,
+  "passed_invocations_including_parameter_variants": 1857,
+  "elapsed_wall_seconds": 484.931,
+  "required_test_evidence_gate": "Passed",
+  "required_classes_passed_cases": {
+    "AudioSessionCoordinatorTests": 4,
+    "CascadedTranslationBackendTests": 12,
+    "LiveTranslationIntegrationTests": 4,
+    "ManagedTranslationCascadeResourcesTests": 7,
+    "SoftwareUpdaterTests": 12,
+    "TranslationAudioTests": 10,
+    "TranslationAutomaticDirectionTests": 7,
+    "TranslationCascadeRuntimeTests": 3,
+    "TranslationContentGuardTests": 10,
+    "TranslationDownloadReservationsTests": 3,
+    "TranslationHostOperationGateTests": 4,
+    "TranslationLocalTransportTests": 7,
+    "TranslationModelStoreTests": 3,
+    "TranslationResourceAssessmentTests": 4,
+    "TranslationRuntimeTests": 6,
+    "TranslationStageCatalogTests": 9,
+    "TranslationStockVoicePreparationTests": 4,
+    "TranslationWhisperPreparationTests": 3
+  },
+  "skipped_optional_integration_cases": [
+    "AudioDiarizationTests.testDiarizedTextOnlyModelWithRealServer()",
+    "AudioDiarizationTests.testServerWithRealModel()",
+    "AudioSummaryReferenceTests.testSavedMeetingSummaryWithLocalModel()",
+    "ChatCompactionTests.testLiveCompactionAndReplay()",
+    "NativAudioClientTests.testSpeakerEndpointsWithRealServer()",
+    "ParakeetTests.testDefaultModelTranscribesSpeech()",
+    "TranslationCascadeInferenceTests.testExplicitOwnedHostCascadeSyntheticInference()",
+    "TranslationRuntimeTests.testExplicitLocalRuntimeIntegration()"
+  ],
+  "unrun_translation_model_qualification": [
+    "TranslationCascadeInferenceTests.testExplicitOwnedHostCascadeSyntheticInference",
+    "TranslationRuntimeTests.testExplicitLocalRuntimeIntegration"
+  ],
+  "artifact_tests_executed": [
+    "TranslationStockVoicePreparationTests.testPinnedStockArtifactsInstallIdempotentlyAndRequireTheirLicense",
+    "TranslationWhisperPreparationTests.testPinnedArtifactsPrepareWithoutChangingSourceSnapshot"
+  ],
+  "new_cancellation_regression_executed": "ManagedTranslationCascadeResourcesTests.testInvalidationDuringSpeechAdmissionDrainsPreparerBeforeNextGeneration",
+  "source": {
+    "baseline_commit": "2896506be37cc1e41f93d64bc74a888eb7820e33",
+    "working_tree_dirty": true,
+    "canonical_native_inputs_equal_tested_snapshot_at_completion": true,
+    "copied_input_file_count": 734,
+    "input_manifest_sha256": "be4da50c7fed3b4c9efcd6fdf7bb5f1d990821310f093891fb1868cf6f845c3c",
+    "input_manifest_local_path": "build/validation/continuation-native-inputs.json",
+    "manifest_encoding": "SHA256 of compact JSON sorted-key list of path/sha256 records; source list in local receipt",
+    "generated_project_sha256": "57d59f3b1ffd653d52cfecb4c760524b43489eb5cfe5770e053007f1500b17cc",
+    "package_resolved_sha256": "acffac59bd5952bf7704d5c45037eea860917df17f3a583a630d4abe822152a0",
+    "test_bundle_revision_build_setting": "development-continuation",
+    "post_run_commit_comparison": {
+      "commit": "f2f79ccf335bd08d5f0beee81ee450492499b899",
+      "native_input_file_count": 667,
+      "native_inputs_match": true,
+      "copied_input_file_count": 734,
+      "matching_copied_file_count": 726,
+      "matching_non_native_file_count": 59,
+      "different_copied_non_native_paths": [
+        "scripts/benchmarks/live_translation/README.md",
+        "scripts/benchmarks/live_translation/probe.py",
+        "scripts/benchmarks/live_translation/run_matrix.py",
+        "scripts/tests/test_translation_test_evidence.py",
+        "scripts/verify_translation_test_results.py"
+      ],
+      "uncommitted_copied_non_native_paths": [
+        "scripts/benchmarks/live_translation/managed-cascade-evidence.json",
+        "scripts/benchmarks/live_translation/managed_cascade_probe.py",
+        "scripts/benchmarks/live_translation/translation_contract.swift"
+      ],
+      "comparison_local_path": "build/validation/continuation-commit-input-comparison.json",
+      "comparison_sha256": "a21121c747857d072d474ebc19659513b96ed7841d1a10582ccbb913516a915c",
+      "scope": "All 667 native source/configuration inputs match this later commit. The full 734-file copied snapshot also contains scripts/artifacts; five differ and three are not in that commit. This does not relabel the historical dirty test run as a clean checkout of the later commit."
+    }
+  },
+  "toolchain": {
+    "xcode": "Xcode 27.2\nBuild version 27B52",
+    "swift": "Apple Swift version 6.4.2 (swiftlang-6.4.2.1.9 clang-2100.4.1.1)\nTarget: arm64-apple-macosx26.0"
+  },
+  "host": "MacBook Air M5, 16 GiB RAM, macOS 26.6, arm64",
+  "command": [
+    "xcodebuild",
+    "-project",
+    "Nativ.xcodeproj",
+    "-scheme",
+    "Nativ",
+    "-configuration",
+    "Debug",
+    "-destination",
+    "platform=macOS,arch=arm64",
+    "-jobs",
+    "2",
+    "-derivedDataPath",
+    "build/NativDevelopmentDerivedData",
+    "-resultBundlePath",
+    "build/TranslationContinuation.xcresult",
+    "CODE_SIGNING_ALLOWED=NO",
+    "NATIV_SKIP_PYTHON_RESOURCE_BUILD=YES",
+    "NATIV_FORK_REVISION=development-continuation",
+    "test"
+  ],
+  "log_sha256": "05fd4abc74143eb8bcd83d4b1c46bc64d3ff09d95697a9c866446ae549d846b6",
+  "summary_json_sha256": "fffa3044ef44ea070c216ddb50adc2d08013965d1dcd14e0fe4b1c446ae5548d",
+  "tests_json_sha256": "b1010bb610b2d5e7bd99fc1c8bcfd2c6162b46ab9a4ec212c4f1086597887d77",
+  "scope_limit": "Full native deterministic/regression suite and pinned offline artifact preparation. No real-model inference, human meaning/voice qualification, 128 GiB hardware, acoustic stop-latency, signing or update publication measured. The two translation inference opt-ins remained unset; skipped tests are not passing measurements.",
+  "subsequent_source_change": {
+    "commit": "f7a0550a05da68d416ea695ae9488df7786b5517",
+    "path": "Sources/Nativ/Features/LiveTranslation/LiveTranslationView.swift",
+    "scope": "Display label for an unselected local speech model, observed during the subsequent idle UI review. This source change postdates the full native run and is not covered by its pass; separate build/UI and exact-head CI evidence is required."
+  }
+}

@@ -1,0 +1,244 @@
+{
+  "date": "2026-11-08",
+  "app_source_commit": "68535271b2f0ab4baacd4e08981b213c21499141",
+  "test_source_sha256": "35200b869c1eb4e4115bb81b4e0ccf2fa5bb5612d22cfbb16fc95ae680a37e17",
+  "result": "Passed",
+  "native_tests": {
+    "totalTestCount": 1,
+    "passedTests": 1,
+    "failedTests": 0,
+    "skippedTests": 0
+  },
+  "native_report": {
+    "created": "2026-11-08T17:22:42Z",
+    "manifest": {
+      "fixtures": [
+        {
+          "artifact": {
+            "filename": "synthetic-nl.wav",
+            "sha256": "1fcaaca892f61ae35e2c8a23c6919b1488c82cb0573c59f065ba14832e3abd0a",
+            "size": 83136
+          },
+          "directory": "/Users/charaf/Library/Developer/NativLiveTranslationValidation/20261108-1352/build/host-cascade-artifacts/fixtures",
+          "source": "nl",
+          "synthetic": true,
+          "target": "en"
+        },
+        {
+          "artifact": {
+            "filename": "synthetic-en.wav",
+            "sha256": "780e5ac06f1fdd319089b9c86df25076733e6226b242c12fd9e389aba8eb50fa",
+            "size": 99142
+          },
+          "directory": "/Users/charaf/Library/Developer/NativLiveTranslationValidation/20261108-1352/build/host-cascade-artifacts/fixtures",
+          "source": "en",
+          "synthetic": true,
+          "target": "nl"
+        }
+      ],
+      "mlxExecutable": "/Users/charaf/Library/Developer/NativLiveTranslationValidation/20261108-1352/build/NativDevelopmentDerivedData/Build/Products/Debug/NativServerKit.framework/Versions/A/Resources/mlx-vlm-server/bin/mlx-vlm-server",
+      "modelSearchPath": "/Users/charaf/Library/Developer/NativLiveTranslationValidation/20261108-1352/build/host-cascade-artifacts/hub",
+      "omni": {
+        "directory": "/Users/charaf/Library/Developer/NativLiveTranslationValidation/20261108-1352/build/host-cascade-artifacts/omni",
+        "executable": "/Users/charaf/Library/Developer/NativLiveTranslationValidation/20261108-1352/build/lfm-realtime/runtime/bin/llama-server",
+        "model": {
+          "filename": "LFM3-Omni-2B-Q8_0.gguf",
+          "sha256": "59118f661eaacb93d204723d76355b53347f0940b508c11412f6290fd49158d4",
+          "size": 1846240768
+        },
+        "projector": {
+          "filename": "mmproj-LFM3-Omni-2B-Q8_0.gguf",
+          "sha256": "8a25f9d1931244429de404fccacfb7fb933970a36aa5688d2f5069f29c6b27b1",
+          "size": 506842528
+        }
+      },
+      "recognition": {
+        "artifacts": [
+          {
+            "filename": ".gitattributes",
+            "sha256": "11ad7efa24975ee4b0c3c3a38ed18737f0658a5f75a0a96787b576a78a023361",
+            "size": 1519
+          },
+          {
+            "filename": "README.md",
+            "sha256": "78f2d3dc65072211d957fc1b646c2d96e8e8f96dd45ceb2ac5f2643d0c5c05da",
+            "size": 359
+          },
+          {
+            "filename": "config.json",
+            "sha256": "b34fc29e4e11e0a25e812775dd67f4dd16fc2c8eb43d28ae25ff7d660ecb6379",
+            "size": 268
+          },
+          {
+            "filename": "weights.safetensors",
+            "sha256": "951ed3fc1203e6a62467abb2144a96ce7eafca8fa77e3704fdb8635ff3e7f8a6",
+            "size": 1613977612
+          }
+        ],
+        "modelID": "mlx-community/whisper-large-v3-turbo",
+        "revision": "a4aaeec0636e6fef84abdcbe3544cb2bf7e9f6fb"
+      },
+      "strategy": "sequential",
+      "translation": {
+        "artifacts": [
+          {
+            "filename": ".gitattributes",
+            "sha256": "34448b82c17d60fec9b65b1f093c115ddbaadc04beb1b0140b6bfed2e012a930",
+            "size": 1570
+          },
+          {
+            "filename": "README.md",
+            "sha256": "8e9717df49219943b8992eeccecd8050535318d34fffbbaeaac924ed01f27155",
+            "size": 593
+          },
+          {
+            "filename": "chat_template.jinja",
+            "sha256": "2f1b4d75d067bae3fe44e676721c7f077d243bc007156cb9c2f8b5836613d082",
+            "size": 17336
+          },
+          {
+            "filename": "config.json",
+            "sha256": "780ccb3a514a5f1ced161d383f948fc22eca9b84b752ca19494f625bd9bad7a6",
+            "size": 6628
+          },
+          {
+            "filename": "generation_config.json",
+            "sha256": "d4226bbe3117d2d253ba4609720ba82c6c4ce4627a9a6ae05387c78983ac03de",
+            "size": 208
+          },
+          {
+            "filename": "model.safetensors",
+            "sha256": "932b8271fc3fe65adcc78b96c10c6268bbfb13e8f67d1358727c0d6ee97e1eff",
+            "size": 5146800534
+          },
+          {
+            "filename": "model.safetensors.index.json",
+            "sha256": "f8accac59ee7efe87e0c298c854610b262c3cadd477407503147c71209ff0093",
+            "size": 240961
+          },
+          {
+            "filename": "processor_config.json",
+            "sha256": "de3e580aebdc98272d4c4547daffe6525fcbae18a83a0e0bcf0d7444d4ee6f37",
+            "size": 1316
+          },
+          {
+            "filename": "tokenizer.json",
+            "sha256": "cc8d3a0ce36466ccc1278bf987df5f71db1719b9ca6b4118264f45cb627bfe0f",
+            "size": 32169626
+          },
+          {
+            "filename": "tokenizer_config.json",
+            "sha256": "080d9e1aff284e2f6043889cd05367966f7c7b80e025fbc0b06745e218158656",
+            "size": 2740
+          }
+        ],
+        "modelID": "mlx-community/gemma-4-e4b-it-4bit",
+        "revision": "475b9088d29754a3379866cf5aeb6b41acd313c2"
+      }
+    },
+    "outcome": "completed",
+    "timingScope": "Each turn starts after the previous backend.stop completed and asserts both owned processes stopped. OS filesystem/model caches are uncontrolled. Timings are not microphone/acoustic latency or a warm/cold qualification.",
+    "turns": [
+      {
+        "audio": {
+          "allSamplesFinite": true,
+          "bytes": 384000,
+          "durationSeconds": 4,
+          "format": {
+            "channels": 1,
+            "encoding": "float32LittleEndian",
+            "sampleRate": 24000
+          },
+          "nonzeroSamples": 96000,
+          "pcmSHA256": "dcc107e6f87eb9c383d53449a87582e1eacf55b04cd860c146acd739d151deb7",
+          "peakAbsoluteAmplitude": 0.4941493570804596,
+          "rmsAmplitude": 0.05669287879261501,
+          "sampleCount": 96000
+        },
+        "completed": true,
+        "mlxRunningAfterStop": false,
+        "mlxWasRunningBeforeTurn": false,
+        "omniRunningAfterStop": false,
+        "omniWasRunningBeforeTurn": false,
+        "pair": "nl-en",
+        "seconds": {
+          "backend_stop": 0.183297375,
+          "commit_to_complete": 8.431051167,
+          "commit_to_final_source": 2.35933725,
+          "commit_to_final_target": 5.736511083,
+          "commit_to_first_received_pcm": 7.214857167,
+          "factory_prepare_and_input": 0.590337125,
+          "whole_turn_including_stop": 9.2114065
+        },
+        "sourceText": "De afspraak is om half vier, niet om vier uur.",
+        "targetText": "The appointment is for half past three, not four o'clock.",
+        "waveFile": "nl-en.wav"
+      },
+      {
+        "audio": {
+          "allSamplesFinite": true,
+          "bytes": 353280,
+          "durationSeconds": 3.68,
+          "format": {
+            "channels": 1,
+            "encoding": "float32LittleEndian",
+            "sampleRate": 24000
+          },
+          "nonzeroSamples": 88320,
+          "pcmSHA256": "e3cef5f9a74730cc456e78073c8c259714216a045cfe64b0cbdf4057da57a384",
+          "peakAbsoluteAmplitude": 0.3820662498474121,
+          "rmsAmplitude": 0.059732602552154325,
+          "sampleCount": 88320
+        },
+        "completed": true,
+        "mlxRunningAfterStop": false,
+        "mlxWasRunningBeforeTurn": false,
+        "omniRunningAfterStop": false,
+        "omniWasRunningBeforeTurn": false,
+        "pair": "en-nl",
+        "seconds": {
+          "backend_stop": 0.154498708,
+          "commit_to_complete": 7.959719958,
+          "commit_to_final_source": 2.078932083,
+          "commit_to_final_target": 5.429868416,
+          "commit_to_first_received_pcm": 6.8397865,
+          "factory_prepare_and_input": 0.584597458,
+          "whole_turn_including_stop": 8.704086458
+        },
+        "sourceText": "Please book two seats for Friday, not for Thursday.",
+        "targetText": "Boek twee plaatsen voor vrijdag, niet voor donderdag.",
+        "waveFile": "en-nl.wav"
+      }
+    ]
+  },
+  "test_seconds": 21.352,
+  "wrapper_seconds": 36.215,
+  "sampled_system": {
+    "interval_seconds": 2,
+    "baseline_swap_mib": 10697.69,
+    "peak_swap_mib": 11519.06,
+    "swap_growth_mib": 821.37,
+    "pressure_levels": [
+      1,
+      2
+    ]
+  },
+  "observed_text_review": "The two recorded source and target strings preserve the fixture time contrast (15:30, not 16:00), count two, day contrast (Friday, not Thursday), and negation. This is two text observations, not general interpreting or ASR qualification.",
+  "audio_review": "Finite, nonzero PCM signal and metadata verified; no human listening, spoken-word transcription, naturalness/prosody or emotional-intent assessment performed.",
+  "wave_files": [
+    {
+      "local_path": "/Users/charaf/Library/Developer/NativLiveTranslationValidation/20261108-1352/build/host-cascade-artifacts/e4b-q8-content-report/nl-en.wav",
+      "sha256": "bcd115385f2c6ca055be1c9a994cbccc9b1371bc95a829f874c44b83735cddb6"
+    },
+    {
+      "local_path": "/Users/charaf/Library/Developer/NativLiveTranslationValidation/20261108-1352/build/host-cascade-artifacts/e4b-q8-content-report/en-nl.wav",
+      "sha256": "abdea99919b749c2cedaf9bb8fc0dc0fa960f7040f2ba7142d7128c3fe166dc6"
+    }
+  ],
+  "owned_helpers_absent_after_completion": true,
+  "official_nativ_server_untouched": true,
+  "manifest_sha256": "618256cc6c4e816b03cb6a3eefe4562dc2d1edc4f6d40b81f1bb5ec59ee4eccd",
+  "log_sha256": "86abdde32975c90d68ba99253edd9e1d7b89d543d55c090664014e033945ab3d",
+  "native_report_sha256": "31aa10a86ee0d254a7fc5212796663b427101d7adb380bd7842970fa35edbc2b",
+  "scope_limit": "Explicit synthetic-only report opt-in; no default persistence or microphone audio. Single observations exceed latency goals. No p50/p95, 100 warm/10 cold starts, 30-minute endurance, 128 GiB hardware or human voice qualification inferred. Backend-stop duration measures owned-process teardown, not acoustic stop-to-silence."
+}

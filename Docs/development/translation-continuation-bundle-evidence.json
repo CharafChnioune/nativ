@@ -1,0 +1,183 @@
+{
+  "date": "2026-11-08",
+  "source_commit": "13ecd8533e57eb4003a046a89df00e221b48565b",
+  "artifact_source_policy": "Later documentation/evidence-only commits may change repository HEAD without changing this built artifact source revision.",
+  "native_input_manifest_sha256": "d7a094b9f50ea26ca22473030e22d3b2886ddb46f45b11a1fc480a25acfdc43b",
+  "checked_committed_native_input_files": 736,
+  "native_input_manifest_local_path": "build/validation/continuation-review-native-inputs.json",
+  "make_build": {
+    "result": "BUILD SUCCEEDED",
+    "command": [
+      "make",
+      "xcode-build",
+      "NATIV_FORK_REVISION=13ecd8533e57eb4003a046a89df00e221b48565b",
+      "XCODE_BUILD_JOBS=2"
+    ],
+    "exit_code": 0,
+    "seconds": 86.142,
+    "log": "build/validation/continuation-review-build.log",
+    "log_sha256": "e73d18b7e54f826a9da9e2d4e4bfe000e7ba6ad50aa547584d3c6496ef2cf3d3"
+  },
+  "preview": {
+    "path": "/Users/charaf/Library/Developer/NativLiveTranslationPreview/CascadeReview/Nativ.app",
+    "copy_method": "APFS clone with /bin/cp -cR into a previously absent destination",
+    "launched_during_build_validation": false,
+    "info_plist": {
+      "CFBundleIdentifier": "io.github.charafchnioune.nativ",
+      "NativForkRevision": "13ecd8533e57eb4003a046a89df00e221b48565b",
+      "NativForkRepository": "CharafChnioune/nativ",
+      "SUPublicEDKey": "YAX1zGfcsvfAec12FrJ0y+q0tsiqe6F65Y2Fvs36AR8=",
+      "SURequireSignedFeed": true,
+      "SUVerifyUpdateBeforeExtraction": true,
+      "SUFeedURL": "https://github.com/CharafChnioune/nativ/releases/latest/download/appcast.xml",
+      "NativPreviewFeedURL": "https://github.com/CharafChnioune/nativ/releases/download/preview/appcast.xml"
+    },
+    "framework_bundle_ids": {
+      "NativServerKit": "io.github.charafchnioune.nativ.NativServerKit",
+      "NativExtensionSDK": "io.github.charafchnioune.nativ.NativExtensionSDK",
+      "NativTranslationKit": "io.github.charafchnioune.nativ.NativTranslationKit"
+    },
+    "extensions": {
+      "LiveTranslationExtensionRuntime.appex": {
+        "bundle_id": "io.github.charafchnioune.nativ.LiveTranslationExtension",
+        "extension_point": "io.github.charafchnioune.nativ.nativ-extension"
+      },
+      "VoiceDictationExtensionRuntime.appex": {
+        "bundle_id": "io.github.charafchnioune.nativ.VoiceDictationExtension",
+        "extension_point": "io.github.charafchnioune.nativ.nativ-extension"
+      }
+    },
+    "sha256": {
+      "Contents/Info.plist": "3284e0e222eff156e4362eca97097386d711f18f3aa81826c5366233077dc25e",
+      "Contents/MacOS/Nativ": "b1b9a49f70d233c89e6d1c7687a48fd15a42c6e529239534e7483ea25b93bd7b",
+      "Contents/MacOS/Nativ.debug.dylib": "1db03fbebed12594988a2a3ec006aaa03c54193fe09ad87b5b98965eec0fbf7b",
+      "Contents/_CodeSignature/CodeResources": "7071edc5f4ead1fbc81d3cdd68c8035ac1c69eb420a02ff6517f6a45ad1a51b3"
+    },
+    "launched_during_subsequent_ui_validation": true
+  },
+  "signing": {
+    "kind": "Apple Development; local development only",
+    "identity_sha1": "71E102B0BCE34C06A2D2159F5EEBD8C68A18BF92",
+    "script_exit_code": 0,
+    "deep_strict_verification_exit_code": 0,
+    "cdhash": "20751d3534159c38b04005cdbdde3604b7953887",
+    "team_identifier": "54U2R292VD",
+    "committed_signing_input_sha256": {
+      "scripts/sign_macos_debug.sh": "48234ce6d4a2fdf316b54790e1549353b602fd1d0b636ec6fc8279e965894bc1",
+      "scripts/sign_macos_release.sh": "cba6e2cadf0730a2c2d2dd110a1396671cc78ee42f51372ad0b51e1099d5b955",
+      "Configuration/Nativ.entitlements": "9ea368353f451ea89ba3c83bd53995996bd7aa42a091c9b84d0d2ba3597748d4"
+    },
+    "log": "build/validation/continuation-review-signing.log",
+    "log_sha256": "d9f9aef7d82d42db0c2d6e3f254f30a8eaac3391f0d6a51c48918913f83b66e2"
+  },
+  "ui_validation": {
+    "source_commit": "13ecd8533e57eb4003a046a89df00e221b48565b",
+    "result": "Launched and idle Translate settings observed through native CUA",
+    "evidence_medium": "Screenshots were shown inline through CUA in the conversation. No exported PNG artifact is claimed for this review.",
+    "initial_translate_settings": {
+      "route": "LFM3-Omni direct",
+      "quantization": "Q8_0",
+      "source_language": "nl",
+      "target_language": "en",
+      "experimental_consent": false,
+      "headphones_option": false
+    },
+    "capture_started": false,
+    "observed_controls": [
+      "Independent recognition, translation and speech selections in the cascade route",
+      "Sequential memory strategy and visible 16/128 GB guidance",
+      "Visible provider/model limitations"
+    ],
+    "preview_model_inventory": "The selected Gemma model was visibly not installed in this preview inventory. Successful native inference tests used the separately verified explicit fixture cache; this UI observation does not claim the preview has that model prepared.",
+    "chat_server_lifecycle": "The existing own chat server autostarted on app launch and was manually stopped during review. This was not a Translate session.",
+    "final_state": "Restored LFM3-Omni direct and quit the preview app before the planned endurance run.",
+    "scope_limit": "Idle settings and lifecycle observation only. No live translation capture, active overlay/meters, device handoff, spoken-content qualification, 128 GB hardware or endurance outcome demonstrated."
+  },
+  "artifact_history": [
+    {
+      "source_commit": "f7a0550a05da68d416ea695ae9488df7786b5517",
+      "preview": {
+        "path": "/Users/charaf/Library/Developer/NativLiveTranslationPreview/CascadeFinal/Nativ.app",
+        "copy_method": "APFS clone with /bin/cp -cR into a previously absent destination",
+        "launched_during_build_validation": false,
+        "info_plist": {
+          "CFBundleIdentifier": "io.github.charafchnioune.nativ",
+          "NativForkRevision": "f7a0550a05da68d416ea695ae9488df7786b5517",
+          "NativForkRepository": "CharafChnioune/nativ",
+          "SUPublicEDKey": "YAX1zGfcsvfAec12FrJ0y+q0tsiqe6F65Y2Fvs36AR8=",
+          "SURequireSignedFeed": true,
+          "SUVerifyUpdateBeforeExtraction": true,
+          "SUFeedURL": "https://github.com/CharafChnioune/nativ/releases/latest/download/appcast.xml",
+          "NativPreviewFeedURL": "https://github.com/CharafChnioune/nativ/releases/download/preview/appcast.xml"
+        },
+        "sha256": {
+          "Contents/Info.plist": "6f5388edbd74bb7fa04a3802cfd3bb7543cd4353bcf2eff2425bf18aa2261149",
+          "Contents/MacOS/Nativ": "ec70946e93270ec79cf5d29172075b453c4c72b2a0085d38d442de3acbc87e62",
+          "Contents/MacOS/Nativ.debug.dylib": "e5c9bae052de231f3d5d0480a5438a85725c07f5f85e737cbc1ccf1b79fb4904",
+          "Contents/_CodeSignature/CodeResources": "8b35d0f6b5f5cfaba1c48c68199821f346b039c9caf347122a46f99a6cd2cec6"
+        }
+      },
+      "make_build": {
+        "result": "BUILD SUCCEEDED",
+        "command": [
+          "make",
+          "xcode-build",
+          "NATIV_FORK_REVISION=f7a0550a05da68d416ea695ae9488df7786b5517",
+          "XCODE_BUILD_JOBS=2"
+        ],
+        "exit_code": 0,
+        "seconds": 36.339,
+        "log": "build/validation/continuation-label-final-build.log",
+        "log_sha256": "a5c7ef4a61dd84338bd5dda9dc4c2d0763128195c2428678d3d659f1c1ef8d15"
+      },
+      "signing": {
+        "kind": "Apple Development; local development only",
+        "identity_sha1": "71E102B0BCE34C06A2D2159F5EEBD8C68A18BF92",
+        "script_exit_code": 0,
+        "deep_strict_verification_exit_code": 0,
+        "cdhash": "a316dafa44cb0134435cda0d7764990e4baa6ee6",
+        "team_identifier": "54U2R292VD",
+        "log": "build/validation/continuation-label-preview-signing.log",
+        "log_sha256": "dea842402276525cf8870a2e34d85a0a64c97192c43414781d6f56139995132a"
+      },
+      "ui_observation": "This f7 artifact was not launched by the build agent. Earlier observed CUA review used f2; no exact f7 UI claim."
+    },
+    {
+      "source_commit": "f2f79ccf335bd08d5f0beee81ee450492499b899",
+      "path": "/Users/charaf/Library/Developer/NativLiveTranslationPreview/CascadeValidated/Nativ.app",
+      "sha256": {
+        "Contents/Info.plist": "0c5027e9f45a4b7428d7b23fdd223be3b5f011f07ad6f1adca4e823d86a066d5",
+        "Contents/MacOS/Nativ": "fedf365d157c47177c488c9987a525fd3a038f977e203c0ed913fdec0030bf4b",
+        "Contents/MacOS/Nativ.debug.dylib": "b0e45ff39f4a8e9aa42fb5f3b5527c9a908504489005204b9abf8fa35f2a3efe",
+        "Contents/_CodeSignature/CodeResources": "bde80df17bd6330de3d0608ad8b5800d8b42548bbff91fc4c3b9c49fbb271161"
+      },
+      "make_build": {
+        "result": "BUILD SUCCEEDED",
+        "command": [
+          "make",
+          "xcode-build",
+          "NATIV_FORK_REVISION=f2f79ccf335bd08d5f0beee81ee450492499b899",
+          "XCODE_BUILD_JOBS=2"
+        ],
+        "exit_code": 0,
+        "seconds": 26.503,
+        "log": "build/validation/continuation-final-build.log",
+        "log_sha256": "b9668d677412d10e8dfac9d438970ad950690e35fa52ba66cc76d0c95030e336"
+      },
+      "signing": {
+        "kind": "Apple Development; local development only",
+        "identity_sha1": "71E102B0BCE34C06A2D2159F5EEBD8C68A18BF92",
+        "script": "scripts/sign_macos_debug.sh",
+        "script_exit_code": 0,
+        "deep_strict_verification_exit_code": 0,
+        "cdhash": "8eeab0bb661bb2b0c7216e83d11ef93c235ec035",
+        "team_identifier": "54U2R292VD",
+        "log": "build/validation/continuation-preview-signing.log",
+        "log_sha256": "53d614eddd415a66209d5d078a09a1fc6a45bf692b0cb579ef5b6ab78c6abecc"
+      },
+      "ui_observation": "The preceding CUA review used this f2 artifact and identified the empty-label issue; it is not an observation of the rebuilt f7 artifact."
+    }
+  ],
+  "scope_limit": "Exact committed build, own namespace/update metadata, local Apple Development signature and subsequent exact-revision idle CUA validation. Existing f2/f7 previews preserved as history. No model inference in this UI check, Developer ID distribution, notarization or update publication. Full native suite and targeted/model tests retain their separate source identities. No outcome of the planned endurance run is inferred.",
+  "production_app_source_last_changed_at": "68535271b2f0ab4baacd4e08981b213c21499141"
+}

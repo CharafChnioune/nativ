@@ -2,7 +2,7 @@
 
 `TranslationCascadeInferenceTests.testExplicitOwnedHostCascadeSyntheticInference` gebruikt de daadwerkelijke `TranslationCascadeProviders.make`, de bestaande modelinventaris en Whisper-assetvoorbereiding, de eigen MLX-runtime, de echte resourceleases en lazy LFM3-Omni-TTS. Het testpakket vraagt geen microfoon- of opnamepermissie en speelt geen audio af. Het voert twee expliciet opgegeven synthetische WAV-bestanden door, Nederlands → Engels en Engels → Nederlands.
 
-Dit is een afzonderlijke technische proef. Zonder beide opt-in-variabelen eindigt de test met `XCTSkip`, niet met een gemeten inferentiepass. Een pass verifieert brontranscript, vertaaltekst, werkelijk ontvangen niet-lege PCM en voltooide turns in de juiste volgorde. Hij kwalificeert geen betekenisbehoud, natuurlijke stemmen, menselijke acceptatie of akoestische latency.
+Dit is een afzonderlijke technische proef. Zonder beide opt-in-variabelen eindigt de test met `XCTSkip`, niet met een gemeten inferentiepass. Een pass verifieert brontranscript, vertaaltekst, werkelijk ontvangen PCM met uitsluitend eindige samples en een niet-stil signaal, en voltooide turns in de juiste volgorde. Hij kwalificeert geen algemeen betekenisbehoud, natuurlijke stemmen, menselijke acceptatie of akoestische latency.
 
 ## Voorbereiding
 
@@ -62,13 +62,14 @@ Gebruik voor native tests bij voorkeur een aparte validatiemap onder `~/Library/
 
 ## Uitvoeren en rapporteren
 
-Geef de variabelen via de testplanomgeving door, of met de Xcode-test-runnerprefix:
+Bouw eerst de bijbehorende testtargets uit dezelfde bronversie. Geef daarna de variabelen via de testplanomgeving door, of met de Xcode-test-runnerprefix. `test-without-building` voorkomt dat compilatie en modelmetingen door elkaar lopen; de opgegeven DerivedData-map moet de zojuist gevalideerde testproducten bevatten. Laat geen andere modelproef of zware build tegelijk draaien.
 
 ```sh
 TEST_RUNNER_NATIV_CASCADE_HOST_INFERENCE=1 \
 TEST_RUNNER_NATIV_CASCADE_HOST_MANIFEST=/absolute/host-cascade-manifest.json \
-xcodebuild test -project Nativ.xcodeproj -scheme Nativ \
+xcodebuild test-without-building -project Nativ.xcodeproj -scheme Nativ \
   -destination 'platform=macOS,arch=arm64' \
+  -derivedDataPath build/NativDevelopmentDerivedData \
   -only-testing:NativTests/TranslationCascadeInferenceTests/testExplicitOwnedHostCascadeSyntheticInference \
   -parallel-testing-enabled NO \
   -resultBundlePath /absolute/HostCascadeInference.xcresult
@@ -77,3 +78,23 @@ xcodebuild test -project Nativ.xcodeproj -scheme Nativ \
 De test vereist normale geheugendruk en leesbare swaptelemetrie vóór de eerste modellading. Elke ASR/LLM/TTS-fase heeft een limiet van zestig seconden. Een experiment stopt bij ontbrekende telemetrie, kritieke systeemgeheugendruk, meer dan 1 GiB toename in globale swap of een totale looptijd van 420 seconden. Globale swap kan door andere processen veranderen; een afgebroken proef is daarom geen gemeten exclusieve geheugenbehoefte van het model. Alleen de eigen twee helpers worden gestopt en alle output wordt direct bevestigd aan het begrensde transportbudget.
 
 Het log noemt exacte ASR-/LLM-revisies, geheugenstrategie, ontvangen PCM-bytes en commit-tot-eerste-ontvangen-PCM. Dit is geen microfoon- of luidsprekermeting. Bewaar het manifest en het `.xcresult` naast het rapport en vermeld mislukte of overgeslagen proeven expliciet. Voor menselijke kwalificatie blijven de oorspronkelijke aantallen, taalrichtingen, warme/koude metingen en duurtest gelden.
+
+## Expliciet tekst- en audiorapport
+
+Zonder aanvullende variabele schrijft de harness geen transcript of uitvoeraudio naar schijf. Voeg uitsluitend voor deze originele synthetische fixtures de volgende variabele toe aan dezelfde testopdracht wanneer een inspecteerbaar rapport nodig is:
+
+```sh
+TEST_RUNNER_NATIV_CASCADE_HOST_REPORT_DIRECTORY=/absolute/new-synthetic-report
+```
+
+In een shell moet deze toekenning vóór `xcodebuild` staan, samen met de twee inferentievariabelen. Het pad moet absoluut en nog niet aanwezig zijn; bestaande rapportmappen worden geweigerd. De harness maakt de map met toegangsmodus `0700`, schrijft `report.json` atomair en bewaart de ontvangen audio als `nl-en.wav` en `en-nl.wav`. De WAV bevat het werkelijk ontvangen PCM-formaat, zonder resampling of stemnabewerking. Een volgende proef krijgt een andere map.
+
+Het manifest moet precies de twee richtingen bevatten, met `synthetic: true` bij beide fixtures. Dit is een expliciete herkomstverklaring van de tester, geen automatische herkenning van synthetische audio. Gebruik de rapportoptie niet voor microfoonopnamen of andere persoonlijke gesprekken. De test gebruikt alleen de opgegeven lokale bestanden en wijzigt de standaardopslag van de app niet.
+
+De invoer is per fixture begrensd tot 2.000.000 bytes, maximaal twaalf seconden, mono PCM16 op 16 kHz. De verzamelde uitvoer is per turn begrensd tot 16.000.000 PCM-bytes. Een veranderend uitvoerformaat, onvolledige sampleframes, niet-eindige floats of volledig stille uitvoer veroorzaken een fout. PCM16 en FLOAT32 worden apart geïnterpreteerd; piek en RMS zijn genormaliseerde amplitudes. Het rapport bevat bron- en doeltekst, volledige artifactpins, samplefrequentie, kanalen, encoding, sampleaantal, werkelijke duur, niet-nulle samples, piek, RMS, PCM-SHA256 en de turntimings. Het sampleaantal omvat alle kanalen; de duur gebruikt ook het kanaalaantal.
+
+Iedere turn begint met gestopte eigen MLX- en Omni-processen. `backend.stop()` wordt na de turn afgewacht en de processtatus wordt gecontroleerd. Het rapport onderscheidt voorbereiding, commit tot definitief brontranscript, commit tot definitieve vertaling, eerste PCM, turncompletion en procesafbouw. Bestandscaches van macOS worden niet leeggemaakt. Deze observaties zijn daarom geen gecontroleerde warme/koude benchmark. `backend_stop` is evenmin een meting van stop tot akoestische stilte. Lees de teststatus altijd uit het `.xcresult`; het JSON-veld `outcome` vervangt de XCTest-asserties niet.
+
+De deterministische test `testSyntheticAudioEvidenceRejectsNonFiniteAndSilentPCM` controleert zonder modellen bekende piek/RMS-waarden en weigert stilte en NaN. De [inhoudelijke technische proef](translation-host-cascade-content-evidence.json) op appbron `68535271b2f0ab4baacd4e08981b213c21499141` leverde twee afgeronde turns met correcte tijd-, getal- en ontkenningsinformatie in de tekst en eindig, niet-stil FLOAT32-audio. Eerste PCM kwam na 7,215 en 6,840 seconden: boven de live-doelen. Gesproken woorden, natuurlijkheid en expressie zijn niet menselijk beoordeeld.
+
+De voorafgaande mislukte proef en de gerepareerde geheugenretentie bij artifact-hashing blijven zichtbaar in [het geheugenbewijs](translation-hash-memory-evidence.json). De 1 MiB-leesbuffers worden nu per chunk vrijgegeven; SHA256-, annulering- en modelgeheugengrenzen zijn behouden.
