@@ -184,9 +184,16 @@ final class TranslationModelStore: ObservableObject {
         let handle = try FileHandle(forReadingFrom: file)
         defer { try? handle.close() }
         var digest = SHA256()
-        while let data = try handle.read(upToCount: 1_048_576), !data.isEmpty {
-            try Task.checkCancellation()
-            digest.update(data: data)
+        while true {
+            // FileHandle returns autoreleased storage on macOS. Drain each
+            // chunk so a multi-gigabyte model never accumulates in a caller's pool.
+            let hasChunk = try autoreleasepool { () throws -> Bool in
+                try Task.checkCancellation()
+                guard let data = try handle.read(upToCount: 1_048_576), !data.isEmpty else { return false }
+                digest.update(data: data)
+                return true
+            }
+            if !hasChunk { break }
         }
         return digest.finalize().map { String(format: "%02x", $0) }.joined() == artifact.sha256.lowercased()
     }
