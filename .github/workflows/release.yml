@@ -10,7 +10,7 @@ on:
         required: true
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: macos-release
@@ -18,7 +18,9 @@ concurrency:
 
 jobs:
   build-notarize-publish:
-    if: ${{ (github.event.release.tag_name || inputs.tag) != 'preview' }}
+    if: ${{ github.repository == 'Neywa-Labs/nativ' && (github.event.release.tag_name || inputs.tag) != 'preview' }}
+    permissions:
+      contents: write
     runs-on: macos-26
     outputs:
       release_channel: ${{ steps.build.outputs.release_channel }}
@@ -36,9 +38,10 @@ jobs:
 
     steps:
       - name: Check out release tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.event.release.tag_name || inputs.tag }}
+          persist-credentials: false
 
       - name: Keep the previous stable appcast available during the build
         run: |
@@ -72,12 +75,12 @@ jobs:
 
       - name: Check out mlx-vlm main for RC builds
         if: ${{ env.RELEASE_CHANNEL == 'rc' }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: Blaizzy/mlx-vlm
           ref: main
-          path: .cache/mlx-vlm
           persist-credentials: false
+          path: .cache/mlx-vlm
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -215,16 +218,19 @@ jobs:
     needs: build-notarize-publish
     # Stable releases, RCs, and explicit preview refreshes update the rolling feed.
     if: >-
-      ${{ !cancelled() && (needs.build-notarize-publish.result == 'success' ||
+      ${{ github.repository == 'Neywa-Labs/nativ' && !cancelled() && (needs.build-notarize-publish.result == 'success' ||
           (github.event_name == 'workflow_dispatch' && inputs.tag == 'preview')) }}
+    permissions:
+      contents: write
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
       - name: Check out current release tooling
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: main
+          persist-credentials: false
 
       - name: Refresh and verify the fixed preview release
         run: |

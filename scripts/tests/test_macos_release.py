@@ -253,7 +253,7 @@ class ReleaseTests(unittest.TestCase):
             '''))
             generator.chmod(0o755)
             environment = dict(os.environ, SPARKLE_GENERATE_APPCAST=str(generator),
-                               SPARKLE_PRIVATE_KEY="test-key-not-used", NATIV_GITHUB_REPOSITORY=REPOSITORY)
+                               SPARKLE_PRIVATE_KEY="test-key-not-used", NATIV_GITHUB_REPOSITORY="CharafChnioune/nativ")
             script = Path(__file__).parents[1] / "generate_macos_appcast.sh"
             for version in ["0.4.0", "0.4.0rc1"]:
                 archive = directory / f"Nativ-{version}.zip"
@@ -266,7 +266,7 @@ class ReleaseTests(unittest.TestCase):
                 command = ["bash", str(script), "--output", str(output), "--tag", "v" + version, str(archive)]
                 result = subprocess.run(command, env=environment, capture_output=True, text=True)
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                item = release.parse_item(output.read_bytes(), "v" + version, REPOSITORY)
+                item = release.parse_item(output.read_bytes(), "v" + version, "CharafChnioune/nativ")
                 self.assertEqual(item.findtext(release.sparkle("channel")), "rc" if "rc" in version else None)
                 command[-2] = "v0.4.0rc999"
                 mismatch = subprocess.run(command, env=environment, capture_output=True, text=True)

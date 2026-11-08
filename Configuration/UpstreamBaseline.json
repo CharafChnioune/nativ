@@ -1,0 +1,8 @@
+{
+  "upstream_repository": "Neywa-Labs/nativ",
+  "integrated_sha": "5cb79ed65659414774745c1331cce08397d16055",
+  "source_label": "initial-fork-baseline",
+  "tag_identities": {
+    "v0.4.5": "9b876ef199adec3018e352b3a7c51864e7c5bb8a"
+  }
+}

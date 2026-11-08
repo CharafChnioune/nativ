@@ -15,12 +15,15 @@ concurrency:
 
 jobs:
   build:
+    if: github.repository == 'Neywa-Labs/nativ'
     runs-on: macos-26
     env:
       XCODE_DERIVED_DATA: build/NativDevelopmentDerivedData
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -38,7 +41,7 @@ jobs:
         run: python3 -m unittest scripts.tests.test_python_resource_reuse scripts.tests.test_model_capabilities -v
 
       - name: Cache bundled mlx-vlm server distribution
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: |
             ${{ env.XCODE_DERIVED_DATA }}/Build/Products/Debug/NativServerKit.framework/Versions/A/Resources/mlx-vlm-server
@@ -46,7 +49,7 @@ jobs:
           key: mlx-vlm-server-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('PythonDistribution/**') }}
 
       - name: Cache Swift package dependencies
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: ${{ env.XCODE_DERIVED_DATA }}/SourcePackages
           key: spm-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Nativ.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}

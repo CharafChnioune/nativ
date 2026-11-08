@@ -14,7 +14,7 @@ Options:
   --release-notes PATH  Markdown, HTML, or plain-text release notes to embed.
   --output PATH         Output feed. Defaults to dist/release/appcast.xml.
   --account NAME        Sparkle signing-key Keychain account. Defaults to
-                        Marvis-Labs. Ignored when SPARKLE_PRIVATE_KEY is set.
+                        io.github.charafchnioune.nativ. Ignored when SPARKLE_PRIVATE_KEY is set.
   --private-key PATH    Read the exported Sparkle private key from a file.
   --derived-data PATH   DerivedData used to locate generate_appcast. Defaults
                         to build/XcodeDerivedData.
@@ -36,7 +36,7 @@ repository_root="$(cd "$script_directory/.." && pwd -P)"
 release_notes=""
 release_tag=""
 output_path="dist/release/appcast.xml"
-account="${SPARKLE_KEY_ACCOUNT:-Marvis-Labs}"
+account="${SPARKLE_KEY_ACCOUNT:-io.github.charafchnioune.nativ}"
 private_key_path=""
 derived_data_path="${NATIV_DERIVED_DATA:-build/XcodeDerivedData}"
 
@@ -171,7 +171,8 @@ if [[ -n "$release_notes" ]]; then
     cp "$release_notes" "${staged_archive%.*}.$notes_extension"
 fi
 
-github_repository="${NATIV_GITHUB_REPOSITORY:-${GITHUB_REPOSITORY:-Neywa-Labs/nativ}}"
+github_repository="${NATIV_GITHUB_REPOSITORY:-${GITHUB_REPOSITORY:-}}"
+[[ "$github_repository" == "CharafChnioune/nativ" ]] || fail "pass the explicit fork repository via NATIV_GITHUB_REPOSITORY=CharafChnioune/nativ"
 [[ "$github_repository" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || \
     fail "invalid GitHub repository: $github_repository"
 download_prefix="https://github.com/${github_repository}/releases/download/${release_tag}/"
