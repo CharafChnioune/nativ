@@ -127,14 +127,13 @@ actor TranslationCascadeRuntime {
         pipe?.fileHandleForReading.readabilityHandler = nil
         owned.terminationHandler = nil
         let cleanup = Task { @concurrent in
-            // The bundled supervisor forwards signals and kills its own child on parent death.
+            // The bundled supervisor owns child escalation and reaping. Killing
+            // it on a competing host deadline could orphan its Python child.
+            // Keep admission blocked until that supervisor has finished cleanup.
             if owned.isRunning { owned.terminate() }
-            let deadline = ContinuousClock.now.advanced(by: .seconds(3))
-            while owned.isRunning && ContinuousClock.now < deadline {
+            while owned.isRunning {
                 try? await Task.sleep(for: .milliseconds(25))
             }
-            if owned.isRunning { _ = Darwin.kill(owned.processIdentifier, SIGKILL) }
-            while owned.isRunning { try? await Task.sleep(for: .milliseconds(10)) }
             try? pipe?.fileHandleForReading.close()
             try? pipe?.fileHandleForWriting.close()
         }
@@ -238,7 +237,7 @@ actor TranslationCascadeRuntime {
     }
 
     static func listenerPort(in output: String) -> Int? {
-        let pattern = #"Uvicorn running on http://127\.0\.0\.1:([0-9]{1,5})(?:\s|$)"#
+        let pattern = #"Uvicorn running on http://127\.0\.0\.1:([0-9]{1,5})\s"#
         guard let regex = try? NSRegularExpression(pattern: pattern),
               let match = regex.firstMatch(in: output, range: NSRange(output.startIndex..., in: output)),
               let range = Range(match.range(at: 1), in: output),

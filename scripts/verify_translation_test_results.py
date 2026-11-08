@@ -16,7 +16,12 @@ REQUIRED_CASES = {("TranslationWhisperPreparationTests", "testDifferentRevisionD
                   ("ManagedTranslationCascadeResourcesTests", "testStaleReleaseAndInvalidationCannotUnloadNextGeneration"),
                   ("ManagedTranslationCascadeResourcesTests", "testInvalidationDuringSpeechAdmissionDrainsPreparerBeforeNextGeneration"),
                   ("TranslationStockVoicePreparationTests", "testAlreadyCancelledStockPreparationHasNoFilesystemOrNetworkEffects"),
-                  ("TranslationStockVoicePreparationTests", "testInvalidReferenceNeverBecomesInstalledStockVoice")}
+                  ("TranslationStockVoicePreparationTests", "testInvalidReferenceNeverBecomesInstalledStockVoice"),
+                  ("TranslationCascadeRuntimeTests", "testStopWaitsForBundledSupervisorToReapTermIgnoringChildBeforeRestart"),
+                  ("TranslationCascadeRuntimeTests", "testReadinessWaitsForAnActualDelimiterAcrossPortFragments"),
+                  ("TranslationStageCatalogTests", "testWhisperVocabularyDeterminesWhetherCantoneseExists"),
+                  ("TranslationStageCatalogTests", "testWhisperHuggingFaceDimensionsFollowTheBundledLoaderPrecedence"),
+                  ("TranslationStageCatalogTests", "testWhisperWithoutReviewedVocabularyDoesNotInventLanguageSupport")}
 # Real model inference is a separate explicit qualification job. Its absence must
 # be reported, and it cannot stand in for the deterministic runtime lifecycle tests.
 OPTIONAL_QUALIFICATION = {("TranslationRuntimeTests", "testExplicitLocalRuntimeIntegration"),

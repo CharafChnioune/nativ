@@ -69,8 +69,19 @@ enum TranslationStageCatalog {
         case .recognition:
             switch family {
             case "whisper":
-                result.languages = (configuration["n_vocab"] as? Int ?? 0) >= 51_865 ? whisperLanguages : ["en"]
                 result.notes = ["Complete-phrase transcription. Whisper's English translation task is never used for arbitrary target languages."]
+                // Match the bundled loader's native/HF dimension selection. Older
+                // multilingual vocabularies have 99 language tokens; v3 adds yue.
+                let usesHFDimensions = configuration["d_model"] != nil || configuration["encoder_layers"] != nil
+                let vocabulary = configuration[usesHFDimensions ? "vocab_size" : "n_vocab"] as? Int
+                switch vocabulary {
+                case 51_864: result.languages = ["en"]
+                case 51_865: result.languages = whisperLanguages.subtracting(["yue"])
+                case 51_866: result.languages = whisperLanguages
+                default:
+                    result.supportStatus = .unsupported
+                    result.preparationIssues.append("Whisper's language inventory could not be established from this snapshot. Choose a complete supported Whisper checkpoint.")
+                }
             case "qwen3_asr":
                 let names = configuration["support_languages"] as? [String] ?? []
                 result.languageArguments = languageMap(names)

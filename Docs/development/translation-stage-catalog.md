@@ -6,7 +6,7 @@ Translate behoudt **LFM3-Omni direct → dezelfde Omni in twee passes → explic
 
 | Taak | Adapter | Grenzen |
 | --- | --- | --- |
-| ASR | Whisper-varianten | Meertalig uitsluitend bij de meertalige vocabulaireconfiguratie; Engelse checkpoints blijven Engels. Alleen `transcribe`, nooit Whisper's Engelse `translate` als algemene vertaler. |
+| ASR | Whisper-varianten | Vocabulaire 51864: Engels; 51865: 99 talen zonder Kantonees; 51866: 100 talen inclusief Kantonees. De catalogus volgt de native/Hugging Face-dimensies van de loader. Ontbrekende of onbekende metadata maken een checkpoint niet selecteerbaar. Alleen `transcribe`, nooit Whisper's Engelse `translate` als algemene vertaler. |
 | ASR | Qwen3-ASR | De 30 gedocumenteerde talen worden doorsneden met `support_languages` in de gekozen configuratie. De aanvraag gebruikt de taalnaam die dit model verwacht. |
 | ASR | Parakeet TDT 0.6B v2/v3 | v2 Engels; v3 25 Europese talen. De modelnaam moet het expliciete profiel identificeren. Geen geforceerde taalhint: de adapter transcribeert de door Parakeet herkende taal. |
 | Vertaling | Generatieve lokale MLX-modellen, bijvoorbeeld Gemma, Qwen of LFM | Alleen modellen uit Nativ's generatieve modelselector, geen embeddings/rerankers/drafters. Gebruik een instructiemodel. De gekozen taalcombinatie is experimenteel; een taakloader is geen kwaliteitsbewijs. |

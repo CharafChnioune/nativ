@@ -8,6 +8,34 @@ spec.loader.exec_module(evidence)
 
 
 class TranslationTestEvidenceTests(unittest.TestCase):
+    reviewed_regressions = [
+        ("TranslationCascadeRuntimeTests", "testStopWaitsForBundledSupervisorToReapTermIgnoringChildBeforeRestart"),
+        ("TranslationCascadeRuntimeTests", "testReadinessWaitsForAnActualDelimiterAcrossPortFragments"),
+        ("TranslationStageCatalogTests", "testWhisperVocabularyDeterminesWhetherCantoneseExists"),
+        ("TranslationStageCatalogTests", "testWhisperHuggingFaceDimensionsFollowTheBundledLoaderPrecedence"),
+        ("TranslationStageCatalogTests", "testWhisperWithoutReviewedVocabularyDoesNotInventLanguageSupport"),
+    ]
+
+    def test_reviewed_regressions_cannot_be_missing_when_their_old_class_passes(self):
+        for suite_name, case in self.reviewed_regressions:
+            with self.subTest(case=case):
+                tree = self.fixture()
+                suite = next(node for node in tree["testNodes"] if node["name"] == suite_name)
+                suite["children"] = [node for node in suite["children"] if node["name"] != case]
+                suite["children"].append({"nodeType": "Test Case", "name": "testPreviouslyExistingBehavior", "result": "Passed"})
+                with self.assertRaisesRegex(ValueError, "Missing executed deterministic tests"):
+                    evidence.verify({"totalTestCount": len(evidence.REQUIRED), "failedTests": 0}, tree)
+
+    def test_reviewed_regressions_cannot_be_skipped_when_other_cases_pass(self):
+        for suite_name, case in self.reviewed_regressions:
+            with self.subTest(case=case):
+                tree = self.fixture()
+                suite = next(node for node in tree["testNodes"] if node["name"] == suite_name)
+                suite["children"] = [node for node in suite["children"] if node["name"] != case]
+                suite["children"].append({"nodeType": "Test Case", "name": case + "()", "result": "Skipped"})
+                with self.assertRaisesRegex(ValueError, "Required test was skipped"):
+                    evidence.verify({"totalTestCount": len(evidence.REQUIRED), "failedTests": 0}, tree)
+
     def test_resource_and_lifecycle_regressions_are_required(self):
         self.assertTrue({"TranslationResourceAssessmentTests", "TranslationHostOperationGateTests",
                          "TranslationDownloadReservationsTests", "TranslationCascadeRuntimeTests",

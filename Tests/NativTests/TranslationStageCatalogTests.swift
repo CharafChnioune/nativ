@@ -66,6 +66,45 @@ final class TranslationStageCatalogTests: XCTestCase {
         XCTAssertTrue(multi.requiresReference)
         XCTAssertFalse(multi.streamsAudio)
     }
+    func testWhisperVocabularyDeterminesWhetherCantoneseExists() {
+        for (vocabulary, count, hasCantonese) in [(51864, 1, false), (51865, 99, false), (51866, 100, true)] {
+            let model = TranslationStageCatalog.describe(modelID: "fixture/whisper", configuration: ["model_type": "whisper", "n_vocab": vocabulary], role: .recognition, taskAvailable: true)
+            XCTAssertTrue(model.isSelectable)
+            XCTAssertEqual(model.languages.count, count, "Vocabulary \(vocabulary)")
+            XCTAssertEqual(model.languages.contains("yue"), hasCantonese)
+            XCTAssertEqual(model.languages.contains("nl"), vocabulary > 51864)
+        }
+    }
+    func testWhisperHuggingFaceDimensionsFollowTheBundledLoaderPrecedence() {
+        for marker in ["d_model", "encoder_layers"] {
+            for vocabulary in [51864, 51865, 51866] {
+                let native = TranslationStageCatalog.describe(modelID: "fixture/native", configuration: ["model_type": "whisper", "n_vocab": vocabulary], role: .recognition, taskAvailable: true)
+                // The loader switches to HF dimensions when either marker is present.
+                // An unrelated native n_vocab must not override vocab_size then.
+                let hf = TranslationStageCatalog.describe(modelID: "fixture/hf", configuration: ["model_type": "whisper", marker: 32, "vocab_size": vocabulary, "n_vocab": 51864], role: .recognition, taskAvailable: true)
+                XCTAssertEqual(hf.languages, native.languages)
+                XCTAssertEqual(hf.isSelectable, native.isSelectable)
+            }
+        }
+        let native = TranslationStageCatalog.describe(modelID: "fixture/native", configuration: ["model_type": "whisper", "n_vocab": 51865, "vocab_size": 51866], role: .recognition, taskAvailable: true)
+        XCTAssertFalse(native.languages.contains("yue"), "Without an HF dimension marker the native vocabulary applies.")
+    }
+    func testWhisperWithoutReviewedVocabularyDoesNotInventLanguageSupport() {
+        let configurations: [[String: Any]] = [
+            ["model_type": "whisper"],
+            ["model_type": "whisper", "n_vocab": "51866"],
+            ["model_type": "whisper", "n_vocab": -1],
+            ["model_type": "whisper", "n_vocab": 60000],
+            ["model_type": "whisper", "d_model": 1280],
+            ["model_type": "whisper", "encoder_layers": 32, "vocab_size": "51866"],
+        ]
+        for configuration in configurations {
+            let model = TranslationStageCatalog.describe(modelID: "fixture/incomplete", configuration: configuration, role: .recognition, taskAvailable: true)
+            XCTAssertFalse(model.isSelectable)
+            XCTAssertTrue(model.languages.isEmpty)
+            XCTAssertFalse(model.preparationIssues.isEmpty)
+        }
+    }
     func testWrongTaskAndUnknownAudioFamilyDoNotBecomeGenericAdapters() {
         let wrong = TranslationStageCatalog.describe(modelID: "fixture/model", configuration: ["model_type": "whisper"], role: .speech, taskAvailable: false)
         let unknown = TranslationStageCatalog.describe(modelID: "fixture/new-audio", configuration: ["model_type": "unreviewed"], role: .speech, taskAvailable: true)
