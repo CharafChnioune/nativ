@@ -117,7 +117,7 @@ struct GenerationResultCard: View {
         if active {
             HStack(spacing: 10) {
                 Text(GenerationTime.label(playback.position)).font(.caption.monospacedDigit())
-                Slider(value: Binding(get: { playback.position }, set: playback.seek), in: 0...max(1, playback.duration)).accessibilityLabel("Playback position")
+                Slider(value: Binding(get: { playback.position }, set: { playback.seek($0) }), in: 0...max(1, playback.duration)).accessibilityLabel("Playback position")
                 Text("−" + GenerationTime.label(max(0, playback.duration - playback.position))).font(.caption.monospacedDigit())
                 Image(systemName: playback.volume == 0 ? "speaker.slash" : "speaker.wave.2")
                 Slider(value: $playback.volume, in: 0...1).frame(width: 80).accessibilityLabel("Volume")

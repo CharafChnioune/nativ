@@ -130,7 +130,7 @@ struct GenerationCompactPlayer: View {
                 } label: { Image(systemName: playback.isPlaying ? "pause.fill" : "play.fill") }
                     .help(playback.isPlaying ? "Pause playback" : "Resume playback")
                 Text(playback.title).lineLimit(1).font(.caption)
-                Slider(value: Binding(get: { playback.position }, set: playback.seek), in: 0...max(1, playback.duration))
+                Slider(value: Binding(get: { playback.position }, set: { playback.seek($0) }), in: 0...max(1, playback.duration))
                     .accessibilityLabel("Playback position")
                 Text(GenerationTime.label(playback.position)).monospacedDigit().font(.caption)
                 Button { playback.clear() } label: { Image(systemName: "xmark") }.help("Close player")
