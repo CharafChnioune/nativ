@@ -1,3 +1,4 @@
+import CryptoKit
 import Darwin
 import Foundation
 import XCTest
@@ -10,6 +11,24 @@ import NativTranslationKit
 /// a skipped test is not a passing inference or a human voice qualification.
 @MainActor
 final class TranslationCascadeInferenceTests: XCTestCase {
+    func testSyntheticAudioEvidenceRejectsNonFiniteAndSilentPCM() throws {
+        let format = TranslationPCMFormat(sampleRate: 16_000, channels: 1, encoding: .float32LittleEndian)
+        func bytes(_ values: [Float]) -> Data {
+            var result = Data()
+            for value in values {
+                var bits = value.bitPattern.littleEndian
+                withUnsafeBytes(of: &bits) { result.append(contentsOf: $0) }
+            }
+            return result
+        }
+        let signal = try HostInferenceAudioReport.analyze(bytes([-0.5, 0.5]), format: format)
+        XCTAssertEqual(signal.sampleCount, 2)
+        XCTAssertEqual(signal.peakAbsoluteAmplitude, 0.5)
+        XCTAssertEqual(signal.rmsAmplitude, 0.5)
+        XCTAssertThrowsError(try HostInferenceAudioReport.analyze(bytes([0, 0]), format: format))
+        XCTAssertThrowsError(try HostInferenceAudioReport.analyze(bytes([.nan, 0.5]), format: format))
+    }
+
     func testExplicitOwnedHostCascadeSyntheticInference() async throws {
         let environment = ProcessInfo.processInfo.environment
         guard environment["NATIV_CASCADE_HOST_INFERENCE"] == "1",
@@ -18,6 +37,8 @@ final class TranslationCascadeInferenceTests: XCTestCase {
         }
         let manifest = try JSONDecoder().decode(HostInferenceManifest.self, from: Data(contentsOf: URL(fileURLWithPath: manifestPath)))
         try manifest.validate()
+        let reportDirectory = try HostInferenceReport.prepareDirectory(environment["NATIV_CASCADE_HOST_REPORT_DIRECTORY"])
+        var report = HostInferenceReport(manifest: manifest)
         guard TranslationHardwareSnapshot.current().pressure == .normal else {
             throw TranslationFailure(code: .providerFailure, message: "Host inference requires normal memory pressure before loading selected models.")
         }
@@ -61,6 +82,12 @@ final class TranslationCascadeInferenceTests: XCTestCase {
                 serverBaseURL: URL(string: "http://127.0.0.1:1")!, serverAPIKey: nil, serverIsRunning: false)
             for fixture in manifest.fixtures {
                 if let failure = await monitor.failure { throw failure }
+                let turnStart = ContinuousClock.now
+                let mlxWasRunning = await runtime.isRunning, omniWasRunning = await omni.isRunning
+                XCTAssertFalse(mlxWasRunning); XCTAssertFalse(omniWasRunning)
+                report.turns.append(.init(pair: fixture.source + "-" + fixture.target,
+                    mlxWasRunningBeforeTurn: mlxWasRunning, omniWasRunningBeforeTurn: omniWasRunning))
+                let reportIndex = report.turns.count - 1
                 var settings = LiveTranslationSettings.Value()
                 settings.provider = .localCascade; settings.output = .speechAndCaptions
                 settings.sourceLanguage = fixture.source; settings.targetLanguage = fixture.target
@@ -86,21 +113,41 @@ final class TranslationCascadeInferenceTests: XCTestCase {
                         captureTimestampNanoseconds: UInt64(offset / 2) * 62_500, sequence: UInt64(offset / 640),
                         sourceID: "opt-in-synthetic-fixture", sessionID: sessionID, turnID: turnID, generation: generation))
                 }
+                report.turns[reportIndex].seconds["factory_prepare_and_input"] = HostInferenceReport.seconds(turnStart.duration(to: .now))
                 let start = ContinuousClock.now
                 try await backend.commit(turnID: turnID)
                 var source = "", target = "", audioBytes = 0, completed = false
                 var firstAudio: Duration?
+                var receivedAudio = Data()
+                var receivedFormat: TranslationPCMFormat?
                 var phases: [String] = []
                 for try await event in stream {
                     defer { event.acknowledgeAudioDelivery() }
                     switch event.payload {
-                    case .sourceText(let text): source = text.text; if text.stability == .final { phases.append("source") }
-                    case .translationText(let text): target = text.text; if text.stability == .final { phases.append("target") }
+                    case .sourceText(let text):
+                        source = text.text; report.turns[reportIndex].sourceText = text.text
+                        if text.stability == .final { phases.append("source"); report.turns[reportIndex].seconds["commit_to_final_source"] = HostInferenceReport.seconds(start.duration(to: .now)) }
+                    case .translationText(let text):
+                        target = text.text; report.turns[reportIndex].targetText = text.text
+                        if text.stability == .final { phases.append("target"); report.turns[reportIndex].seconds["commit_to_final_target"] = HostInferenceReport.seconds(start.duration(to: .now)) }
                     case .audio(let chunk):
                         XCTAssertTrue(chunk.committed)
-                        if firstAudio == nil { firstAudio = start.duration(to: .now); phases.append("audio") }
+                        if firstAudio == nil {
+                            firstAudio = start.duration(to: .now); phases.append("audio")
+                            report.turns[reportIndex].seconds["commit_to_first_received_pcm"] = HostInferenceReport.seconds(firstAudio!)
+                        }
+                        if let receivedFormat, receivedFormat != chunk.format {
+                            throw TranslationFailure(code: .invalidAudio, message: "Synthetic report cannot concatenate changing PCM formats.")
+                        }
+                        guard receivedAudio.count + chunk.bytes.count <= 16_000_000 else {
+                            throw TranslationFailure(code: .invalidAudio, message: "Synthetic report audio exceeded its 16 MB bound.")
+                        }
+                        receivedFormat = chunk.format; receivedAudio.append(chunk.bytes)
                         audioBytes += chunk.bytes.count
-                    case .turnCompleted: completed = true; phases.append("complete")
+                    case .turnCompleted:
+                        completed = true; phases.append("complete")
+                        report.turns[reportIndex].completed = true
+                        report.turns[reportIndex].seconds["commit_to_complete"] = HostInferenceReport.seconds(start.duration(to: .now))
                     case .failure(let failure): throw failure
                     default: break
                     }
@@ -113,13 +160,37 @@ final class TranslationCascadeInferenceTests: XCTestCase {
                 XCTAssertGreaterThan(audioBytes, 0)
                 XCTAssertTrue(completed)
                 XCTAssertEqual(phases, ["source", "target", "audio", "complete"])
+                guard !source.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                      !target.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                      completed, phases == ["source", "target", "audio", "complete"] else {
+                    throw TranslationFailure(code: .invalidEvent, message: "The synthetic turn did not deliver complete ordered source, target and audio events.")
+                }
+                let format = try XCTUnwrap(receivedFormat)
+                report.turns[reportIndex].audio = try HostInferenceAudioReport.analyze(receivedAudio, format: format)
+                if let reportDirectory {
+                    let name = fixture.source + "-" + fixture.target + ".wav"
+                    try TranslationWaveCodec.encode(receivedAudio, format: format).write(to: reportDirectory.appendingPathComponent(name), options: .atomic)
+                    report.turns[reportIndex].waveFile = name
+                }
                 print("Host cascade synthetic technical result pair=\(fixture.source)-\(fixture.target) ASR=\(manifest.recognition.modelID)@\(manifest.recognition.revision) LLM=\(manifest.translation.modelID)@\(manifest.translation.revision) speech=LFM3-Omni strategy=\(manifest.strategy.rawValue) receivedPCMBytes=\(audioBytes) commitToFirstReceivedPCM=\(String(describing: firstAudio)); not microphone/acoustic latency, meaning or voice qualification")
+                let stopping = ContinuousClock.now
                 await backend.stop(); activeBackend = nil
+                report.turns[reportIndex].seconds["backend_stop"] = HostInferenceReport.seconds(stopping.duration(to: .now))
+                report.turns[reportIndex].seconds["whole_turn_including_stop"] = HostInferenceReport.seconds(turnStart.duration(to: .now))
+                report.turns[reportIndex].mlxRunningAfterStop = await runtime.isRunning
+                report.turns[reportIndex].omniRunningAfterStop = await omni.isRunning
+                XCTAssertFalse(report.turns[reportIndex].mlxRunningAfterStop == true)
+                XCTAssertFalse(report.turns[reportIndex].omniRunningAfterStop == true)
+                try report.write(to: reportDirectory)
             }
             await monitor.stop(); await runtime.stop(); await omni.stop()
+            report.outcome = "completed"
+            try report.write(to: reportDirectory)
         } catch {
             await activeBackend?.stop()
             await monitor.stop(); await runtime.stop(); await omni.stop()
+            report.outcome = "failed"; report.failure = String(describing: error)
+            try report.write(to: reportDirectory)
             throw error
         }
         let mlxRunning = await runtime.isRunning, omniRunning = await omni.isRunning
@@ -127,10 +198,89 @@ final class TranslationCascadeInferenceTests: XCTestCase {
     }
 }
 
-private struct HostInferenceManifest: Decodable, Sendable {
-    struct Model: Decodable, Sendable { let modelID: String; let revision: String; let artifacts: [TranslationModelArtifact] }
-    struct Omni: Decodable, Sendable { let executable: String; let directory: String; let model: TranslationModelArtifact; let projector: TranslationModelArtifact }
-    struct Fixture: Decodable, Sendable {
+private struct HostInferenceReport: Encodable {
+    let manifest: HostInferenceManifest
+    let created = Date()
+    let timingScope = "Each turn starts after the previous backend.stop completed and asserts both owned processes stopped. OS filesystem/model caches are uncontrolled. Timings are not microphone/acoustic latency or a warm/cold qualification."
+    var outcome = "running"
+    var failure: String?
+    var turns: [HostInferenceTurnReport] = []
+
+    static func seconds(_ duration: Duration) -> Double {
+        Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18
+    }
+    static func prepareDirectory(_ path: String?) throws -> URL? {
+        guard let path else { return nil }
+        guard path.hasPrefix("/"), !FileManager.default.fileExists(atPath: path) else {
+            throw TranslationFailure(code: .invalidConfiguration, message: "Synthetic evidence requires a new absolute report directory; existing files are never replaced.")
+        }
+        let directory = URL(fileURLWithPath: path, isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        return directory
+    }
+    func write(to directory: URL?) throws {
+        guard let directory else { return }
+        let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]; encoder.dateEncodingStrategy = .iso8601
+        try encoder.encode(self).write(to: directory.appendingPathComponent("report.json"), options: .atomic)
+    }
+}
+
+private struct HostInferenceTurnReport: Encodable {
+    let pair: String
+    let mlxWasRunningBeforeTurn: Bool
+    let omniWasRunningBeforeTurn: Bool
+    var sourceText = ""
+    var targetText = ""
+    var completed = false
+    var seconds: [String: Double] = [:]
+    var audio: HostInferenceAudioReport?
+    var waveFile: String?
+    var mlxRunningAfterStop: Bool?
+    var omniRunningAfterStop: Bool?
+}
+
+private struct HostInferenceAudioReport: Encodable {
+    let format: TranslationPCMFormat
+    let bytes: Int
+    let sampleCount: Int
+    let durationSeconds: Double
+    let peakAbsoluteAmplitude: Double
+    let rmsAmplitude: Double
+    let nonzeroSamples: Int
+    let allSamplesFinite: Bool
+    let pcmSHA256: String
+
+    static func analyze(_ data: Data, format: TranslationPCMFormat) throws -> Self {
+        let duration = try format.duration(byteCount: data.count)
+        var peak = 0.0, squared = 0.0, nonzero = 0
+        let count = data.count / format.encoding.bytesPerSample
+        try data.withUnsafeBytes { (raw: UnsafeRawBufferPointer) in
+            for offset in stride(from: 0, to: raw.count, by: format.encoding.bytesPerSample) {
+                let sample: Double
+                switch format.encoding {
+                case .float32LittleEndian:
+                    sample = Double(Float(bitPattern: UInt32(littleEndian: raw.loadUnaligned(fromByteOffset: offset, as: UInt32.self))))
+                case .signedInt16LittleEndian:
+                    sample = Double(Int16(bitPattern: UInt16(littleEndian: raw.loadUnaligned(fromByteOffset: offset, as: UInt16.self)))) / 32_768
+                }
+                guard sample.isFinite else { throw TranslationFailure(code: .invalidAudio, message: "Received synthetic PCM contains nonfinite samples.") }
+                peak = max(peak, abs(sample)); squared += sample * sample
+                if sample != 0 { nonzero += 1 }
+            }
+        }
+        guard nonzero > 0, peak > 0, squared > 0 else {
+            throw TranslationFailure(code: .invalidAudio, message: "Received synthetic PCM is silent.")
+        }
+        return .init(format: format, bytes: data.count, sampleCount: count, durationSeconds: duration,
+            peakAbsoluteAmplitude: peak, rmsAmplitude: sqrt(squared / Double(count)), nonzeroSamples: nonzero,
+            allSamplesFinite: true, pcmSHA256: SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined())
+    }
+}
+
+private struct HostInferenceManifest: Codable, Sendable {
+    struct Model: Codable, Sendable { let modelID: String; let revision: String; let artifacts: [TranslationModelArtifact] }
+    struct Omni: Codable, Sendable { let executable: String; let directory: String; let model: TranslationModelArtifact; let projector: TranslationModelArtifact }
+    struct Fixture: Codable, Sendable {
         let source: String; let target: String; let directory: String; let artifact: TranslationModelArtifact; let synthetic: Bool
         func load() throws -> (bytes: Data, format: TranslationPCMFormat) {
             guard synthetic, artifact.size <= 2_000_000 else { throw TranslationModelStoreError.invalidManifest }
