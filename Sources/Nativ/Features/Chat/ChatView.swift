@@ -1908,6 +1908,9 @@ private struct ChatAgentStepCell: View {
             .help(showsDetails ? "Hide call details" : "Show call details")
             .disabled(isAwaitingConsent || isAwaitingImageModelSelection)
 
+            if let reference = GenerationChatJobReference.parse(message.content), message.toolStatus == .succeeded, ChatGenerationToolRegistry.modality(for: message.toolName) != nil {
+                GenerationChatJobCard(reference: reference)
+            }
             if isAwaitingImageModelSelection {
                 Divider()
                     .padding(.top, 7)

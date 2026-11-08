@@ -109,6 +109,8 @@ final class NativModel: ChatModelSwitchingSurface {
     var menuIsOpen = false
     var onMenuStateChanged: (() -> Void)?
 
+    @ObservationIgnored var generationStopPreflight: (@MainActor (String) async -> Bool)?
+    @ObservationIgnored private var explicitServerStopTask: Task<Void, Never>?
     private let server = NativProcessController()
     private var metricsClient = NativMetricsClient()
     private var metricsFetchTask: Task<Void, Never>?
@@ -397,6 +399,13 @@ final class NativModel: ChatModelSwitchingSurface {
         return settingsAppliedAtServerStart.serverBaseURL
     }
 
+    /// Snapshot the applied launch settings, never pending preference edits.
+    func generationConnection() -> GenerationConnection? {
+        guard let baseURL = activeServerBaseURL,
+              let key = settingsAppliedAtServerStart?.serverAPIKey, !key.isEmpty else { return nil }
+        return GenerationConnection(baseURL: baseURL, apiKey: key)
+    }
+
     /// Called only by an explicit processing action or a newly completed meeting.
     /// Readiness is checked separately from process launch, including with native ASR.
     func prepareAudioAnalysisServer() async throws -> NativAudioClient {
@@ -519,7 +528,18 @@ final class NativModel: ChatModelSwitchingSurface {
     }
 
     func stopServer(preserveSessionStats: Bool = false) {
-        stopServer(preserveSessionStats: preserveSessionStats, reason: .stopRequest)
+        guard let generationStopPreflight, server.isRunning else {
+            stopServer(preserveSessionStats: preserveSessionStats, reason: .stopRequest)
+            return
+        }
+        guard explicitServerStopTask == nil else { return }
+        let connection = generationConnection()
+        explicitServerStopTask = Task { [weak self] in
+            guard let self else { return }
+            defer { explicitServerStopTask = nil }
+            guard await generationStopPreflight("Stop Server"), self.generationConnection() == connection else { return }
+            self.stopServer(preserveSessionStats: preserveSessionStats, reason: .stopRequest)
+        }
     }
 
     private func stopServer(
@@ -570,6 +590,19 @@ final class NativModel: ChatModelSwitchingSurface {
             return
         }
 
+        if let generationStopPreflight {
+            guard explicitServerStopTask == nil else { return }
+            let connection = generationConnection()
+            explicitServerStopTask = Task { [weak self] in
+                guard let self else { return }
+                defer { explicitServerStopTask = nil }
+                guard await generationStopPreflight("Restart Server"), self.generationConnection() == connection else { return }
+                self.stopServer(preserveSessionStats: false, reason: .configurationRestart)
+                guard !server.isRunning else { return }
+                startServer()
+            }
+            return
+        }
         stopServer(preserveSessionStats: false, reason: .configurationRestart)
         guard !server.isRunning else {
             appendLog("\nCould not stop the current server to apply the configuration change.\n")
@@ -738,6 +771,12 @@ final class NativModel: ChatModelSwitchingSurface {
             }
 
             if self.server.isRunning {
+                if let preflight = self.generationStopPreflight, !(await preflight("Switch Model")) {
+                    self.modelSwitchInProgress = false; self.modelSwitchTargetID = nil
+                    self.modelSwitchWatchdog?.cancel(); self.modelSwitchWatchdog = nil
+                    self.notifyMenuStateChanged()
+                    return
+                }
                 self.isStoppingForModelSwitch = true
                 self.stopServer(preserveSessionStats: true, reason: .modelSwitch)
                 await Task.yield()

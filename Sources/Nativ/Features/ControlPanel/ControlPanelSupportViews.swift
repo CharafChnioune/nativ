@@ -210,27 +210,6 @@ struct ControlPanelSidebarMaterial: NSViewRepresentable {
     }
 }
 
-extension Color {
-    static func nativMaterialOverlay(for colorScheme: ColorScheme) -> Color {
-        (colorScheme == .dark ? Color.black : Color.white).opacity(0.1)
-    }
-
-    static let nativMainContentBackground = Color(
-        nsColor: NSColor(name: NSColor.Name("NativMainContentBackground")) { appearance in
-            if appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua {
-                return NSColor(
-                    srgbRed: 24 / 255,
-                    green: 24 / 255,
-                    blue: 24 / 255,
-                    alpha: 1
-                )
-            }
-
-            return .windowBackgroundColor
-        }
-    )
-}
-
 /// A small pulsing download arrow shown at the trailing edge of the Models sidebar row
 /// while a model is downloading.
 struct ModelsDownloadArrow: View {

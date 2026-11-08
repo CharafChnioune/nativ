@@ -15,6 +15,7 @@ struct ImageGenerationView: View {
     let workspaceMode: ChatWorkspaceMode
     let onSelectWorkspaceMode: (ChatWorkspaceMode) -> Void
     let onExploreImageModels: () -> Void
+    var onAnimate: ((GeneratedImage) -> Void)? = nil
     @StateObject private var localLibrary = LocalModelLibrary()
     @State private var transcriptScrollPosition = ScrollPosition(edge: .bottom)
     @State private var composerHeight: CGFloat = 0
@@ -121,6 +122,7 @@ struct ImageGenerationView: View {
                             allowsEditing: selectedModelSupportsEditing,
                             onUseOutput: viewModel.useAsReference,
                             onUseInput: viewModel.useAsReference,
+                            onAnimate: onAnimate,
                             onSave: viewModel.save
                         )
                         .id(turn.id)
@@ -646,6 +648,7 @@ private struct ImageGenerationTurnView: View {
     let allowsEditing: Bool
     let onUseOutput: (GeneratedImage) -> Void
     let onUseInput: (ChatImageAttachment) -> Void
+    var onAnimate: ((GeneratedImage) -> Void)? = nil
     let onSave: (GeneratedImage) -> Void
 
     private let columns = [
@@ -719,6 +722,7 @@ private struct ImageGenerationTurnView: View {
                         isGenerating: isGenerating,
                         allowsEditing: allowsEditing,
                         onUseAsReference: { onUseOutput(output) },
+                        onAnimate: onAnimate.map { action in { action(output) } },
                         onSave: { onSave(output) }
                     )
                 }
@@ -733,6 +737,7 @@ private struct GeneratedImageCard: View {
     let isGenerating: Bool
     let allowsEditing: Bool
     let onUseAsReference: () -> Void
+    var onAnimate: (() -> Void)? = nil
     let onSave: () -> Void
 
     var body: some View {
@@ -768,6 +773,10 @@ private struct GeneratedImageCard: View {
                     .buttonStyle(.bordered)
                     .disabled(isGenerating || isActiveReference)
                     .help("Use this image as the next edit reference")
+                }
+
+                if let onAnimate {
+                    Button("Animate", action: onAnimate).buttonStyle(.bordered).help("Open a Video draft from this image")
                 }
 
                 Button(action: onSave) {

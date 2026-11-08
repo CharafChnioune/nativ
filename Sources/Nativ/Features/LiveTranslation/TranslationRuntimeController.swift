@@ -27,6 +27,7 @@ actor TranslationRuntimeController {
     let contextSize: Int
   }
   private var process: Process?
+    private var computeLease: GenerationComputeLease?
   private var outputPipe: Pipe?
   private var listenerBuffer = ""
   private var listener: Int?
@@ -113,7 +114,8 @@ actor TranslationRuntimeController {
       await shutdown.value
       return
     }
-    guard let owned = process else { return }
+    guard let owned = process else { computeLease?.close(); computeLease = nil; return }
+    let ownedLease = computeLease; computeLease = nil
     process = nil
     let pipe = outputPipe
     outputPipe = nil
@@ -134,6 +136,7 @@ actor TranslationRuntimeController {
     shutdown = cleanup
     await cleanup.value
     shutdown = nil
+    ownedLease?.close()
   }
 
   private func cancelLaunch(_ id: UUID) async { if launchID == id { await stop() } }
@@ -163,7 +166,9 @@ actor TranslationRuntimeController {
     child.arguments = args
     child.environment = Self.sanitizedEnvironment(
       ProcessInfo.processInfo.environment, bearerToken: key)
-    child.standardInput = FileHandle.nullDevice
+    let acquired = try GenerationComputeLease.acquire()
+    computeLease = acquired
+    child.standardInput = try acquired.inheritedFileHandle()
     child.standardOutput = FileHandle.nullDevice
     child.standardError = pipe
     pipe.fileHandleForReading.readabilityHandler = { [weak self] handle in

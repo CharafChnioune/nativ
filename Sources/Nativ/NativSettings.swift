@@ -1463,6 +1463,7 @@ struct NativSettings: Codable, Equatable {
         if let modelConfigsJSON = encodedModelConfigs {
             environment["NATIV_MODEL_CONFIGS"] = modelConfigsJSON
         }
+        environment.merge(GenerationProviderCredentials.launchEnvironment()) { _, new in new }
         return environment
     }
 

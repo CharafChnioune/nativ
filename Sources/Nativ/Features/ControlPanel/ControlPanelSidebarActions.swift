@@ -258,6 +258,10 @@ extension ControlPanelView {
             switch recent.selection {
             case .chat(let sessionID):
                 guard await deleteChatSession(sessionID) else { continue }
+            case .generation(let storeID, let modality, let sessionID):
+                let library = modality == "music" ? dependencies.musicLibrary : dependencies.videoLibrary
+                guard library.storeID == storeID else { continue }
+                do { try await library.updateSession(sessionID, hidden: true) } catch { continue }
             case .imageGeneration(let sessionID):
                 imageGeneration.deleteSession(sessionID)
             case .tab, .extensionPage:

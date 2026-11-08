@@ -50,6 +50,11 @@ final class ArtifactStore: ObservableObject {
     @Published private(set) var favoriteIDs: Set<UUID> = []
     @Published private(set) var displayNames: [UUID: String] = [:]
 
+    private var generationCancellables: [AnyCancellable] = []
+    private var generationLibraries: [GenerationLibraryObserver] = []
+    private var serviceArtifacts: [String: [Artifact]] = [:]
+    private var serviceCacheURLs: [UUID: URL] = [:]
+    private var serviceDownloads: Set<UUID> = []
     private var mutationRevision = 0
     private var knownFingerprint: String?
     private var knownCandidates: [Artifact]?
@@ -75,8 +80,10 @@ final class ArtifactStore: ObservableObject {
         rebuild: Rebuild? = nil,
         mediaStore: MediaAssetStore = .shared,
         trash: ArtifactTrash? = nil,
-        deletionHandler: DeletionHandler? = nil
+        deletionHandler: DeletionHandler? = nil,
+        generationLibraries: [GenerationLibraryObserver] = []
     ) {
+        self.generationLibraries = generationLibraries
         self.mediaStore = mediaStore
         rebuildIndex = rebuild ?? Self.rebuild
         self.trash = trash
@@ -99,7 +106,7 @@ final class ArtifactStore: ObservableObject {
         favoriteIDs = Self.loadFavorites(favoritesURL)
         displayNames = Self.loadNames(displayNamesURL)
         let stored = Self.loadIndex(indexURL)
-        artifacts = stored.artifacts.filter { artifact in !((trash?.records ?? []).contains { $0.id == artifact.id }) }
+        artifacts = stored.artifacts.filter { $0.serviceReference == nil }.filter { artifact in !((trash?.records ?? []).contains { $0.id == artifact.id }) }
         knownFingerprint = stored.fingerprint
         knownCandidates = stored.candidates
         persistedDataChangeCancellable = persistedDataChanges?.changes
@@ -122,12 +129,34 @@ final class ArtifactStore: ObservableObject {
         fileIndexCancellable = fileIndex?.$revision.dropFirst().sink { [weak self] _ in
             self?.refresh()
         }
+        for library in generationLibraries {
+            library.$jobs.combineLatest(library.$assets).sink { [weak self] jobs, assets in
+                guard let self else { return }
+                serviceArtifacts[library.modality.rawValue] = GenerationArtifactProjection.artifacts(jobs: jobs, assets: assets)
+                artifacts = artifacts.filter { $0.serviceReference == nil } + serviceArtifacts.values.flatMap { $0 }
+            }.store(in: &generationCancellables)
+        }
         if refreshesAutomatically {
             refresh()
         }
     }
 
     func fileURL(for artifact: Artifact) -> URL? {
+        if let reference = artifact.serviceReference {
+            if let cached = serviceCacheURLs[artifact.id], FileManager.default.fileExists(atPath: cached.path) { return cached }
+            guard !serviceDownloads.contains(artifact.id), let library = generationLibraries.first(where: { $0.modality.rawValue == reference.modality && $0.storeID == reference.storeID }), let asset = library.assets[reference.assetID] else { return nil }
+            serviceDownloads.insert(artifact.id)
+            Task { [weak self] in
+                guard let self else { return }
+                defer { serviceDownloads.remove(artifact.id) }
+                do {
+                    let url = try await library.mediaURL(asset: asset)
+                    serviceCacheURLs[artifact.id] = url
+                    objectWillChange.send()
+                } catch { trash?.errorMessage = error.localizedDescription }
+            }
+            return nil
+        }
         if artifact.workFileURL != nil { return artifact.validatedWorkFileURL }
         if let asset = artifact.asset, let url = mediaStore.fileURL(for: asset) { return url }
         return cacheDirectory.appendingPathComponent(artifact.relativePath)
@@ -264,7 +293,7 @@ final class ArtifactStore: ObservableObject {
         isRefreshing = true
         let cache = cacheDirectory
         let index = indexURL
-        let known = CatalogSnapshot(fingerprint: knownFingerprint, artifacts: artifacts, candidates: knownCandidates)
+        let known = CatalogSnapshot(fingerprint: knownFingerprint, artifacts: artifacts.filter { $0.serviceReference == nil }, candidates: knownCandidates)
         let revision = mutationRevision
         let rebuild = rebuildIndex
         Task.detached(priority: .utility) {
@@ -272,7 +301,7 @@ final class ArtifactStore: ObservableObject {
             await MainActor.run {
                 if revision == self.mutationRevision {
                     let deletedIDs = Set(self.trash?.records.map(\.id) ?? [])
-                    self.artifacts = rebuilt.artifacts.filter { !deletedIDs.contains($0.id) }
+                    self.artifacts = rebuilt.artifacts.filter { $0.serviceReference == nil && !deletedIDs.contains($0.id) } + self.serviceArtifacts.values.flatMap { $0 }
                     self.knownFingerprint = rebuilt.fingerprint
                     self.knownCandidates = rebuilt.candidates
                 } else {
@@ -296,6 +325,18 @@ final class ArtifactStore: ObservableObject {
     func delete(_ toDelete: [Artifact]) -> Set<Artifact.ID> {
         var deletedIDs: Set<Artifact.ID> = []
         for artifact in toDelete {
+            if let reference = artifact.serviceReference {
+                if let library = generationLibraries.first(where: { $0.storeID == reference.storeID && $0.modality.rawValue == reference.modality }), let asset = library.assets[reference.assetID] {
+                    Task {
+                        do {
+                            guard let job = library.jobs.first(where: { $0.jobID == reference.jobID }) else { return }
+                            try await library.removeSessionUsageAndTrash(job: job)
+                        }
+                        catch { trash?.errorMessage = error.localizedDescription }
+                    }
+                }
+                continue
+            }
             guard artifact.workFileURL == nil, !deletedIDs.contains(artifact.id), deletionHandler(artifact) else {
                 continue
             }
@@ -306,7 +347,7 @@ final class ArtifactStore: ObservableObject {
             knownFingerprint = nil
         }
         artifacts.removeAll { deletedIDs.contains($0.id) }
-        Self.writeIndex(artifacts, fingerprint: nil, to: indexURL)
+        Self.writeIndex(artifacts.filter { $0.serviceReference == nil }, fingerprint: nil, to: indexURL)
         return deletedIDs
     }
 
@@ -374,6 +415,10 @@ final class ArtifactStore: ObservableObject {
     }
 
     func chatAttachment(for artifact: Artifact) -> ChatImageAttachment? {
+        if var reference = artifact.serviceReference {
+            reference.filename = artifact.filename; reference.mimeType = artifact.mimeType; reference.byteSize = Int64(artifact.byteSize)
+            return ChatImageAttachment(serviceReference: reference)
+        }
         guard let asset = artifact.asset, mediaStore.fileURL(for: asset) != nil else { return nil }
         var attachment = ChatImageAttachment(
             id: artifact.id, filename: artifact.filename, mimeType: artifact.mimeType, asset: asset

@@ -16,6 +16,9 @@ struct ChatToolExecutionContext: Sendable {
     var browsingMaximumResultBytes = ChatBrowsingBudget.maximumBytes(context: 8192)
     var huggingFaceToken: String? = nil
     var analyticsDatabaseURL: URL? = nil
+    var generationConnection: GenerationConnection? = nil
+    var generationConnectionIdentity: String? = nil
+    var generationIntentID: String? = nil
     var imageToolDependencies = ChatImageToolDependencies.live
     var fileReadRootPath: String? = nil
     var fileReadTracker: ChatReadFileTracker? = nil
@@ -143,6 +146,9 @@ enum ChatToolRegistry {
                 configuration: nil
             )
         }
+        tools += ChatGenerationToolRegistry.definitions().map {
+            ChatNativeToolDescriptor(definition: $0, displayDescription: "Create media with a deliberately selected configured provider.", configuration: nil)
+        }
         tools += ChatModelLibraryToolRegistry.definitions().map {
             ChatNativeToolDescriptor(
                 definition: $0,
@@ -259,6 +265,14 @@ enum ChatToolDispatcher {
     private typealias FailureHandler = @Sendable (String, Error) -> String
 
     private static let handlers: [String: Handler] = [
+        ChatGenerationToolRegistry.music: { call, context in
+            let content = try await ChatGenerationToolExecutor().execute(call: call, connection: context.generationConnection, connectionIdentity: context.generationConnectionIdentity, intentID: context.generationIntentID)
+            return ChatToolExecutionOutcome(content: content, attachments: [])
+        },
+        ChatGenerationToolRegistry.video: { call, context in
+            let content = try await ChatGenerationToolExecutor().execute(call: call, connection: context.generationConnection, connectionIdentity: context.generationConnectionIdentity, intentID: context.generationIntentID)
+            return ChatToolExecutionOutcome(content: content, attachments: [])
+        },
         ChatWorkToolRegistry.toolName: { call, context in
             try await executeWorkTool(call: call, context: context)
         },
@@ -692,6 +706,10 @@ enum ChatToolConsentRouter {
 enum ChatToolPresentation {
     static func title(toolName: String?, status: ChatTranscriptMessage.ToolStatus?) -> String {
         switch toolName {
+        case ChatGenerationToolRegistry.music:
+            return status == .succeeded ? "Music job submitted" : "Generate music"
+        case ChatGenerationToolRegistry.video:
+            return status == .succeeded ? "Video job submitted" : "Generate video"
         case ChatImageToolRegistry.generateToolName:
             return imageTitle(isEdit: false, status: status)
         case ChatImageToolRegistry.editToolName:

@@ -772,3 +772,24 @@ struct NativHoverCloseButton: View {
         .help(help)
     }
 }
+
+extension Color {
+    static func nativMaterialOverlay(for colorScheme: ColorScheme) -> Color {
+        (colorScheme == .dark ? Color.black : Color.white).opacity(0.1)
+    }
+
+    static let nativMainContentBackground = Color(
+        nsColor: NSColor(name: NSColor.Name("NativMainContentBackground")) { appearance in
+            if appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua {
+                return NSColor(
+                    srgbRed: 24 / 255,
+                    green: 24 / 255,
+                    blue: 24 / 255,
+                    alpha: 1
+                )
+            }
+
+            return .windowBackgroundColor
+        }
+    )
+}

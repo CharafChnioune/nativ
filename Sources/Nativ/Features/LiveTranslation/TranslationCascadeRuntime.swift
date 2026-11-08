@@ -13,6 +13,7 @@ actor TranslationCascadeRuntime {
     }
 
     private var process: Process?
+    private var computeLease: GenerationComputeLease?
     private var output: Pipe?
     private var buffer = ""
     private var port: Int?
@@ -120,7 +121,8 @@ actor TranslationCascadeRuntime {
         port = nil
         buffer = ""
         if let shutdown { await shutdown.value; return }
-        guard let owned = process else { return }
+        guard let owned = process else { computeLease?.close(); computeLease = nil; return }
+    let ownedLease = computeLease; computeLease = nil
         process = nil
         let pipe = output
         output = nil
@@ -140,6 +142,7 @@ actor TranslationCascadeRuntime {
         shutdown = cleanup
         await cleanup.value
         shutdown = nil
+    ownedLease?.close()
     }
 
     private func cancelLaunch(_ id: UUID) async {
@@ -156,7 +159,9 @@ actor TranslationCascadeRuntime {
         child.executableURL = try executable ?? Nativ.executableURL()
         child.arguments = Self.arguments
         child.environment = Self.sanitizedEnvironment(ProcessInfo.processInfo.environment, bearerToken: key)
-        child.standardInput = FileHandle.nullDevice
+        let acquired = try GenerationComputeLease.acquire()
+    computeLease = acquired
+    child.standardInput = try acquired.inheritedFileHandle()
         let pipe = Pipe()
         child.standardOutput = pipe
         child.standardError = pipe
@@ -224,6 +229,8 @@ actor TranslationCascadeRuntime {
         // ffmpeg is used by prepared local audio models; no inherited model, preload or cloud configuration.
         environment["PATH"] = "/opt/homebrew/bin:/usr/local/bin:" + (environment["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin")
         environment["MLX_VLM_SERVER_API_KEY"] = bearerToken
+        environment["NATIV_PRIVATE_TRANSLATION_RUNTIME"] = "1"
+        environment["NATIV_INHERITED_COMPUTE_FD"] = "0"
         environment["PYTHONNOUSERSITE"] = "1"
         environment["PYTHONUNBUFFERED"] = "1"
         environment["HF_HUB_OFFLINE"] = "1"

@@ -19,11 +19,13 @@ struct SidebarRecentsSnapshot: Equatable {
     init(
         chatSessions: [ChatSessionSummary],
         imageSessions: [ImageGenerationSessionSummary],
-        projects: [ChatProject] = []
+        projects: [ChatProject] = [],
+        generationSessions: [GenerationSession] = []
     ) {
         let recentSessions =
             (chatSessions.map(ControlPanelRecentSession.init(chat:))
-            + imageSessions.map(ControlPanelRecentSession.init(imageGeneration:))).sorted(
+            + imageSessions.map(ControlPanelRecentSession.init(imageGeneration:))
+            + generationSessions.filter { !$0.hidden }.map(ControlPanelRecentSession.init(generation:))).sorted(
                 by: ControlPanelRecentSession.recencySort)
         let projectIDs = Set(projects.map(\.id))
         let standaloneSessions = recentSessions.filter {
@@ -85,27 +87,36 @@ final class ChatSidebarState: ObservableObject {
     init(
         chat: ChatViewModel,
         imageGeneration: ImageGenerationViewModel,
-        projects: ChatProjectStore
+        projects: ChatProjectStore,
+        music: GenerationLibraryObserver? = nil,
+        video: GenerationLibraryObserver? = nil
     ) {
         recents = SidebarRecentsSnapshot(
             chatSessions: chat.sessions,
             imageSessions: imageGeneration.sessions,
-            projects: projects.projects
+            projects: projects.projects,
+            generationSessions: (music?.sessions ?? []) + (video?.sessions ?? [])
         )
         currentChatSessionID = chat.currentSessionID
         currentImageSessionID = imageGeneration.currentSessionID
         isGeneratingImage = imageGeneration.isGenerating
 
-        Publishers.CombineLatest3(
+        let generations = Publishers.CombineLatest(
+            music?.$sessions.eraseToAnyPublisher() ?? Just([]).eraseToAnyPublisher(),
+            video?.$sessions.eraseToAnyPublisher() ?? Just([]).eraseToAnyPublisher()
+        ).map { $0 + $1 }
+        Publishers.CombineLatest4(
             chat.$sessions.removeDuplicates(),
             imageGeneration.$sessions.removeDuplicates(),
-            projects.$projects.removeDuplicates()
+            projects.$projects.removeDuplicates(),
+            generations
         )
-        .map { sessions, imageSessions, projects in
+        .map { sessions, imageSessions, projects, generationSessions in
             SidebarRecentsSnapshot(
                 chatSessions: sessions,
                 imageSessions: imageSessions,
-                projects: projects
+                projects: projects,
+                generationSessions: generationSessions
             )
         }
         .removeDuplicates()
@@ -127,12 +138,14 @@ enum ControlPanelSidebarSelection: Hashable {
     case extensionPage(String)
     case chat(UUID)
     case imageGeneration(UUID)
+    case generation(storeID: String, modality: String, sessionID: String)
 }
 
 struct ControlPanelRecentSession: Identifiable, Equatable {
     enum ID: Hashable {
         case chat(UUID)
         case imageGeneration(UUID)
+    case generation(storeID: String, modality: String, sessionID: String)
     }
 
     let id: ID
@@ -169,6 +182,14 @@ struct ControlPanelRecentSession: Identifiable, Equatable {
         scheduledTaskID = nil
     }
 
+    init(generation session: GenerationSession) {
+        id = .generation(storeID: session.storeID, modality: session.modality.rawValue, sessionID: session.id)
+        title = session.title.isEmpty ? "Untitled" : session.title
+        createdAt = Date(timeIntervalSince1970: session.createdAt)
+        updatedAt = Date(timeIntervalSince1970: session.updatedAt)
+        pinned = false; pinnedOrder = nil; sessionOrder = nil; projectID = nil; scheduledTaskID = nil
+    }
+
     var chatID: UUID? {
         if case .chat(let sessionID) = id {
             return sessionID
@@ -186,6 +207,8 @@ struct ControlPanelRecentSession: Identifiable, Equatable {
             return .chat(sessionID)
         case .imageGeneration(let sessionID):
             return .imageGeneration(sessionID)
+        case .generation(let storeID, let modality, let sessionID):
+            return .generation(storeID: storeID, modality: modality, sessionID: sessionID)
         }
     }
 
@@ -202,6 +225,8 @@ struct ControlPanelRecentSession: Identifiable, Equatable {
             scheduledTaskID == nil ? nil : "clock"
         case .imageGeneration:
             "photo"
+        case .generation(_, let modality, _):
+            modality == "music" ? "waveform" : "film"
         }
     }
 
@@ -211,6 +236,8 @@ struct ControlPanelRecentSession: Identifiable, Equatable {
             scheduledTaskID == nil ? nil : "Scheduled task"
         case .imageGeneration:
             "Image session"
+        case .generation(_, let modality, _):
+            modality == "music" ? "Music session" : "Video session"
         }
     }
 

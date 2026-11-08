@@ -4,6 +4,8 @@ import SwiftUI
 enum ChatWorkspaceMode: String, CaseIterable, Identifiable {
     case chat = "Chat"
     case images = "Images"
+    case music = "Music"
+    case video = "Video"
 
     var id: Self { self }
 }

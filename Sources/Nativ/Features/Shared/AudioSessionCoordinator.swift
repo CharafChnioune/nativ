@@ -24,6 +24,8 @@ struct AudioSessionConflict: LocalizedError {
 final class AudioSessionCoordinator {
     static let shared = AudioSessionCoordinator()
     private var leases: [UUID: AudioSessionLease] = [:]
+    private var mediaPauses: [UUID: @MainActor () async -> Void] = [:]
+    private var mediaTeardowns: [UUID: Task<Void, Never>] = [:]
     private var passiveSuspend: (@MainActor () async -> Void)?
     private var passiveResume: (@MainActor () -> Void)?
     private var passiveIsSuspended = false
@@ -37,12 +39,19 @@ final class AudioSessionCoordinator {
         passiveResume = resume
     }
 
+    /// Media is interruptible; recording/translation leases retain their existing strict ownership.
+    func acquireInterruptiblePlayback(owner: AudioSessionOwner, pause: @escaping @MainActor () async -> Void) async throws -> AudioSessionLease {
+        let lease = try await acquire(owner: owner, resources: [.playback])
+        mediaPauses[lease.id] = pause
+        return lease
+    }
+
     func acquire(owner: AudioSessionOwner, resources: Set<AudioSessionResource>, passive: Bool = false) async throws -> AudioSessionLease {
         try Task.checkCancellation()
         let lease = AudioSessionLease(id: UUID(), owner: owner, resources: resources, passive: passive)
         // Foreground resources conflict across owners, even mic vs speech playback, to prevent feedback.
         if let conflict = leases.values.first(where: {
-            (!$0.passive || passive) && ($0.owner != owner || !$0.resources.isDisjoint(with: resources))
+            (passive || mediaPauses[$0.id] == nil) && (!$0.passive || passive) && ($0.owner != owner || !$0.resources.isDisjoint(with: resources))
         }) { throw AudioSessionConflict(ownerName: conflict.owner.name) }
         let passiveLeases = leases.values.filter(\.passive)
         if !passive, !passiveLeases.isEmpty, passiveSuspend == nil {
@@ -50,6 +59,20 @@ final class AudioSessionCoordinator {
         }
         // Reserve before suspending so reentrant foreground requests cannot both win.
         leases[lease.id] = lease
+        if !passive {
+            let interruptible = leases.values.filter { $0.id != lease.id && mediaPauses[$0.id] != nil }
+            for old in interruptible {
+                leases[old.id] = nil
+                if let pause = mediaPauses.removeValue(forKey: old.id) {
+                    mediaTeardowns[old.id] = Task { await pause() }
+                }
+            }
+            let barriers = mediaTeardowns
+            for (id, barrier) in barriers {
+                await barrier.value
+                mediaTeardowns[id] = nil
+            }
+        }
         if !passive, !passiveIsSuspended {
             passiveIsSuspended = true
             for old in passiveLeases { leases[old.id] = nil }
@@ -78,6 +101,7 @@ final class AudioSessionCoordinator {
     func release(_ lease: AudioSessionLease) {
         guard leases[lease.id] == lease else { return }
         leases[lease.id] = nil
+        mediaPauses[lease.id] = nil
         if passiveIsSuspended, !leases.values.contains(where: { !$0.passive }) {
             passiveIsSuspended = false
             passiveResume?()

@@ -53,6 +53,8 @@ extension ControlPanelView {
                 mcpHost: mcpHost,
                 extensionManager: extensionManager,
                 imageGeneration: imageGeneration,
+                musicGeneration: dependencies.musicGeneration,
+                videoGeneration: dependencies.videoGeneration,
                 projects: projects,
                 showsConfiguration: $isModelConfigurationVisible,
                 onExploreImageModels: navigation.openImageModelDiscovery,
@@ -93,6 +95,11 @@ extension ControlPanelView {
                     case .chat:
                         applySidebarSelection(.chat(artifact.sessionID))
                         chat.scrollTargetMessageID = artifact.workFileURL == nil ? artifact.messageID : nil
+                    case .musicGeneration, .videoGeneration:
+                        let music = artifact.workspace == .musicGeneration
+                        let workspace = music ? dependencies.musicGeneration as GenerationWorkspaceModel : dependencies.videoGeneration
+                        workspace.selectedSessionID = artifact.serviceReference?.sessionID
+                        selectChatWorkspaceMode(music ? .music : .video)
                     case .imageGeneration:
                         applySidebarSelection(.imageGeneration(artifact.sessionID))
                     }
@@ -229,6 +236,12 @@ extension ControlPanelView {
             }
             chatWorkspaceMode = .chat
             selectedTab = .chat
+        case .generation(let storeID, let modality, let sessionID):
+            let workspace: GenerationWorkspaceModel = modality == "music" ? dependencies.musicGeneration : dependencies.videoGeneration
+            guard workspace.library.storeID == storeID else { return }
+            workspace.selectedSessionID = sessionID
+            chatWorkspaceMode = modality == "music" ? .music : .video
+            sidebarSelection = selection; selectedTab = .chat
         case .imageGeneration(let sessionID):
             if sidebarState.recents.containsImageSession(sessionID) {
                 imageGeneration.selectSession(sessionID)
@@ -251,6 +264,8 @@ struct ChatWorkspaceView: View {
     let mcpHost: MCPHostManager
     let extensionManager: NativExtensionManager
     let imageGeneration: ImageGenerationViewModel
+    let musicGeneration: MusicGenerationViewModel
+    let videoGeneration: VideoGenerationViewModel
     let projects: ChatProjectStore
     @Binding var showsConfiguration: Bool
     let onExploreImageModels: (ChatImageOperation) -> Void
@@ -272,13 +287,21 @@ struct ChatWorkspaceView: View {
                     onExploreImageModels: onExploreImageModels,
                     onFindDraftModels: onFindDraftModels
                 )
+            case .music:
+                MusicGenerationView(model: model, viewModel: musicGeneration, onSelectMode: onSelectMode)
+            case .video:
+                VideoGenerationView(model: model, viewModel: videoGeneration, onSelectMode: onSelectMode)
             case .images:
                 ImageGenerationView(
                     model: model,
                     viewModel: imageGeneration,
                     workspaceMode: mode,
                     onSelectWorkspaceMode: onSelectMode,
-                    onExploreImageModels: { onExploreImageModels(.generate) }
+                    onExploreImageModels: { onExploreImageModels(.generate) },
+                    onAnimate: { output in
+                        videoGeneration.animate(image: output.imageData, filename: output.filename)
+                        onSelectMode(.video)
+                    }
                 )
             }
         }

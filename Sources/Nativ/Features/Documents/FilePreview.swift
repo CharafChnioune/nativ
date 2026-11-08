@@ -72,6 +72,8 @@ struct ChatAttachmentPreview: View {
                 } else {
                     unavailable
                 }
+            case .generatedMedia:
+                GenerationLocalMediaPreview(url: previewFile.url, isVideo: attachment.serviceReference?.modality == "video")
             case .document(.pdf):
                 if let pdfDocument {
                     PDFFilePreview(

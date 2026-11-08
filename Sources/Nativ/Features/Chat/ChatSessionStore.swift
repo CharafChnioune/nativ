@@ -293,6 +293,7 @@ struct ChatTranscriptMessage: Identifiable, Equatable, Codable {
     var isThinkingEnabled: Bool
     var thinkingDuration: TimeInterval?
     var imageAttachments: [ChatImageAttachment]
+    var generationAssets: [GenerationServiceReference] = []
     var responseMetrics: ChatResponseMetrics?
     var compactionMetrics: ChatCompactionMetrics?
     var savedWorkFiles: [String]?
@@ -358,6 +359,7 @@ struct ChatTranscriptMessage: Identifiable, Equatable, Codable {
         case isThinkingEnabled
         case thinkingDuration
         case imageAttachments
+        case generationAssets
         case responseMetrics
         case compactionMetrics
         case savedWorkFiles
@@ -397,6 +399,7 @@ struct ChatTranscriptMessage: Identifiable, Equatable, Codable {
         imageAttachments =
             try container.decodeIfPresent([ChatImageAttachment].self, forKey: .imageAttachments)
             ?? []
+        generationAssets = try container.decodeIfPresent([GenerationServiceReference].self, forKey: .generationAssets) ?? []
         responseMetrics = try container.decodeIfPresent(
             ChatResponseMetrics.self, forKey: .responseMetrics)
         compactionMetrics = try container.decodeIfPresent(ChatCompactionMetrics.self, forKey: .compactionMetrics)
@@ -436,6 +439,7 @@ struct ChatTranscriptMessage: Identifiable, Equatable, Codable {
         try container.encode(isThinkingEnabled, forKey: .isThinkingEnabled)
         try container.encodeIfPresent(thinkingDuration, forKey: .thinkingDuration)
         try container.encode(imageAttachments, forKey: .imageAttachments)
+        if !generationAssets.isEmpty { try container.encode(generationAssets, forKey: .generationAssets) }
         try container.encodeIfPresent(responseMetrics, forKey: .responseMetrics)
         try container.encodeIfPresent(compactionMetrics, forKey: .compactionMetrics)
         try container.encodeIfPresent(savedWorkFiles, forKey: .savedWorkFiles)
@@ -458,7 +462,9 @@ struct ChatTranscriptMessage: Identifiable, Equatable, Codable {
     ) -> MLXChatMessage? {
         switch role {
         case .user:
-            let requestContent = [ChatAnnotation.prompt(annotations, request: content), documentContext ?? ""]
+            let generated = generationAssets + imageAttachments.compactMap(\.serviceReference)
+            let mediaContext = generated.map { "Generated \($0.modality) attachment: \($0.filename ?? $0.assetID). This is a saved media reference; it is not an image input or microphone recording." }.joined(separator: "\n")
+            let requestContent = [ChatAnnotation.prompt(annotations, request: content), documentContext ?? "", mediaContext]
                 .filter { !$0.isEmpty }
                 .joined(separator: "\n\n")
             let imageParts =
@@ -717,11 +723,12 @@ struct ChatImageAttachment: Identifiable, Equatable, Codable, Sendable {
     private(set) var asset: MediaAssetReference?
     var generation: ArtifactGeneration? = nil
     var origin: ArtifactSource? = nil
+    var serviceReference: GenerationServiceReference? = nil
 
     var assetID: UUID { asset?.id ?? id }
 
     enum CodingKeys: String, CodingKey {
-        case id, filename, mimeType, base64Data, asset, generation, origin
+        case id, filename, mimeType, base64Data, asset, generation, origin, serviceReference
     }
 
     var base64Data: String {
@@ -774,6 +781,14 @@ struct ChatImageAttachment: Identifiable, Equatable, Codable, Sendable {
         self.init(id: id, filename: url.lastPathComponent, mimeType: mimeType, asset: asset, origin: .uploaded)
     }
 
+    init(serviceReference: GenerationServiceReference) {
+        self.id = GenerationArtifactProjection.stableID(storeID: serviceReference.storeID, assetID: serviceReference.assetID)
+        self.filename = serviceReference.filename ?? (serviceReference.modality == "music" ? "Generated audio" : "Generated video")
+        self.mimeType = serviceReference.mimeType ?? (serviceReference.modality == "music" ? "audio/wav" : "video/mp4")
+        self.inlineBase64Data = nil; self.asset = nil; self.origin = .generated
+        self.serviceReference = serviceReference
+    }
+
     var dataURL: String {
         "data:\(mimeType);base64,\(base64Data)"
     }
@@ -804,6 +819,7 @@ struct ChatImageAttachment: Identifiable, Equatable, Codable, Sendable {
         mimeType = try container.decode(String.self, forKey: .mimeType)
         asset = try container.decodeIfPresent(MediaAssetReference.self, forKey: .asset)
         generation = try container.decodeIfPresent(ArtifactGeneration.self, forKey: .generation)
+        serviceReference = try container.decodeIfPresent(GenerationServiceReference.self, forKey: .serviceReference)
         origin = try container.decodeIfPresent(ArtifactSource.self, forKey: .origin)
         inlineBase64Data = try container.decodeIfPresent(String.self, forKey: .base64Data)
     }
@@ -816,6 +832,7 @@ struct ChatImageAttachment: Identifiable, Equatable, Codable, Sendable {
         try container.encodeIfPresent(asset, forKey: .asset)
         try container.encodeIfPresent(generation, forKey: .generation)
         try container.encodeIfPresent(origin, forKey: .origin)
+        try container.encodeIfPresent(serviceReference, forKey: .serviceReference)
         if asset == nil { try container.encodeIfPresent(inlineBase64Data, forKey: .base64Data) }
     }
 
