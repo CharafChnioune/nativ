@@ -1,0 +1,21 @@
+{
+  "sha256": "d7f415a5b3aefa165e742daef7b7ef70028a280ad6687fe20129b14c4544ffbf",
+  "byte_size": 778,
+  "mime": "image/png",
+  "width": 64,
+  "height": 32,
+  "oriented_source_size": [
+    18,
+    30
+  ],
+  "transform": {
+    "version": 1,
+    "fit_policy": "contain",
+    "crop": null,
+    "background": "#123456"
+  },
+  "color_space": "sRGB",
+  "encoding": "RGB PNG",
+  "metadata_stripped": true,
+  "original_sha256": "13e386d8cd1810c2a86bab8cb67d70f3c486f6832be098e74bc5c12521ded20f"
+}
