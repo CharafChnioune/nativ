@@ -336,6 +336,16 @@ final class ChatWorkBrowser: NSObject, ObservableObject, WKNavigationDelegate, W
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         guard navigation === pendingNavigation else { return }
         pendingNavigation = nil
+        // WebKit can finish a rejected HTTP(S) load (for example a blocked port)
+        // at about:blank without calling either failure delegate. That replacement
+        // document must not count as the requested website or expose live controls.
+        if navigationFailure == nil, let requestedURL = loadedURL,
+           (try? ChatWorkState.webURL(webView.url?.absoluteString ?? "")) == nil {
+            let message = "The requested website did not load. Open another URL to continue."
+            navigationFailure = ChatWorkNavigationFailure(url: requestedURL, message: message)
+            errorMessage = message
+            elementLabels = [:]
+        }
         if navigationFailure == nil { errorMessage = nil }
         refreshNavigation()
     }

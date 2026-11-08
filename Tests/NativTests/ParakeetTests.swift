@@ -1,7 +1,19 @@
 import AVFoundation
+import ObjectiveC
 import XCTest
 
 final class ParakeetTests: XCTestCase {
+    func testRuntimeClassDiscoveryDoesNotRequireCoreAIAvailability() throws {
+        // XCTest enumerates all Objective-C-visible classes before availability-guarded
+        // test methods run. On macOS 26 this must not resolve macOS 27 CoreAI metadata.
+        var count: UInt32 = 0
+        let classes = try XCTUnwrap(objc_copyClassList(&count))
+        defer { free(UnsafeMutableRawPointer(classes)) }
+        XCTAssertGreaterThan(count, 0)
+        let module = String(reflecting: ParakeetConfiguration.self).split(separator: ".").first!
+        XCTAssertNotNil(NSClassFromString("\(module).ParakeetTranscriber"), "The production actor must participate in discovery")
+    }
+
     private func configuration() throws -> ParakeetConfiguration {
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase

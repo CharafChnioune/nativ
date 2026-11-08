@@ -339,6 +339,8 @@ final class ChatWorkBrowserTests: XCTestCase {
         let control = try element("Search", in: first)
         var published: [String] = []
         browser.onNavigate = { published.append($0) }
+        // A blocked port can finish at about:blank without a failure callback.
+        // This covers WebKit's replacement document, not only network errors.
         let unavailable = "http://127.0.0.1:1/unavailable"
         try browser.navigate(unavailable)
         for request in [ChatWorkRequest(action: .inspect), ChatWorkRequest(action: .click, elementID: control)] {
@@ -357,6 +359,38 @@ final class ChatWorkBrowserTests: XCTestCase {
         XCTAssertEqual(recovered["url"] as? String, next)
         XCTAssertNil(browser.errorMessage)
         XCTAssertEqual(published, [next])
+    }
+
+    func testConnectionRefusedDoesNotExposePreviousPageAndCanRecover() async throws {
+        let server = try ChatWorkHTTPFixture()
+        let base = try await server.start()
+        defer { server.stop() }
+        let unavailableServer = try ChatWorkHTTPFixture()
+        let unavailableBase = try await unavailableServer.start()
+        unavailableServer.stop()
+        let browser = makeBrowser()
+        defer { browser.stop() }
+        browser.load(ChatWorkItem(title: "Fixture", kind: .website, content: "", url: base.absoluteString))
+        let first = try await inspect(browser)
+        let control = try element("Search", in: first)
+        var published: [String] = []
+        browser.onNavigate = { published.append($0) }
+        let unavailable = unavailableBase.appendingPathComponent("unavailable").absoluteString
+        try browser.navigate(unavailable)
+        for request in [ChatWorkRequest(action: .inspect), ChatWorkRequest(action: .click, elementID: control)] {
+            do {
+                _ = try await browser.execute(request)
+                XCTFail("A refused connection must not expose the previous page")
+            } catch let failure as ChatWorkNavigationFailure {
+                XCTAssertEqual(failure.url, unavailable)
+            }
+        }
+        XCTAssertTrue(published.isEmpty)
+        XCTAssertEqual(browser.address, unavailable)
+        XCTAssertTrue(browser.elementLabels.isEmpty)
+        let recovered = try await browser.execute(ChatWorkRequest(action: .navigate, url: base.absoluteString))
+        XCTAssertEqual(recovered["url"] as? String, base.absoluteString)
+        XCTAssertNil(browser.errorMessage)
     }
 
     func testHTTPErrorIsNotReportedAsASuccessfulPageAndClearsAfterRecovery() async throws {
