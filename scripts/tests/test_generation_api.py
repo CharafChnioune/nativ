@@ -25,6 +25,19 @@ class GenerationAPITests(unittest.TestCase):
             self.assertEqual(self.c.post('/v1/music/sessions',headers=headers,json={}).status_code,status)
         self.assertEqual(self.c.get('/v1/music/info',headers=self.h).json()['store_id'],self.s.repo.store_id)
     def test_locked_generation_store_does_not_disable_existing_server(self):
+        # A complete app lifespan owns the real process-global Images executor.
+        # Run it in a fresh host process: closing it here would intentionally
+        # close Images for unrelated standalone service fixtures in this runner;
+        # running it after those fixtures would replace their live ownership.
+        import os,subprocess
+        marker='NATIV_TEST_GENERATION_LIFESPAN_PROCESS'
+        if os.environ.get(marker)!='1':
+            environment=dict(os.environ,**{marker:'1','PYTHONDONTWRITEBYTECODE':'1'})
+            result=subprocess.run([sys.executable,'-B','-W','error::ResourceWarning','-m','unittest',
+                'test_generation_api.GenerationAPITests.test_locked_generation_store_does_not_disable_existing_server'],
+                cwd=Path(__file__).resolve().parent,env=environment,capture_output=True,text=True,timeout=30)
+            self.assertEqual(result.returncode,0,result.stdout+result.stderr)
+            return
         from unittest.mock import patch
         from nativ_generation.api import install
         app=FastAPI()
