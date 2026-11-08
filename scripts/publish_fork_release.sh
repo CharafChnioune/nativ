@@ -30,6 +30,7 @@ security import "$temporary_directory/certificate.p12" -P "$DEVELOPER_ID_APPLICA
 security set-key-partition-list -S apple-tool:,apple: -s -k "$keychain_password" "$keychain" >/dev/null
 security list-keychains -d user -s "$keychain"
 scripts/sign_macos_release.sh --team-id "$APPLE_TEAM_ID" --provisioning-profile "$temporary_directory/fork.provisionprofile" "$app"
+python3 scripts/fork_release.py bundle "$app" --sha "$RELEASE_SHA"
 codesign --verify --deep --strict "$app"
 version="${RELEASE_TAG#v}"
 mkdir -p dist/release
@@ -49,7 +50,7 @@ scripts/generate_macos_appcast.sh --tag "$RELEASE_TAG" --output dist/release/app
 # Recheck stale identity immediately before publishing. Existing signed assets are immutable.
 python3 scripts/fork_release.py preflight --sha "$RELEASE_SHA" --tag "$RELEASE_TAG"
 if ! gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-  gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --draft --title "Nativ fork $version" --notes "Fork of Neywa-Labs/nativ with Live Translate. Combined commit: $RELEASE_SHA."
+  gh release create "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --verify-tag --draft --title "Nativ fork $version" --notes "Fork of Neywa-Labs/nativ with Live Translate, Music and Video. Combined commit: $RELEASE_SHA."
 fi
 existing="$(gh release view "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name')"
 if [[ -n "$existing" ]]; then echo 'Refusing to replace existing release assets' >&2; exit 1; fi

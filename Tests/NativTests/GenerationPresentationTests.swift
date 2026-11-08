@@ -245,12 +245,27 @@ final class GenerationPlaybackTests: XCTestCase {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
         let encoder = root.appendingPathComponent("dist/codec-runtime/bin/ffmpeg")
         XCTAssertTrue(FileManager.default.isExecutableFile(atPath: encoder.path), "The required managed media build must precede native tests")
-        let output = FileManager.default.temporaryDirectory.appendingPathComponent("nativ-video-marker-" + UUID().uuidString + ".mp4")
-        defer { try? FileManager.default.removeItem(at: output) }
+        let temporary = FileManager.default.temporaryDirectory.appendingPathComponent("nativ-video-marker-" + UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temporary, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temporary) }
+        let output = temporary.appendingPathComponent("markers.mp4")
+        let rawVideo = temporary.appendingPathComponent("frames.rgb"), rawAudio = temporary.appendingPathComponent("stereo.pcm")
+        var frames = Data(), samples = Data()
+        for frame in 0..<24 {
+            for y in 0..<64 {
+                for x in 0..<96 { frames.append(contentsOf: [UInt8((x * 2 + frame * 7) % 256), UInt8(y * 4), UInt8(frame * 10)]) }
+            }
+        }
+        for index in 0..<48_000 {
+            var sample = Int16(12_000 * sin(2 * Double.pi * 880 * Double(index) / 48_000)).littleEndian
+            withUnsafeBytes(of: &sample) { bytes in samples.append(contentsOf: bytes); samples.append(contentsOf: bytes) }
+        }
+        try frames.write(to: rawVideo); try samples.write(to: rawAudio)
         let process = Process(); process.executableURL = encoder
-        process.arguments = ["-nostdin", "-v", "error", "-f", "lavfi", "-i", "testsrc2=size=96x64:rate=24", "-f", "lavfi", "-i", "sine=frequency=880:sample_rate=48000", "-t", "1", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-ac", "2", "-y", output.path]
+        process.arguments = ["-nostdin", "-v", "error", "-f", "rawvideo", "-pixel_format", "rgb24", "-video_size", "96x64", "-framerate", "24", "-i", rawVideo.path, "-f", "s16le", "-ar", "48000", "-ac", "2", "-i", rawAudio.path, "-t", "1", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", "-ac", "2", "-y", output.path]
         process.standardOutput = FileHandle.nullDevice; process.standardError = FileHandle.nullDevice
-        try process.run(); process.waitUntilExit(); XCTAssertEqual(process.terminationStatus, 0)
+        try process.run(); process.waitUntilExit()
+        guard process.terminationStatus == 0 else { XCTFail("Managed marker encoding failed: \(process.terminationStatus)"); return }
         let asset = AVURLAsset(url: output)
         let duration = try await asset.load(.duration)
         XCTAssertEqual(duration.seconds, 1, accuracy: 0.05)
@@ -260,10 +275,13 @@ final class GenerationPlaybackTests: XCTestCase {
         let rate = try await XCTUnwrap(videoTracks.first).load(.nominalFrameRate)
         XCTAssertEqual(rate, 24)
         let generator = AVAssetImageGenerator(asset: asset)
+        var decodedFrames: [Data] = []
         for seconds in [0.0, 0.5, 0.95] {
             let result = try await generator.image(at: CMTime(seconds: seconds, preferredTimescale: 600))
             XCTAssertEqual(result.image.width, 96); XCTAssertEqual(result.image.height, 64)
+            decodedFrames.append(try XCTUnwrap(result.image.dataProvider?.data) as Data)
         }
+        XCTAssertNotEqual(decodedFrames[0], decodedFrames[1]); XCTAssertNotEqual(decodedFrames[1], decodedFrames[2])
         let item = AVPlayerItem(asset: asset)
         let player = AVPlayer(playerItem: item); player.isMuted = true
         defer { player.pause(); player.replaceCurrentItem(with: nil) }

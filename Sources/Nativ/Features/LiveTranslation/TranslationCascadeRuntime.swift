@@ -161,7 +161,6 @@ actor TranslationCascadeRuntime {
         child.environment = Self.sanitizedEnvironment(ProcessInfo.processInfo.environment, bearerToken: key)
         let acquired = try GenerationComputeLease.acquire()
     computeLease = acquired
-    child.standardInput = try acquired.inheritedFileHandle()
         let pipe = Pipe()
         child.standardOutput = pipe
         child.standardError = pipe
@@ -174,7 +173,7 @@ actor TranslationCascadeRuntime {
         guard id == launchID else { throw CancellationError() }
         process = child
         output = pipe
-        do { try child.run() }
+        do { try acquired.runOwnedProcess(child) }
         catch { throw failure("The bundled private cascade runtime could not start. Rebuild the app runtime.") }
         let session = Self.session()
         defer { session.invalidateAndCancel() }

@@ -168,7 +168,6 @@ actor TranslationRuntimeController {
       ProcessInfo.processInfo.environment, bearerToken: key)
     let acquired = try GenerationComputeLease.acquire()
     computeLease = acquired
-    child.standardInput = try acquired.inheritedFileHandle()
     child.standardOutput = FileHandle.nullDevice
     child.standardError = pipe
     pipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
@@ -182,7 +181,7 @@ actor TranslationRuntimeController {
     child.terminationHandler = { [weak self] _ in Task { await self?.didExit(id: id) } }
     process = child
     outputPipe = pipe
-    do { try child.run() } catch { throw RuntimeError.launchFailed }
+    do { try acquired.runOwnedProcess(child) } catch { throw RuntimeError.launchFailed }
     let clock = ContinuousClock()
     let deadline = clock.now.advanced(by: .seconds(readinessTimeout))
     let session = URLSession(configuration: .ephemeral)

@@ -386,12 +386,20 @@ actor StartingBackend: TranslationBackend {
   let core = TranslationSession(backend: backend)
   _ = try await core.prepare(configuration: configuration())
   let start = Task { try await core.start() }
-  for _ in 0..<10_000 {
+  let startDeadline = ContinuousClock.now.advanced(by: .seconds(2))
+  while ContinuousClock.now < startDeadline {
     if await backend.starting { break }
-    await Task.yield()
+    try await Task.sleep(for: .milliseconds(1))
   }
+  #expect(await backend.starting)
   let stop = Task { await core.stop() }
-  await settle()
+  // A fixed yield count does not wait for the stop/cancellation/release chain.
+  // Observe its real milestone, bounded far below the backend's 60-second sleep.
+  let stopDeadline = ContinuousClock.now.advanced(by: .seconds(2))
+  while ContinuousClock.now < stopDeadline {
+    if await backend.didStop { break }
+    try await Task.sleep(for: .milliseconds(1))
+  }
   #expect(await backend.didStop)
   start.cancel()  // Ensure a failing implementation cannot leave the test blocked.
   await stop.value

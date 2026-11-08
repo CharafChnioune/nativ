@@ -6,6 +6,7 @@ import plistlib
 import subprocess
 import sys
 import tempfile
+from sign_generation_resources import prepare, refresh
 
 NAMESPACE = 'io.github.charafchnioune.nativ'
 MACH_O = {b'\xfe\xed\xfa\xce', b'\xce\xfa\xed\xfe', b'\xfe\xed\xfa\xcf', b'\xcf\xfa\xed\xfe', b'\xca\xfe\xba\xbe', b'\xbe\xba\xfe\xca'}
@@ -21,6 +22,7 @@ def validate_app(app: pathlib.Path) -> None:
 def sign(app: pathlib.Path) -> None:
     app = app.resolve()
     validate_app(app)
+    codec_snapshot = prepare(app)
     def run(args): subprocess.run(args, check=True, timeout=60)
     def codesign(path, extra=()):
         run(['/usr/bin/codesign', '--force', '--sign', '-', '--timestamp=none', *extra, str(path)])
@@ -29,6 +31,9 @@ def sign(app: pathlib.Path) -> None:
         if path.is_symlink() or not path.is_file(): continue
         with path.open('rb') as stream: magic = stream.read(4)
         if magic in MACH_O: codesign(path)
+    # Mach-O signatures change codec bytes; update their verified receipt before
+    # any containing framework/app resource seal is created.
+    refresh(app, codec_snapshot)
     for path in paths:
         if path.is_dir() and not path.is_symlink() and path.suffix in {'.app', '.framework', '.xpc', '.appex'}:
             codesign(path)

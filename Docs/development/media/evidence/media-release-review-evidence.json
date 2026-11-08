@@ -25,7 +25,12 @@
     ".github/workflows/upstream-sync.yml": "c4ba2abbba38b36df29a230058a248907d0bc84957d11fd45307149612e756d2",
     "scripts/sync_upstream.py": "81bf58d43e676d17976305c7c91948879c954cf86be2a0bf90a9ab1202d23f48",
     "scripts/verify_translation_test_results.py": "9743bcfeb1c02539b5d0162447a97d2b4f1c14e9daa012a26acfea82b37e50ad",
-    "Nativ.xcodeproj/project.pbxproj": "be3135ed8e0f0fa104ddde2acaf0527efa7a991678b99d4d952a99990170d83d"
+    "Nativ.xcodeproj/project.pbxproj": "be3135ed8e0f0fa104ddde2acaf0527efa7a991678b99d4d952a99990170d83d",
+    "scripts/sign_generation_resources.py": "eff6a5231d3d2d54635a76d8f6fce1722f4c9573535e6b858e52616db529e43a",
+    "scripts/sign_macos_local.py": "ea1b1351cc7504d5837a310a055995e2d5b96fc0eb8cf4a3ad3d4ffe854a6cc6",
+    "scripts/sign_macos_release.sh": "1e841b66ee8b70333f2276a91eb9cde7b3b569c8dd3c6e4cb9c983467e662c05",
+    "scripts/publish_fork_release.sh": "ab42a0212f286a3158c0c2fdb3f28ffa14e3bb491d2f49c4642f6d7dc5d86dd1",
+    "scripts/tests/test_sign_generation_resources.py": "1747474049904a9e454c62776eb23b5fbd54250416f76bc0299a4f294a6b7468"
   },
   "actual_native_test_source_count": 373,
   "generation_test_membership": [

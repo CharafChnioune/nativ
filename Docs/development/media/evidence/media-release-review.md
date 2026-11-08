@@ -12,6 +12,10 @@ Datum: 8 november 2026. Scope: fork workflows, release/update-identiteit, concre
 
 3. **Ontbrekend upgradebewijs gedeeltelijk ingevuld.** `test_generation_upgrade.py` introduceert Generations naast bestaande Chat/Images-JSON en Translate-preferences-Data en bewaakt identieke bytes. Een schema-1 store wordt in verse serviceinstanties heropend met dezelfde store/job/asset/ref-identiteiten. Live references en released tombstones blijven behouden, Trash overleeft heropenen, Restore behoudt originele SHA en pad, en een gewijzigde providerrevision blokkeert redispatch vóór een provider wordt geconstrueerd. Er wordt geen bestaand bestand verwijderd. Dit is een gesimuleerde opslagupgrade; native Codable-tests en een daadwerkelijke ondertekende Sparkle-installatie zijn afzonderlijke bewijslagen.
 
+4. **Bevestigd, opgelost: re-signing maakte codec-receipts ongeldig.** Beide signers wijzigden FFmpeg/ffprobe na de Xcode-receiptrefresh. Het nieuwe vertrouwde `scripts/sign_generation_resources.py` verifieert alle huidige resources en codecs vóór signing en bewaart een receipt-snapshot buiten de app. Na Mach-O-signing vernieuwt het alleen actuele codec-hashes, bewaart `build_files` en valideert statisch opnieuw, vóór framework/appseals. Beide lokale/release-signers gebruiken deze volgorde. De publisher doet daarnaast een statische bundlecheck ná signing en vóór packaging; geen kandidaat-Python wordt uitgevoerd in de secret-bearing signingfase.
+
+   Vier gerichte signingregressies zijn toegevoegd, inclusief een echt tijdelijk Mach-O-bestand dat tweemaal ad-hoc wordt gesigned: de oude hashcontrole faalt na elke signaturewijziging, de refresh herstelt validatie en behoudt oorspronkelijke buildprovenance. Een lokale-signingprobe controleert dat geen bundelseal vóór receiptrefresh gebeurt; corrupte pre-signbytes en een gewijzigde receipt-snapshot worden afgewezen. De signing/release/resource-suite telt **68/68 geslaagde tests**, geen skips (`media-codec-signing-tests.log`). Beide shellscripts slagen voor `bash -n`. De actieve door root gebouwde app is niet gewijzigd.
+
 Geen verdere concrete releaseblocker gevonden binnen deze scope. De definitieve brongebonden appcontrole en onderstaande kwalificatiegates staan nog open.
 
 ## Uitgevoerde verificatie
@@ -45,4 +49,4 @@ De echte ingepakte Python importeerde buiten de checkout succesvol `nativ_genera
 4. Geen lokale modelinstallatie of inference op grotere hardware: operationele runtime-/modelkwalificatie, piek/unified-memory, langdurig thermisch gedrag en Translate/generatie resourcewissels op de ondersteunde apparaten blijven afzonderlijk vereist.
 5. Geen betaalde cloudruns: echte accounts, regiobinding, providercontracten, cancellation/charges, retrieval en kwaliteitsacceptatie blijven kwalificatiegates. Experimentele profielen mogen daardoor niet als bewezen native/production-ready worden geadverteerd.
 
-Geen release, signing, upload, push, merge of Git-mutatie uitgevoerd door deze reviewer. Alleen de expliciet toegewezen releasegate, clientcorrectie en regressietests zijn gewijzigd.
+Geen release, distributiesigning, upload, push, merge of Git-mutatie uitgevoerd door deze reviewer. Alleen een tijdelijk synthetisch Mach-O-bestand is ad-hoc gesigned als regressieproef. Alleen de expliciet toegewezen releasegate, signingpaden, clientcorrectie en regressietests zijn gewijzigd.

@@ -72,6 +72,16 @@ final class GenerationComputeLease: @unchecked Sendable {
         return FileHandle(fileDescriptor: duplicate, closeOnDealloc: true)
     }
 
+    /// Foundation retains standardInput on the Process object even after exit.
+    /// Close our duplicate immediately after spawn; the child's dup2 descriptor
+    /// alone must retain admission if the native host disappears.
+    func runOwnedProcess(_ process: Process) throws {
+        let inherited = try inheritedFileHandle()
+        defer { try? inherited.close() }
+        process.standardInput = inherited
+        try process.run()
+    }
+
     func close() {
         closeLock.lock(); defer { closeLock.unlock() }
         guard !closed else { return }; closed = true
