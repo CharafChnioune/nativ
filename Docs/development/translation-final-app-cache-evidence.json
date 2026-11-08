@@ -1,0 +1,141 @@
+{
+  "operation": "Reuse verified local artifacts in configured app cache without inference or download",
+  "cache": "/Users/charaf/.cache/huggingface/hub",
+  "gemma_revision": "475b9088d29754a3379866cf5aeb6b41acd313c2",
+  "whisper_revision": "a4aaeec0636e6fef84abdcbe3544cb2bf7e9f6fb",
+  "omni_revision": "d508b88f08a5b4286f2d2805a6a8d69a0ff44c72",
+  "verified_installed_artifacts": [
+    {
+      "filename": ".gitattributes",
+      "size": 1570,
+      "sha256": "34448b82c17d60fec9b65b1f093c115ddbaadc04beb1b0140b6bfed2e012a930"
+    },
+    {
+      "filename": "README.md",
+      "size": 593,
+      "sha256": "8e9717df49219943b8992eeccecd8050535318d34fffbbaeaac924ed01f27155"
+    },
+    {
+      "filename": "chat_template.jinja",
+      "size": 17336,
+      "sha256": "2f1b4d75d067bae3fe44e676721c7f077d243bc007156cb9c2f8b5836613d082"
+    },
+    {
+      "filename": "config.json",
+      "size": 6628,
+      "sha256": "780ccb3a514a5f1ced161d383f948fc22eca9b84b752ca19494f625bd9bad7a6"
+    },
+    {
+      "filename": "generation_config.json",
+      "size": 208,
+      "sha256": "d4226bbe3117d2d253ba4609720ba82c6c4ce4627a9a6ae05387c78983ac03de"
+    },
+    {
+      "filename": "model.safetensors",
+      "size": 5146800534,
+      "sha256": "932b8271fc3fe65adcc78b96c10c6268bbfb13e8f67d1358727c0d6ee97e1eff"
+    },
+    {
+      "filename": "model.safetensors.index.json",
+      "size": 240961,
+      "sha256": "f8accac59ee7efe87e0c298c854610b262c3cadd477407503147c71209ff0093"
+    },
+    {
+      "filename": "processor_config.json",
+      "size": 1316,
+      "sha256": "de3e580aebdc98272d4c4547daffe6525fcbae18a83a0e0bcf0d7444d4ee6f37"
+    },
+    {
+      "filename": "tokenizer.json",
+      "size": 32169626,
+      "sha256": "cc8d3a0ce36466ccc1278bf987df5f71db1719b9ca6b4118264f45cb627bfe0f"
+    },
+    {
+      "filename": "tokenizer_config.json",
+      "size": 2740,
+      "sha256": "080d9e1aff284e2f6043889cd05367966f7c7b80e025fbc0b06745e218158656"
+    },
+    {
+      "filename": "LFM3-Omni-2B-Q8_0.gguf",
+      "size": 1846240768,
+      "sha256": "59118f661eaacb93d204723d76355b53347f0940b508c11412f6290fd49158d4"
+    },
+    {
+      "filename": "mmproj-LFM3-Omni-2B-Q8_0.gguf",
+      "size": 506842528,
+      "sha256": "8a25f9d1931244429de404fccacfb7fb933970a36aa5688d2f5069f29c6b27b1"
+    }
+  ],
+  "whisper_existing_required_source_artifacts_verified": [
+    {
+      "filename": "config.json",
+      "size": 268,
+      "sha256": "b34fc29e4e11e0a25e812775dd67f4dd16fc2c8eb43d28ae25ff7d660ecb6379"
+    },
+    {
+      "filename": "weights.safetensors",
+      "size": 1613977612,
+      "sha256": "951ed3fc1203e6a62467abb2144a96ce7eafca8fa77e3704fdb8635ff3e7f8a6"
+    }
+  ],
+  "whisper_processor_preparation": "Native Prepare Whisper tokenizer completed; UI confirmed verified. Config equals source and weights resolve to the unchanged original snapshot; all nine processor hashes verified again.",
+  "existing_model_directories_replaced": false,
+  "copy": "APFS clones; external Hub blob links materialized inside new model directory; snapshot links retained",
+  "verified_whisper_processor_artifacts": [
+    {
+      "filename": "preprocessor_config.json",
+      "size": 340,
+      "sha256": "7ccc62c6f2765af1f3b46c00c9b5894426835a05021c8b9c01eecb6dfb542711"
+    },
+    {
+      "filename": "tokenizer_config.json",
+      "size": 282843,
+      "sha256": "844b642c73a91359722f47b35705f7174686df33d252695d8572cf9ac03a6389"
+    },
+    {
+      "filename": "tokenizer.json",
+      "size": 2710337,
+      "sha256": "297b13372ac43916285644fb9687add3cc62ee2a1adb60da3dc25cc94c1871fd"
+    },
+    {
+      "filename": "vocab.json",
+      "size": 1036558,
+      "sha256": "e2aa043ef015641d363d8288e7c241c85e36a5c761fb303598e0710233344387"
+    },
+    {
+      "filename": "merges.txt",
+      "size": 493869,
+      "sha256": "2df2990a395e35e8dfbc7511e08c12d56018d8d04691e0133e5d63b21e154dc6"
+    },
+    {
+      "filename": "normalizer.json",
+      "size": 52666,
+      "sha256": "bf1c507dc8724ca9cf9903640dacfb69dae2f00edee4f21ceba106a7392f26dd"
+    },
+    {
+      "filename": "added_tokens.json",
+      "size": 34648,
+      "sha256": "3c51f66c4c21f9e126970078f11ae77a78c74aee8df606ee9daba86e467108e0"
+    },
+    {
+      "filename": "special_tokens_map.json",
+      "size": 2186,
+      "sha256": "baea4ea09372eb4fca86b4e4346139fd73cb807d5087e9de0948e971739c3e74"
+    },
+    {
+      "filename": "generation_config.json",
+      "size": 3772,
+      "sha256": "cce11bfe3aaa6ae9e072ea2637caaec8795e68d9b67e655a5af16ee509681a4c"
+    }
+  ],
+  "native_ui": {
+    "source_commit": "029258629ea8f91ee843734bc2e2bb776274e48b",
+    "omni_prepare": "Model artifacts verified",
+    "whisper_prepare": "Whisper tokenizer verified. Model weights are managed in Models.",
+    "recognition": "whisper-large-v3-turbo",
+    "translation": "gemma-4-e4b-it-4bit",
+    "speech": "LFM3-Omni local streaming",
+    "capture_started": false,
+    "inference_started": false
+  }
+}

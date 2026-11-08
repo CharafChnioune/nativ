@@ -73,6 +73,13 @@ jobs. Native test results must actually contain successful test cases in:
 - `TranslationResourceAssessmentTests`
 - `TranslationHostOperationGateTests`
 - `TranslationDownloadReservationsTests`
+- `CascadedTranslationBackendTests`
+- `TranslationContentGuardTests`
+- `TranslationAutomaticDirectionTests`
+- `TranslationCascadeRuntimeTests`
+- `ManagedTranslationCascadeResourcesTests`
+- `TranslationStageCatalogTests`
+- `TranslationStockVoicePreparationTests`
 
 The result bundle is retained. A green unrelated run or an empty test plan is
 insufficient. Main changes require a new candidate and new validation. Repository
@@ -215,12 +222,14 @@ separate step before signing credentials enter the environment, verifying SHA256
 from the [official package manifest](https://github.com/sparkle-project/Sparkle/blob/2.9.4/Package.swift).
 The privileged publisher never evaluates Swift package manifests or builds code.
 
-The native-test gate requires the local-only transport regressions as well as the
-session/audio/model/updater and Whisper preparation classes. Only the explicitly
-named real-runtime integration and pinned-Whisper-artifact tests may be skipped
-without failing deterministic CI; each is printed as **unrun qualification**.
-Neither can satisfy its class alone. Both deterministic Whisper revision and
-cancellation tests are required individually; missing or skipped cases fail.
+The native-test gate requires all eighteen classes above and twelve individually
+named critical cases in `scripts/verify_translation_test_results.py`, including
+supervisor cleanup, fragmented readiness and Whisper vocabulary regressions.
+Only four explicitly named qualification tests may be skipped: real Omni runtime,
+pinned Whisper artifacts, pinned stock voice artifacts and real owned host
+cascade inference. Each is printed as **unrun qualification** and cannot stand
+in for deterministic coverage. Missing or skipped required cases fail even when
+their class has another passing test.
 
 Without these resources only local development builds are deliverable. Signed
 notarization, real feed publication and an actual older-fork→newer-fork Sparkle

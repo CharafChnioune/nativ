@@ -1,0 +1,114 @@
+{
+  "date": "2026-11-08",
+  "source_commit": "029258629ea8f91ee843734bc2e2bb776274e48b",
+  "source_scope": "Later documentation/evidence-only HEAD may differ. This artifact contains the reviewed runtime/catalog fixes plus the final evidence-copy clarifications.",
+  "native_input_manifest": {
+    "files": 736,
+    "sha256": "e6ce2d2939f579a71ff1ec0bf117ce7dae1bbc9b3731a32f4e8b61697d8497b6",
+    "path": "build/validation/final-reviewed-02925862-native-inputs.json",
+    "all_committed_git_blobs_verified": true,
+    "unexpected_native_input_files": []
+  },
+  "make_build": {
+    "exit_code": 0,
+    "wall_seconds": 41.199,
+    "log": "/Users/charaf/Desktop/code/nativ/build/validation/final-reviewed-02925862-build.log",
+    "command": [
+      "make",
+      "xcode-build",
+      "XCODE_BUILD_JOBS=2",
+      "NATIV_FORK_REVISION=029258629ea8f91ee843734bc2e2bb776274e48b"
+    ],
+    "result": "BUILD SUCCEEDED",
+    "log_sha256": "ad5d8053951a2482ba835f5ed861e7ac5734275272faab36247a4c41a752055d"
+  },
+  "preview": {
+    "path": "/Users/charaf/Library/Developer/NativLiveTranslationPreview/FinalReviewed/Nativ.app",
+    "copy_method": "APFS clone into previously absent FinalReviewed directory",
+    "launched_by_build_agent": false,
+    "info_plist": {
+      "CFBundleIdentifier": "io.github.charafchnioune.nativ",
+      "NativForkRevision": "029258629ea8f91ee843734bc2e2bb776274e48b",
+      "NativForkRepository": "CharafChnioune/nativ",
+      "SUPublicEDKey": "YAX1zGfcsvfAec12FrJ0y+q0tsiqe6F65Y2Fvs36AR8=",
+      "SURequireSignedFeed": true,
+      "SUVerifyUpdateBeforeExtraction": true,
+      "SUFeedURL": "https://github.com/CharafChnioune/nativ/releases/latest/download/appcast.xml",
+      "NativPreviewFeedURL": "https://github.com/CharafChnioune/nativ/releases/download/preview/appcast.xml"
+    },
+    "framework_bundle_ids": {
+      "NativServerKit": "io.github.charafchnioune.nativ.NativServerKit",
+      "NativExtensionSDK": "io.github.charafchnioune.nativ.NativExtensionSDK",
+      "NativTranslationKit": "io.github.charafchnioune.nativ.NativTranslationKit"
+    },
+    "extensions": {
+      "VoiceDictationExtensionRuntime.appex": {
+        "bundle_id": "io.github.charafchnioune.nativ.VoiceDictationExtension",
+        "extension_point": "io.github.charafchnioune.nativ.nativ-extension"
+      },
+      "LiveTranslationExtensionRuntime.appex": {
+        "bundle_id": "io.github.charafchnioune.nativ.LiveTranslationExtension",
+        "extension_point": "io.github.charafchnioune.nativ.nativ-extension"
+      }
+    },
+    "sha256": {
+      "Contents/Info.plist": "fbb5a7eac5706a2c6c6f5de1a8018ef8c67c30850e4effc43232080a936e64c7",
+      "Contents/MacOS/Nativ": "65de372d26a03ff2b864d2b7cee857353d732ada3d0be5f15b24b1ce101d7a3a",
+      "Contents/MacOS/Nativ.debug.dylib": "fae41bdf3b624a202177cff5fddde6d553d4785da637c2fca0c289ef075b46f7",
+      "Contents/_CodeSignature/CodeResources": "41f26704edb2eec05ad2b25db167fcb1fbaef84a075e2e31b7dd61b6e0998bdb"
+    }
+  },
+  "signing": {
+    "signing_exit_code": 0,
+    "deep_strict_verification_exit_code": 0,
+    "wall_seconds": 200.178,
+    "preview": "/Users/charaf/Library/Developer/NativLiveTranslationPreview/FinalReviewed/Nativ.app",
+    "log": "/Users/charaf/Desktop/code/nativ/build/validation/final-reviewed-02925862-signing.log",
+    "kind": "Apple Development; local development only, not Developer ID/notarization",
+    "identity_sha1": "71E102B0BCE34C06A2D2159F5EEBD8C68A18BF92",
+    "team_identifier": "54U2R292VD",
+    "cdhash": "a9680445be4b05fd2f53c4770a43ec6b2cf32bb2",
+    "log_sha256": "bfe68166c050faf4d5343d1c14758711a1a2bca3d4877e80d54aa0d437f273fa",
+    "committed_signing_input_sha256": {
+      "scripts/sign_macos_debug.sh": "48234ce6d4a2fdf316b54790e1549353b602fd1d0b636ec6fc8279e965894bc1",
+      "scripts/sign_macos_release.sh": "cba6e2cadf0730a2c2d2dd110a1396671cc78ee42f51372ad0b51e1099d5b955",
+      "Configuration/Nativ.entitlements": "9ea368353f451ea89ba3c83bd53995996bd7aa42a091c9b84d0d2ba3597748d4"
+    }
+  },
+  "validation_relationship": {
+    "runtime_catalog_behavior": "17/17 targeted native tests passed; see translation-review-regressions-evidence.json. Final subsequent app changes only clarify measurement copy.",
+    "full_native_ci": "Historical c249 CI: 1867 total, 1857 passed, 10 skipped. New final HEAD CI is required for the added cases and is not inferred from that run.",
+    "model_runs": "No inference or model qualification performed during this build/sign validation."
+  },
+  "ui_validation": {
+    "status": "observed through native CUA",
+    "observed_at": "2026-11-08T18:26:15.314205+00:00",
+    "exact_preview_opened": true,
+    "observations": [
+      "Native Translate page visible with experimental consent unchecked and source/target Dutch to English.",
+      "Existing own chatserver auto-started at app launch and was stopped through its own UI.",
+      "Prepare LFM3-Omni verified already installed pinned Q8 weights and projector without inference.",
+      "Cascade controls discovered normal-cache Whisper and Gemma; no missing-model label.",
+      "Prepare Whisper tokenizer completed through the native UI.",
+      "Independent STT/LLM/TTS and sequential memory choice visible; no automatic substitution.",
+      "Expanded evidence panel displayed actual 7.2/6.8-second network PCM observations and aborted 15m22 warm endurance.",
+      "Second window showed same prepared status and choices; swapping language direction there updated the first window. Direction restored to Dutch to English."
+    ],
+    "final_state": {
+      "app": "left open on idle Translate page",
+      "route": "LFM3-Omni direct",
+      "precision": "Q8_0",
+      "source": "microphone, not active",
+      "experimental_consent": false,
+      "headphones_option": false,
+      "own_chatserver": "stopped",
+      "second_window": "closed"
+    },
+    "capture_started": false,
+    "audio_playback_started": false,
+    "translation_inference_started": false,
+    "screenshots": "Displayed inline in CUA conversation; no exported PNG claimed.",
+    "limits": "Idle UI and model preparation only. No active microphone/system-audio, acoustic latency, VoiceOver, sleep/lock, overlay/multi-screen or 128 GB qualification."
+  },
+  "previous_artifact_history": "translation-continuation-bundle-evidence.json retains the older CascadeReview, CascadeFinal and CascadeValidated artifacts and their observations."
+}

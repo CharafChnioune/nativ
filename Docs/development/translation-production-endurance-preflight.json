@@ -1,0 +1,344 @@
+{
+  "started_utc": "2026-11-08T17:37:31.724674+00:00",
+  "scope": "Read-only baseline, no models, microphone, playback or cache changes",
+  "first_run_reference_swap_mib": 18990.62,
+  "criteria": {
+    "seconds": 60.0,
+    "all_pressure_levels": 1,
+    "maximum_swap_range_mib": 128,
+    "maximum_absolute_net_swap_change_mib": 64,
+    "maximum_swap_mib": 18990.62
+  },
+  "status": "not-ready",
+  "reasons": [
+    "Swap range exceeded 128 MiB",
+    "Absolute net swap change exceeded 64 MiB"
+  ],
+  "ended_utc": "2026-11-08T17:38:31.794147+00:00",
+  "duration_seconds": 60.060730959,
+  "swap_range_mib": 342.4400000000005,
+  "net_swap_change_mib": -342.4400000000005,
+  "max_swap_mib": 9582.94,
+  "schemaVersion": 1,
+  "production_endurance": "not-started",
+  "models_loaded": false,
+  "qualification": false,
+  "sample_count": 58,
+  "pressure_levels": [
+    1
+  ],
+  "compiler_samples": 0,
+  "first_swap_mib": 9582.94,
+  "last_swap_mib": 9240.5,
+  "interpretation": "OS pressure stayed normal while existing global swap declined. The fixed stability criteria failed; this is not evidence of critical pressure or a universal 16-GiB hardware limit.",
+  "planned_run": {
+    "runtime": "Q8_0",
+    "duration_seconds": 1800,
+    "minimum_warm_turns": 200,
+    "cold_starts": 10,
+    "cancel_turns": 5,
+    "maximum_swap_growth_mib": 1024
+  },
+  "contract_verification": {
+    "driver_sha256": "6d83c27f275bbbf2f110b043527729203666ccd79a6e9ddeace12df25544fde6",
+    "framework_sha256": "90377445d9c032756075411188da9e4e5cc2966969b2d074a75a84ec17256e16",
+    "framework_changed_since_matrix": false,
+    "all_three_checks_passed": true,
+    "recompiled": false
+  },
+  "raw_evidence_sha256": "4d79e1d58ba9897882611823b0f4fb68207d0d262210c39e8b7e9b32af65ea15",
+  "observer_sha256": "79f38ed65223145d8ad03a08dae7b1eeb799d9657f623978430f546666e1f226",
+  "raw_evidence_path": "build/lfm-realtime/endurance/production-preflight-20261108.json",
+  "samples": [
+    {
+      "elapsed_seconds": 0.02592091700000001,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 1.0949486670000002,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 2.137446334,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 3.18103,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 4.226076667,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 5.2955953749999995,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 6.361545416999999,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 7.430470917,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 8.501313875000001,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 9.572810875,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 10.643802709000001,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 11.713722917,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 12.779286792,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 13.848114709,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 14.914832042,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 15.985153167000002,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 17.055435375,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 18.124872417,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 19.194360292,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 20.265023959,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 21.33756875,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 22.407702792,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 23.477670084,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 24.54110575,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 25.611534624999997,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 26.680574459,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 27.745910917,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 28.782628959,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 29.81524525,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 30.880442625,
+      "pressure_level": 1,
+      "swap_used_mib": 9582.94
+    },
+    {
+      "elapsed_seconds": 31.923187291999998,
+      "pressure_level": 1,
+      "swap_used_mib": 9526.94
+    },
+    {
+      "elapsed_seconds": 32.982645584,
+      "pressure_level": 1,
+      "swap_used_mib": 9526.94
+    },
+    {
+      "elapsed_seconds": 34.052224667,
+      "pressure_level": 1,
+      "swap_used_mib": 9526.94
+    },
+    {
+      "elapsed_seconds": 35.103705209,
+      "pressure_level": 1,
+      "swap_used_mib": 9248.44
+    },
+    {
+      "elapsed_seconds": 36.154201834,
+      "pressure_level": 1,
+      "swap_used_mib": 9248.44
+    },
+    {
+      "elapsed_seconds": 37.223775709,
+      "pressure_level": 1,
+      "swap_used_mib": 9248.5
+    },
+    {
+      "elapsed_seconds": 38.290432292,
+      "pressure_level": 1,
+      "swap_used_mib": 9248.5
+    },
+    {
+      "elapsed_seconds": 39.35870075,
+      "pressure_level": 1,
+      "swap_used_mib": 9248.5
+    },
+    {
+      "elapsed_seconds": 40.429443084,
+      "pressure_level": 1,
+      "swap_used_mib": 9248.5
+    },
+    {
+      "elapsed_seconds": 41.501773667,
+      "pressure_level": 1,
+      "swap_used_mib": 9248.5
+    },
+    {
+      "elapsed_seconds": 42.573579375,
+      "pressure_level": 1,
+      "swap_used_mib": 9248.5
+    },
+    {
+      "elapsed_seconds": 43.644794042,
+      "pressure_level": 1,
+      "swap_used_mib": 9248.5
+    },
+    {
+      "elapsed_seconds": 44.710269834,
+      "pressure_level": 1,
+      "swap_used_mib": 9248.5
+    },
+    {
+      "elapsed_seconds": 45.765069249999996,
+      "pressure_level": 1,
+      "swap_used_mib": 9248.5
+    },
+    {
+      "elapsed_seconds": 46.835240917,
+      "pressure_level": 1,
+      "swap_used_mib": 9248.5
+    },
+    {
+      "elapsed_seconds": 47.903338833999996,
+      "pressure_level": 1,
+      "swap_used_mib": 9248.5
+    },
+    {
+      "elapsed_seconds": 48.956040167,
+      "pressure_level": 1,
+      "swap_used_mib": 9248.5
+    },
+    {
+      "elapsed_seconds": 50.020029,
+      "pressure_level": 1,
+      "swap_used_mib": 9240.5
+    },
+    {
+      "elapsed_seconds": 51.091743375,
+      "pressure_level": 1,
+      "swap_used_mib": 9240.5
+    },
+    {
+      "elapsed_seconds": 52.155751334,
+      "pressure_level": 1,
+      "swap_used_mib": 9240.5
+    },
+    {
+      "elapsed_seconds": 53.224418584,
+      "pressure_level": 1,
+      "swap_used_mib": 9240.5
+    },
+    {
+      "elapsed_seconds": 54.29520675,
+      "pressure_level": 1,
+      "swap_used_mib": 9240.5
+    },
+    {
+      "elapsed_seconds": 55.364959,
+      "pressure_level": 1,
+      "swap_used_mib": 9240.5
+    },
+    {
+      "elapsed_seconds": 56.4376195,
+      "pressure_level": 1,
+      "swap_used_mib": 9240.5
+    },
+    {
+      "elapsed_seconds": 57.507670667,
+      "pressure_level": 1,
+      "swap_used_mib": 9240.5
+    },
+    {
+      "elapsed_seconds": 58.578639667,
+      "pressure_level": 1,
+      "swap_used_mib": 9240.5
+    },
+    {
+      "elapsed_seconds": 59.641735374999996,
+      "pressure_level": 1,
+      "swap_used_mib": 9240.5
+    },
+    {
+      "elapsed_seconds": 60.060730959,
+      "pressure_level": 1,
+      "swap_used_mib": 9240.5
+    }
+  ]
+}

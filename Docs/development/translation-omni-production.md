@@ -53,3 +53,17 @@ expliciet gekozen alternatief. Deze resultaten rechtvaardigen geen
 gekwalificeerde standaard of automatische fallback. De menselijke beoordeling,
 werkelijk gesproken inhoud, 100 warme metingen, tien koude starts en duurproef
 blijven afzonderlijke acceptatiepunten.
+
+De eerste startpoging van de productie-duurproef (30 minuten, minimaal 200 warme
+turns, tien koude starts, vijf onderbrekingen) is afgewezen door de
+[geheugenvoorcontrole](translation-production-endurance-preflight.json).
+Gedurende 60,061 seconden bleef de druk normaal en waren geen compilers zichtbaar,
+maar systeemswap daalde van 9582,94 naar 9240,50 MiB. De range/nettoverandering van
+342,44 MiB overschreed de vooraf vastgelegde stabiliteitsgrenzen van 128/64 MiB.
+De grenzen zijn niet verruimd en er is tijdens die voorcontrole geen model geladen.
+Dalende systeemswap betekent hier geen kritieke geheugendruk en bewijst geen
+ongeschiktheid van 16 GiB-Macs; deze uitgangssituatie was nog onvoldoende stabiel.
+Na gecontroleerd read-only wachten en een nieuwe geslaagde voorcontrole is de
+[productie-duurproef](translation-production-endurance.md) wel gestart. Deze is
+na 15 minuten en 22 seconden afgebroken op de vaste swapgrens; de mislukte
+voorcontroles en de afgebroken run blijven afzonderlijk zichtbaar.
