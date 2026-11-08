@@ -163,6 +163,41 @@ private actor LFMSpeechFixtureTransport: LFMSpeechTransport {
   func finish() { pair.continuation.finish() }
 }
 extension LFM3BackendTests {
+  func testTwoPassWrongLanguageFailsBeforeFinalTextAndSpeech() async throws {
+    let socket = ScriptedLFMSocket()
+    let events = CapturedLFMEvents()
+    let transport = LFMSpeechFixtureTransport(socket: socket)
+    let backend = LFM3RealtimeBackend(
+      endpoint: try .init(baseURL: URL(string: "http://127.0.0.1:54321")!, bearerToken: "test"),
+      mode: .twoPass, socketFactory: { _ in socket }, speechTransport: transport,
+      contentGuard: .init(languageDetector: { _ in .init(language: "en", confidence: 0.99) }))
+    _ = try await backend.prepare(configuration: .init(
+      languagePair: .init(source: "en", target: "nl"), outputMode: .speechAndCaptions,
+      provider: .lfm3OmniTwoPass))
+    let stream = try await backend.start(sessionID: sid, generation: generation)
+    let consumer = Task { await events.consume(stream) }
+    try await backend.send(frame: frame())
+    try await backend.commit(turnID: turn)
+    await socket.push(#"{"type":"response.created","response":{"id":"r","status":"in_progress"}}"#)
+    await socket.push(#"{"type":"response.output_text.delta","response_id":"r","delta":"Please keep the door closed today."}"#)
+    await consumer.value
+    let error = await events.failure as? TranslationFailure
+    let called = await transport.called
+    let captured = await events.events
+    XCTAssertEqual(error?.code, .unsupportedOutput)
+    XCTAssertFalse(called)
+    XCTAssertFalse(captured.contains {
+      if case .audio = $0.payload { return true }
+      if case .translationText(let text) = $0.payload { return text.stability == .final }
+      return $0.payload == .turnCompleted
+    })
+    let sent = await socket.sent
+    let update = try XCTUnwrap(sent.first)
+    let instructions = try XCTUnwrap((JSONSerialization.jsonObject(with: update) as? [String: Any])?["session"] as? [String: Any])["instructions"] as? String
+    XCTAssertTrue(instructions?.contains("previous hour") == true)
+    await backend.stop()
+  }
+
   func testTwoPassClosesRealtimeSlotBeforeStreamingFloatSpeech() async throws {
     let socket = ScriptedLFMSocket()
     let events = CapturedLFMEvents()
@@ -189,6 +224,11 @@ extension LFM3BackendTests {
     await transport.push(Data([63]))
     try await Task.sleep(for: .milliseconds(20))
     let partial = await events.events
+    let textUpdates = partial.compactMap { event -> TranslationTextUpdate? in
+      if case .translationText(let text) = event.payload { return text }
+      return nil
+    }
+    XCTAssertEqual(textUpdates.map(\.stability), [.tentative, .final])
     let chunk = partial.compactMap { event -> TranslationAudioChunk? in
       if case .audio(let chunk) = event.payload { return chunk }
       return nil
