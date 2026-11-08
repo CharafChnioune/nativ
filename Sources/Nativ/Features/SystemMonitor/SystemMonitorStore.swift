@@ -441,7 +441,7 @@ private final class SystemDisplayFPSSampler: NSObject {
 
 private final class SystemANEUtilizationSampler: @unchecked Sendable {
     private let queue = DispatchQueue(
-        label: "dev.local.Nativ.system-monitor.ane",
+        label: "io.github.charafchnioune.nativ.system-monitor.ane",
         qos: .utility
     )
     private var services: [io_service_t] = []

@@ -54,9 +54,19 @@
 	<key>NativGitHubAppSlug</key>
 	<string>$(NATIV_GITHUB_APP_SLUG)</string>
 	<key>SUFeedURL</key>
-	<string>https://github.com/Neywa-Labs/nativ/releases/latest/download/appcast.xml</string>
+	<string>$(NATIV_STABLE_FEED_URL)</string>
 	<key>SUEnableAutomaticChecks</key>
-	<true/>
+	<false/>
+	<key>NativPreviewFeedURL</key>
+	<string>$(NATIV_PREVIEW_FEED_URL)</string>
+	<key>NativForkRepository</key>
+	<string>CharafChnioune/nativ</string>
+	<key>NativUpstreamSHA</key>
+	<string>$(NATIV_UPSTREAM_SHA)</string>
+	<key>NativUpstreamTag</key>
+	<string>$(NATIV_UPSTREAM_TAG)</string>
+	<key>NativForkRevision</key>
+	<string>$(NATIV_FORK_REVISION)</string>
 	<key>SUPublicEDKey</key>
 	<string>$(NATIV_SPARKLE_PUBLIC_KEY)</string>
 	<key>UTExportedTypeDeclarations</key>
@@ -69,7 +79,7 @@
 			<key>UTTypeDescription</key>
 			<string>Nativ Extension</string>
 			<key>UTTypeIdentifier</key>
-			<string>com.nativ.extension-package</string>
+			<string>io.github.charafchnioune.nativ.extension-package</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>

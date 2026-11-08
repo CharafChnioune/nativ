@@ -85,7 +85,7 @@ struct ImageGenerationExecutor {
         let caches = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first
             ?? fileManager.temporaryDirectory
         let directory = caches
-            .appendingPathComponent("Nativ", isDirectory: true)
+            .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
             .appendingPathComponent("ImageGeneration", isDirectory: true)
             .appendingPathComponent("References", isDirectory: true)
         try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -1117,12 +1117,12 @@ struct ImageGenerationSessionStore {
             let support = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
                 ?? fileManager.temporaryDirectory
             self.imageDirectory = support
-                .appendingPathComponent("Nativ", isDirectory: true)
+                .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
                 .appendingPathComponent("ImageGeneration", isDirectory: true)
             let caches = fileManager.urls(for: .cachesDirectory, in: .userDomainMask).first
                 ?? fileManager.temporaryDirectory
             self.legacyImageDirectory = caches
-                .appendingPathComponent("Nativ", isDirectory: true)
+                .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
                 .appendingPathComponent("ImageGeneration", isDirectory: true)
         }
     }

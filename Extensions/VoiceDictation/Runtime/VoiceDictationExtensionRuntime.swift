@@ -19,7 +19,7 @@ private final class VoiceDictationRuntimeService:
                 NativExtensionActivationContext.self,
                 from: contextData
             )
-            guard context.extensionID == "com.nativ.voice-dictation" else {
+            guard context.extensionID == "io.github.charafchnioune.nativ.voice-dictation" else {
                 reply("The activation context belongs to another extension.")
                 return
             }
@@ -64,7 +64,7 @@ private final class VoiceDictationExtensionRuntime: AppExtension {
     @AppExtensionPoint.Bind
     var boundExtensionPoint: AppExtensionPoint {
         AppExtensionPoint.Identifier(
-            host: "dev.local.Nativ",
+            host: "io.github.charafchnioune.nativ",
             name: "nativ-extension"
         )
     }

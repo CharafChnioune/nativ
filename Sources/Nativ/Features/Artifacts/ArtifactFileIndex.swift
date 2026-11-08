@@ -21,7 +21,7 @@ final class ArtifactFileIndexCoordinator: ObservableObject {
     private var retryNeedsScan = false
     private static let logger = Logger(subsystem: "Nativ", category: "FileIndex")
 
-    init(root: URL = URL.applicationSupportDirectory.appending(path: "Nativ/Chat"), indexURL: URL? = nil) {
+    init(root: URL = NativBuildIdentity.applicationSupportDirectory().appending(path: "Chat"), indexURL: URL? = nil) {
         self.root = ChatWorkFileStore.canonicalRoot(root)
         worker = ArtifactFileIndexer(root: root, indexURL: indexURL ?? root.deletingLastPathComponent().appending(path: "Artifact Files.sqlite"))
         changes = NotificationCenter.default.publisher(for: ArtifactFileManifest.changed).sink { [weak self] event in

@@ -80,7 +80,7 @@ final class RoutineScheduler {
             create: true
         )) ?? FileManager.default.homeDirectoryForCurrentUser
         let directory = base
-            .appendingPathComponent("Nativ", isDirectory: true)
+            .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
             .appendingPathComponent("Routines", isDirectory: true)
             .appendingPathComponent("triggers", isDirectory: true)
         try? FileManager.default.createDirectory(

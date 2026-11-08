@@ -25,7 +25,7 @@ final class ArtifactSearchIndex: ObservableObject {
             .urls(for: .applicationSupportDirectory, in: .userDomainMask)
             .first ?? FileManager.default.temporaryDirectory
         storageURL = support
-            .appendingPathComponent("Nativ", isDirectory: true)
+            .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
             .appendingPathComponent("Artifact Vectors.json")
         vectors = Self.load(storageURL)
         indexedCount = vectors.count

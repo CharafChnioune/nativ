@@ -283,7 +283,7 @@ final class NativSettingsTests: XCTestCase {
             Array(settings.launchArguments.prefix(12)),
             [
                 "--host", "127.0.0.1",
-                "--port", "8080",
+                "--port", "8181",
                 "--max-tokens", "2048",
                 "--model", "org/language",
                 "--image-model", "org/image",

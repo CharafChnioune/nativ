@@ -163,7 +163,7 @@ final class NativKitLibrary {
             in: .userDomainMask
         ).first ?? fileManager.homeDirectoryForCurrentUser
         return applicationSupport
-            .appendingPathComponent("Nativ", isDirectory: true)
+            .appendingPathComponent(NativBuildIdentity.applicationSupportDirectoryName, isDirectory: true)
             .appendingPathComponent("Kits.json")
     }
 }
