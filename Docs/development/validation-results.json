@@ -1,0 +1,62 @@
+{
+  "date": "2026-11-08",
+  "native": {
+    "result": "Passed",
+    "total_test_cases": 1802,
+    "passed_test_cases": 1794,
+    "skipped_test_cases": 8,
+    "failed_test_cases": 0,
+    "passed_invocations_including_parameter_variants": 1799,
+    "required_classes_passed_cases": {
+      "AudioSessionCoordinatorTests": 4,
+      "LiveTranslationIntegrationTests": 3,
+      "SoftwareUpdaterTests": 12,
+      "TranslationAudioTests": 10,
+      "TranslationDownloadReservationsTests": 3,
+      "TranslationHostOperationGateTests": 4,
+      "TranslationLocalTransportTests": 5,
+      "TranslationModelStoreTests": 3,
+      "TranslationResourceAssessmentTests": 4,
+      "TranslationRuntimeTests": 6,
+      "TranslationWhisperPreparationTests": 2
+    },
+    "skipped_optional_integration_cases": [
+      "AudioDiarizationTests.testDiarizedTextOnlyModelWithRealServer()",
+      "AudioDiarizationTests.testServerWithRealModel()",
+      "AudioSummaryReferenceTests.testSavedMeetingSummaryWithLocalModel()",
+      "ChatCompactionTests.testLiveCompactionAndReplay()",
+      "NativAudioClientTests.testSpeakerEndpointsWithRealServer()",
+      "ParakeetTests.testDefaultModelTranscribesSpeech()",
+      "TranslationRuntimeTests.testExplicitLocalRuntimeIntegration()",
+      "TranslationWhisperPreparationTests.testPinnedArtifactsPrepareWithoutChangingSourceSnapshot()"
+    ],
+    "log_sha256": "9d86a80c7da076c54f19fbe141618e00e16ddd978b3fbfff4f5e5c1b03ee880f",
+    "toolchain": "Xcode 27.2 / Swift 6.4.2 / macOS 26.6 / arm64",
+    "source_note": "Canonical source snapshot outside Desktop avoided TCC-blocked test startup. Full suite covered unchanged functional production code. A trailing EOF blank line was then removed from TranslationWhisperPreparation.swift; the final file was rebuilt and both deterministic tests rerun successfully. All final compiled inputs match the canonical repository.",
+    "final_whisper_file_recheck": {
+      "passed": 2,
+      "skipped": 1,
+      "failed": 0,
+      "log": "native-whisper-final.log"
+    }
+  },
+  "swiftpm": {
+    "passed": 53,
+    "failed": 0,
+    "note": "24 XCTest and 29 Swift Testing; overlaps native framework target, do not add as distinct total."
+  },
+  "python": {
+    "total": 123,
+    "passed": 122,
+    "skipped": 1,
+    "failed": 0,
+    "seconds": 11.862
+  },
+  "scope_limit": "No human voice, 128GB hardware, acoustic stop-latency or signed-update qualification.",
+  "app_source_commit": "e1cf3640ef066cf3bd7e1f149701c6294bf5a0f9",
+  "build": {
+    "result": "BUILD SUCCEEDED",
+    "log": "development-build-verified-revision.log",
+    "source_commit": "e1cf3640ef066cf3bd7e1f149701c6294bf5a0f9"
+  }
+}

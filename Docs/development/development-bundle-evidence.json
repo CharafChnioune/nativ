@@ -1,0 +1,18 @@
+{
+  "app_source_commit": "e1cf3640ef066cf3bd7e1f149701c6294bf5a0f9",
+  "app_identifier": "io.github.charafchnioune.nativ",
+  "frameworks": {
+    "NativServerKit": "io.github.charafchnioune.nativ.NativServerKit",
+    "NativExtensionSDK": "io.github.charafchnioune.nativ.NativExtensionSDK",
+    "NativTranslationKit": "io.github.charafchnioune.nativ.NativTranslationKit"
+  },
+  "extensions": {
+    "VoiceDictationExtensionRuntime.appex": "io.github.charafchnioune.nativ.VoiceDictationExtension",
+    "LiveTranslationExtensionRuntime.appex": "io.github.charafchnioune.nativ.LiveTranslationExtension"
+  },
+  "helper": "arm64 bundled static native helper",
+  "updates": "disabled: own Sparkle key is empty; no upstream fallback",
+  "native_snapshot_compile_inputs_matching_canonical": 649,
+  "compile_inputs_sha256": "2b48dbd579c51cf760eca04fa33d056bf861775acc5317dd5fa5619781bd50e7",
+  "distribution_qualified": false
+}
