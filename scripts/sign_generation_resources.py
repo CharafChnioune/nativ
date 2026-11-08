@@ -7,7 +7,9 @@ import json
 import os
 from pathlib import Path
 import plistlib
+import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from fork_release import NAMESPACE, validate_bundle_resources
 
 

@@ -275,10 +275,13 @@ final class GenerationPlaybackTests: XCTestCase {
         let rate = try await XCTUnwrap(videoTracks.first).load(.nominalFrameRate)
         XCTAssertEqual(rate, 24)
         let generator = AVAssetImageGenerator(asset: asset)
+        generator.requestedTimeToleranceBefore = .zero
+        generator.requestedTimeToleranceAfter = .zero
         var decodedFrames: [Data] = []
         for seconds in [0.0, 0.5, 0.95] {
             let result = try await generator.image(at: CMTime(seconds: seconds, preferredTimescale: 600))
             XCTAssertEqual(result.image.width, 96); XCTAssertEqual(result.image.height, 64)
+            XCTAssertEqual(result.actualTime.seconds, seconds, accuracy: 1.0 / 24)
             decodedFrames.append(try XCTUnwrap(result.image.dataProvider?.data) as Data)
         }
         XCTAssertNotEqual(decodedFrames[0], decodedFrames[1]); XCTAssertNotEqual(decodedFrames[1], decodedFrames[2])

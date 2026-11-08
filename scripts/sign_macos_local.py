@@ -6,6 +6,7 @@ import plistlib
 import subprocess
 import sys
 import tempfile
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from sign_generation_resources import prepare, refresh
 
 NAMESPACE = 'io.github.charafchnioune.nativ'
