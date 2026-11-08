@@ -19,10 +19,11 @@ bundle_identifier="$(
     /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' \
         "$app_path/Contents/Info.plist" 2>/dev/null || true
 )"
-[[ -n "$bundle_identifier" ]] || fail "Nativ has no bundle identifier"
+[[ "$bundle_identifier" == "io.github.charafchnioune.nativ" ]] || fail "This launcher only opens the isolated fork identity"
 
 codesign --verify --deep --strict "$app_path"
 signature_details="$(codesign -dvvv -r- "$app_path" 2>&1)"
+if [[ "${NATIV_ALLOW_ADHOC_DEVELOPMENT:-NO}" != "YES" ]]; then
 [[ "$signature_details" == *"Authority=Apple Development:"* ]] || {
     fail "refusing to open an ad-hoc build because it would invalidate macOS permissions"
 }
@@ -33,12 +34,18 @@ signature_details="$(codesign -dvvv -r- "$app_path" 2>&1)"
     fail "refusing to open a build without a stable designated requirement"
 }
 
+fi
+
 # Multiple Nativ builds compete for the same global shortcuts and make privacy
-# status appear inconsistent. Close prior instances before opening this exact
-# verified bundle.
+# status appear inconsistent. Close only an instance of this exact build.
+# Never terminate the separately installed official application.
 while IFS= read -r process_id; do
     [[ -n "$process_id" ]] || continue
-    kill "$process_id" 2>/dev/null || true
+    process_command="$(ps -p "$process_id" -o command= 2>/dev/null || true)"
+    process_command="${process_command#"${process_command%%[![:space:]]*}"}"
+    if [[ "$process_command" == "$app_path/Contents/MacOS/Nativ" ]]; then
+        kill "$process_id" 2>/dev/null || true
+    fi
 done < <(pgrep -x Nativ || true)
 
 open -na "$app_path"

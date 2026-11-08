@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct NativApplicationCommands: Commands {
@@ -7,6 +8,18 @@ struct NativApplicationCommands: Commands {
     let appDelegate: AppDelegate
 
     var body: some Commands {
+        CommandGroup(replacing: .appInfo) {
+            Button("About Nativ · Live Translate fork") {
+                let info = Bundle.main.infoDictionary ?? [:]
+                let upstream = info["NativUpstreamSHA"] as? String ?? "Unavailable"
+                let revision = info["NativForkRevision"] as? String ?? "development"
+                NSApplication.shared.orderFrontStandardAboutPanel(options: [
+                    .applicationName: "Nativ · Live Translate fork",
+                    .credits: NSAttributedString(string:
+                        "\(NativBuildIdentity.repository)\nBased on Neywa-Labs/nativ. This is an independent fork.\nUpstream: \(upstream)\nFork revision: \(revision)\nMIT notices and model/component licenses are retained in this build.")
+                ])
+            }
+        }
         CommandGroup(after: .appInfo) {
             CheckForUpdatesCommand(updater: appDelegate.softwareUpdater.updater)
         }

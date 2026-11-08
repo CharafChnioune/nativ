@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.charafchnioune.nativ.translation",
+  "version": "1.0.0",
+  "minimumNativVersion": "1.0.0",
+  "displayName": "Translate",
+  "summary": "Private local translation of spoken turns, with explicit model and language capabilities.",
+  "developer": "Nativ fork contributors",
+  "systemImage": "bubble.left.and.text.bubble.right",
+  "included": true,
+  "enabledByDefault": false,
+  "runtime": "extensionFoundation",
+  "extensionPoint": "io.github.charafchnioune.nativ.nativ-extension",
+  "runtimeBundleIdentifier": "io.github.charafchnioune.nativ.LiveTranslationExtension",
+  "contributions": {
+    "sidebar": [
+      {
+        "id": "io.github.charafchnioune.nativ.translation.page",
+        "title": "Translate",
+        "systemImage": "bubble.left.and.text.bubble.right",
+        "order": 260
+      }
+    ],
+    "commands": [
+      {
+        "id": "io.github.charafchnioune.nativ.translation.toggle",
+        "title": "Toggle translation",
+        "systemImage": "translate"
+      },
+      {
+        "id": "io.github.charafchnioune.nativ.translation.stop",
+        "title": "Stop translation",
+        "systemImage": "stop"
+      }
+    ],
+    "shortcuts": [
+      {
+        "id": "io.github.charafchnioune.nativ.translation.toggle",
+        "title": "Toggle translation",
+        "defaultShortcut": "Control+Option+T"
+      }
+    ],
+    "settings": [
+      {
+        "id": "io.github.charafchnioune.nativ.translation.models",
+        "title": "Translation models and languages"
+      },
+      {
+        "id": "io.github.charafchnioune.nativ.translation.audio",
+        "title": "Translation audio route"
+      }
+    ]
+  },
+  "permissions": [
+    "microphone",
+    "audio.systemCapture",
+    "models.speechToText",
+    "overlay",
+    "storage.namespaced"
+  ]
+}

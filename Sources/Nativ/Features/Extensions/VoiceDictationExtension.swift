@@ -6,7 +6,7 @@ import SwiftUI
 @MainActor
 final class VoiceDictationExtension: NativHostExtension {
     static let showRecordingsCommandID =
-        "com.nativ.voice-dictation.show-recordings"
+        "io.github.charafchnioune.nativ.voice-dictation.show-recordings"
 
     let manifest: NativExtensionManifest
 
@@ -116,7 +116,7 @@ final class VoiceDictationExtension: NativHostExtension {
         included: true,
         enabledByDefault: false,
         runtime: .extensionFoundation,
-        runtimeBundleIdentifier: "dev.local.Nativ.VoiceDictationExtension",
+        runtimeBundleIdentifier: "io.github.charafchnioune.nativ.VoiceDictationExtension",
         contributions: .init(
             sidebar: [
                 .init(
@@ -135,20 +135,20 @@ final class VoiceDictationExtension: NativHostExtension {
             ],
             shortcuts: [
                 .init(
-                    id: "com.nativ.voice-dictation.transcribe",
+                    id: "io.github.charafchnioune.nativ.voice-dictation.transcribe",
                     title: "Transcribe",
                     defaultShortcut: "Fn+Control"
                 ),
                 .init(
-                    id: "com.nativ.voice-dictation.retranscribe",
+                    id: "io.github.charafchnioune.nativ.voice-dictation.retranscribe",
                     title: "Retranscribe",
                     defaultShortcut: "Fn+R"
                 ),
             ],
             settings: [
-                .init(id: "com.nativ.voice-dictation.model", title: "Speech-to-Text Model"),
-                .init(id: "com.nativ.voice-dictation.animation", title: "Animation"),
-                .init(id: "com.nativ.voice-dictation.shortcuts", title: "Shortcuts"),
+                .init(id: "io.github.charafchnioune.nativ.voice-dictation.model", title: "Speech-to-Text Model"),
+                .init(id: "io.github.charafchnioune.nativ.voice-dictation.animation", title: "Animation"),
+                .init(id: "io.github.charafchnioune.nativ.voice-dictation.shortcuts", title: "Shortcuts"),
             ]
         ),
         permissions: [

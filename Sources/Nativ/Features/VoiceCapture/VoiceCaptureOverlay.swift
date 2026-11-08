@@ -8,7 +8,7 @@ private enum VoiceIslandLayoutMetrics {
     static let audioCaptureSideWidth: CGFloat = 106
 }
 
-private let voiceCaptureDismissalDuration: TimeInterval = 0.38
+private let voiceCaptureDismissalDuration: TimeInterval = NativAudioOverlayLayout.dismissalDuration
 private let voiceCaptureMinimumLoadingDuration: TimeInterval = 0.65
 private let meetingTranscriptionSuggestionDuration: TimeInterval = 10
 
@@ -153,20 +153,7 @@ final class VoiceCaptureOverlayController {
             backing: .buffered,
             defer: false
         )
-        panel.backgroundColor = .clear
-        panel.isOpaque = false
-        panel.hasShadow = false
-        panel.hidesOnDeactivate = false
-        panel.isFloatingPanel = true
-        panel.becomesKeyOnlyIfNeeded = false
-        panel.ignoresMouseEvents = true
-        panel.level = .screenSaver
-        panel.collectionBehavior = [
-            .canJoinAllSpaces,
-            .fullScreenAuxiliary,
-            .ignoresCycle,
-            .stationary,
-        ]
+        NativAudioOverlayLayout.configure(panel, interactive: false)
         panel.isMovable = false
         panel.isMovableByWindowBackground = false
         panel.contentView = NSHostingView(rootView: content)
@@ -428,18 +415,8 @@ final class VoiceCaptureOverlayController {
         )
         let visibleFrame = screen(containing: cursorPosition).visibleFrame
 
-        let horizontalInset: CGFloat = 8
-        let verticalInset: CGFloat = 8
-        let origin = NSPoint(
-            x: min(
-                max(preferredOrigin.x, visibleFrame.minX + horizontalInset),
-                visibleFrame.maxX - panelSize.width - horizontalInset
-            ),
-            y: min(
-                max(preferredOrigin.y, visibleFrame.minY + verticalInset),
-                visibleFrame.maxY - panelSize.height - verticalInset
-            )
-        )
+        let origin = NativAudioOverlayLayout.clampedOrigin(
+            preferredOrigin, size: panelSize, visibleFrame: visibleFrame)
         waveformPanel.setFrameOrigin(origin)
     }
 
@@ -1108,7 +1085,7 @@ struct NativAudioCaptureMark: View {
                 }
                 .scaleEffect(state == .finishing ? 0.92 : 1)
                 .opacity(state == .failed ? 0.48 : 1)
-                .animation(.easeOut(duration: 0.12), value: level)
+                .animation(NativAudioOverlayLayout.levelAnimation, value: level)
             }
         }
     }

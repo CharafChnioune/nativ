@@ -1,6 +1,6 @@
 name: Nativ
 options:
-  bundleIdPrefix: dev.local
+  bundleIdPrefix: io.github.charafchnioune.nativ
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
@@ -53,7 +53,45 @@ schemes:
       config: Debug
       targets:
         - NativTests
+        - NativTranslationKitTests
 targets:
+  NativTranslationKit:
+    type: framework
+    platform: macOS
+    configFiles:
+      Debug: Configuration/Signing.xcconfig
+      Release: Configuration/Signing.xcconfig
+    sources:
+      - path: Sources/NativTranslationKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(NATIV_TRANSLATION_KIT_BUNDLE_IDENTIFIER)
+        GENERATE_INFOPLIST_FILE: YES
+        SKIP_INSTALL: YES
+  NativTranslationKitTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests/NativTranslationKitTests
+    dependencies:
+      - target: NativTranslationKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.charafchnioune.nativ.TranslationKitTests
+        GENERATE_INFOPLIST_FILE: YES
+  WebRTCVAD:
+    type: library.static
+    platform: macOS
+    sources:
+      - path: ThirdParty/WebRTCVAD/src
+      - path: ThirdParty/WebRTCVAD/include
+    settings:
+      base:
+        CLANG_C_LANGUAGE_STANDARD: c11
+        HEADER_SEARCH_PATHS: "$(SRCROOT)/ThirdParty/WebRTCVAD/include $(SRCROOT)/ThirdParty/WebRTCVAD/src"
+        DEFINES_MODULE: NO
+        CLANG_ENABLE_MODULES: NO
+        SKIP_INSTALL: YES
   NativExtensionSDK:
     type: framework
     platform: macOS
@@ -110,13 +148,29 @@ targets:
         buildPhase: resources
       - path: Extensions/VoiceDictation/Manifest.json
         buildPhase: resources
+      - path: Extensions/LiveTranslation
+        type: folder
+        excludes:
+          - Runtime
+        buildPhase: resources
+      - path: ThirdParty/TranslationCascade
+        type: folder
+        buildPhase: resources
+      - path: ThirdParty/WebRTCVAD/LICENSE
+        buildPhase: resources
+      - path: ThirdParty/WebRTCVAD/PATENTS
+        buildPhase: resources
       - path: ThirdParty/ripgrep/Tools
         type: folder
         buildPhase: resources
     dependencies:
+      - target: NativTranslationKit
+      - target: WebRTCVAD
       - target: NativServerKit
       - target: NativExtensionSDK
       - target: VoiceDictationExtensionRuntime
+        embed: true
+      - target: LiveTranslationExtensionRuntime
         embed: true
       - package: Sparkle
         product: Sparkle
@@ -135,6 +189,11 @@ targets:
       - package: swift-xet
         product: Xet
     postBuildScripts:
+      - name: Install LFM3 realtime runtime
+        basedOnDependencyAnalysis: false
+        script: |
+          set -euo pipefail
+          python3 "$SRCROOT/scripts/install_lfm_realtime_runtime.py" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH"
       - name: Install GitHub OAuth MCP server
         basedOnDependencyAnalysis: false
         script: |
@@ -144,6 +203,8 @@ targets:
     settings:
       base:
         ARCHS: arm64
+        HEADER_SEARCH_PATHS: "$(inherited) $(SRCROOT)/ThirdParty/WebRTCVAD/include"
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: ""
         MACOSX_DEPLOYMENT_TARGET: "26.0"
         ENABLE_HARDENED_RUNTIME: YES
@@ -155,9 +216,9 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Nativ
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.utilities
         EX_ENABLE_EXTENSION_POINT_GENERATION: YES
-        MARKETING_VERSION: 0.4.5
+        MARKETING_VERSION: 1.0.0
         NATIV_RELEASE_VERSION: $(MARKETING_VERSION)
-        CURRENT_PROJECT_VERSION: 24
+        CURRENT_PROJECT_VERSION: 1
   VoiceDictationExtensionRuntime:
     type: extensionkit-extension
     platform: macOS
@@ -178,8 +239,32 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: $(NATIV_VOICE_EXTENSION_BUNDLE_IDENTIFIER)
         GENERATE_INFOPLIST_FILE: NO
         INFOPLIST_FILE: Configuration/AudioExtension-Info.plist
-        MARKETING_VERSION: 0.4.5
-        CURRENT_PROJECT_VERSION: 24
+        MARKETING_VERSION: 1.0.0
+        CURRENT_PROJECT_VERSION: 1
+        SKIP_INSTALL: YES
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks"
+  LiveTranslationExtensionRuntime:
+    type: extensionkit-extension
+    platform: macOS
+    configFiles:
+      Debug: Configuration/Signing.xcconfig
+      Release: Configuration/Signing.xcconfig
+    sources:
+      - path: Extensions/LiveTranslation/Runtime
+      - path: Extensions/LiveTranslation/Manifest.json
+        buildPhase: resources
+    dependencies:
+      - target: NativExtensionSDK
+    settings:
+      base:
+        ARCHS: arm64
+        MACOSX_DEPLOYMENT_TARGET: "26.0"
+        ENABLE_HARDENED_RUNTIME: YES
+        PRODUCT_BUNDLE_IDENTIFIER: $(NATIV_TRANSLATION_EXTENSION_BUNDLE_IDENTIFIER)
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Configuration/LiveTranslationExtension-Info.plist
+        MARKETING_VERSION: 1.0.0
+        CURRENT_PROJECT_VERSION: 1
         SKIP_INSTALL: YES
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks @executable_path/../../../../Frameworks"
   NativTests:
@@ -187,6 +272,18 @@ targets:
     platform: macOS
     sources:
       - path: Tests/NativTests
+      - path: Sources/Nativ/Utilities/NativBuildIdentity.swift
+      - path: Sources/Nativ/Features/Shared/AudioSessionCoordinator.swift
+      - path: Sources/Nativ/Features/LiveTranslation/TranslationAudioCapture.swift
+      - path: Sources/Nativ/Features/LiveTranslation/TranslationAudioPlayback.swift
+      - path: Sources/Nativ/Features/LiveTranslation/TranslationSystemAudioCapture.swift
+      - path: Sources/Nativ/Features/LiveTranslation/TranslationVoiceActivityDetector.swift
+      - path: Sources/Nativ/Features/LiveTranslation/TranslationModelStore.swift
+      - path: Sources/Nativ/Features/LiveTranslation/TranslationWhisperPreparation.swift
+      - path: Sources/Nativ/Features/LiveTranslation/TranslationResourceAssessment.swift
+      - path: Sources/Nativ/Features/LiveTranslation/TranslationHostOperationGate.swift
+      - path: Sources/Nativ/Features/LiveTranslation/TranslationRuntimeController.swift
+      - path: Sources/Nativ/Features/LiveTranslation/LiveTranslationSettings.swift
       - path: Sources/Nativ/NativSettings.swift
       - path: Sources/Nativ/NativRuntimeSettingsController.swift
       - path: Sources/Nativ/ReleaseVersion.swift
@@ -362,6 +459,8 @@ targets:
       - path: Sources/Nativ/Features/Routines/Routine.swift
       - path: Sources/Nativ/Features/Routines/RoutineStore.swift
     dependencies:
+      - target: NativTranslationKit
+      - target: WebRTCVAD
       - target: NativServerKit
       - target: NativExtensionSDK
       - package: ZIPFoundation
@@ -382,5 +481,6 @@ targets:
         product: Xet
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: dev.local.NativTests
+        HEADER_SEARCH_PATHS: "$(inherited) $(SRCROOT)/ThirdParty/WebRTCVAD/include"
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.charafchnioune.nativ.Tests
         GENERATE_INFOPLIST_FILE: YES
