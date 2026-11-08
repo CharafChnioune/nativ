@@ -1,0 +1,9 @@
+# Runtime setup process ownership review
+
+Confirmed the old implementation released its flock after host SIGKILL while both the simulated pip leader and its build child remained alive. The reproduction used only stdlib subprocesses and temporary files; owned children were explicitly cleaned afterward.
+
+Both runtime builders now accept optional `compute_lease_fd` and use `nativ_generation.setup_command.run_setup_command`. RuntimeManager forwards its acquired descriptor. The supervisor inherits that descriptor, lives outside the owned setup group, and uses host-pipe EOF for parent death. A live anchor reserves the group identity even after the command exits. Normal completion, cancellation and parent death kill the entire owned group and wait until no running member remains before closing the inherited descriptor. The anchor remains unreaped during that check, preventing group-ID reuse. Zombie processes have already stopped and released compute resources. Process inventory failure fails closed, retaining admission. Standalone builders retain their existing five positional arguments and work without an inherited descriptor.
+
+Validation: five real, weight-free tests passed, including SIGKILL plus admission exclusion; cancellation; orphan build-child cleanup after successful command exit; poisoned target PYTHONHOME; and both packaged builders without a checkout Overlay. Existing Music installation (5) and Video runtime (5) tests also passed. Logs: setup-command-tests.log. No model cache changes, pip dependency downloads, model downloads, paid requests or Git mutations.
+
+Scope: trusted pip/build descendants must remain in the owned Unix process group, as with the existing generation worker guardian. Deliberate external SIGKILL of the independent supervisor is outside the server-parent-death guarantee.

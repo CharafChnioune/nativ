@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Require executed Live Translate XCTest classes, not merely a green empty plan."""
+"""Require executed Translate and Music/Video XCTest classes, not an empty plan."""
 import argparse
 import json
 import subprocess
@@ -9,7 +9,11 @@ REQUIRED = {"CascadedTranslationBackendTests", "TranslationContentGuardTests", "
             "TranslationLocalTransportTests", "TranslationWhisperPreparationTests",
             "TranslationResourceAssessmentTests", "TranslationHostOperationGateTests",
             "TranslationDownloadReservationsTests", "TranslationCascadeRuntimeTests",
-            "ManagedTranslationCascadeResourcesTests", "TranslationStageCatalogTests", "TranslationStockVoicePreparationTests"}
+            "ManagedTranslationCascadeResourcesTests", "TranslationStageCatalogTests", "TranslationStockVoicePreparationTests",
+            "GenerationPersistenceTests", "GenerationAudioCoordinationTests", "MusicPresentationStateTests",
+            "GenerationArtifactTests", "ChatGenerationToolTests", "GenerationClientTests",
+            "GenerationAttachmentTests", "VideoPresentationStateTests", "GenerationComputeLeaseTests",
+            "VideoInputPreviewTests", "GenerationPlaybackTests"}
 REQUIRED_CASES = {("TranslationWhisperPreparationTests", "testDifferentRevisionDoesNotCreatePreparedFiles"),
                   ("TranslationWhisperPreparationTests", "testAlreadyCancelledPreparationDoesNotTouchTheCache"),
                   ("ManagedTranslationCascadeResourcesTests", "testInvalidatedPendingBeginCannotResurrectAfterCleanup"),

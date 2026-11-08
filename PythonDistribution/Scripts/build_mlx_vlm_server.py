@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import importlib.util
 import os
 import platform
 import re
@@ -31,6 +32,12 @@ PYTHON_DISTRIBUTION_ROOT = REPO_ROOT / "PythonDistribution"
 LAUNCHER_SOURCE = PYTHON_DISTRIBUTION_ROOT / "Launcher" / "mlx_vlm_server_launcher.c"
 OVERLAY_SERVER = PYTHON_DISTRIBUTION_ROOT / "Overlay" / "nativ_server.py"
 OVERLAY_TRANSLATION = PYTHON_DISTRIBUTION_ROOT / "Overlay" / "nativ_translation_local.py"
+OVERLAY_PACKAGES = tuple(PYTHON_DISTRIBUTION_ROOT / "Overlay" / name for name in (
+    "nativ_generation", "nativ_music", "nativ_video"))
+RUNTIME_RESOURCES = tuple(PYTHON_DISTRIBUTION_ROOT / name for name in (
+    "MusicRuntimes", "VideoRuntimes", "CodecRuntime", "Patches"))
+CODEC_MANAGED_OUTPUT = REPO_ROOT / "dist" / "codec-runtime"
+
 MODEL_CAPABILITIES_MANIFEST_GENERATOR = Path(__file__).with_name(
     "generate_model_capabilities_manifest.py"
 )
@@ -269,7 +276,7 @@ def build_signature(
     skip_install: bool,
 ) -> dict[str, object]:
     return {
-        "version": 6,
+        "version": 7,
         "asset": asset.name,
         "python_version": python_version,
         "pbs_release": pbs_release,
@@ -313,6 +320,9 @@ def build_signature(
         "launcher_sha256": file_sha256(LAUNCHER_SOURCE),
         "overlay_server_sha256": file_sha256(OVERLAY_SERVER),
         "overlay_translation_sha256": file_sha256(OVERLAY_TRANSLATION),
+        "overlay_packages": {path.name: tree_fingerprint(path) for path in OVERLAY_PACKAGES},
+        "runtime_resources": {path.name: tree_fingerprint(path) for path in RUNTIME_RESOURCES},
+        "codec_managed": tree_fingerprint(CODEC_MANAGED_OUTPUT) if CODEC_MANAGED_OUTPUT.is_dir() else None,
         "model_capabilities_manifest_generator_sha256": file_sha256(
             MODEL_CAPABILITIES_MANIFEST_GENERATOR
         ),
@@ -620,11 +630,90 @@ def site_packages_dir(output: Path) -> Path:
     return matches[0]
 
 
+def tree_fingerprint(root: Path) -> dict[str, str]:
+    """Content and membership matter; deleted files invalidate the cache too."""
+    root = Path(root)
+    if not root.is_dir():
+        raise SystemExit(f"Missing packaged source directory: {root}")
+    inventory = {}
+    for path in sorted(root.rglob("*")):
+        relative = path.relative_to(root)
+        if "__pycache__" in relative.parts or path.suffix in (".pyc", ".pyo"):
+            continue
+        if path.is_symlink():
+            raise SystemExit(f"Packaged source may not contain symlinks: {path}")
+        if path.is_file():
+            inventory[relative.as_posix()] = file_sha256(path)
+    return inventory
+
+
+def replace_packaged_tree(source: Path, destination: Path) -> None:
+    tree_fingerprint(source)  # Validate before replacing the managed destination.
+    if destination.is_symlink():
+        destination.unlink()
+    elif destination.exists():
+        shutil.rmtree(destination)
+    shutil.copytree(source, destination, ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo"))
+
+
 def install_overlay(output: Path) -> None:
+    site = site_packages_dir(output)
     for source in (OVERLAY_SERVER, OVERLAY_TRANSLATION):
-        destination = site_packages_dir(output) / source.name
+        destination = site / source.name
         log(f"Installing runtime overlay {source.name}")
         shutil.copy2(source, destination)
+    for source in OVERLAY_PACKAGES:
+        replace_packaged_tree(source, site / source.name)
+    for source in RUNTIME_RESOURCES:
+        replace_packaged_tree(source, output / source.name)
+    image_source = site / "mlx_vlm" / "server" / "openai.py"
+    if image_source.is_file():
+        image_execution_patch().apply(site)
+    if CODEC_MANAGED_OUTPUT.is_dir():
+        # Sources/manifests remain beside a separately built, hash-receipted codec.
+        replace_packaged_tree(CODEC_MANAGED_OUTPUT, output / "CodecRuntime" / "managed")
+
+
+def image_execution_patch():
+    script = PYTHON_DISTRIBUTION_ROOT / "Patches" / "apply_patch.py"
+    spec = importlib.util.spec_from_file_location("nativ_image_packaging_patch", script)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def verify_packaged_resources(output: Path) -> None:
+    site = site_packages_dir(output)
+    for source in OVERLAY_PACKAGES:
+        if tree_fingerprint(site / source.name) != tree_fingerprint(source):
+            raise SystemExit(f"Packaged overlay differs: {source.name}")
+    for source in RUNTIME_RESOURCES:
+        actual = tree_fingerprint(output / source.name)
+        if source.name == "CodecRuntime":
+            actual = {key: value for key, value in actual.items() if not key.startswith("managed/")}
+        if actual != tree_fingerprint(source):
+            raise SystemExit(f"Packaged runtime resources differ: {source.name}")
+    if CODEC_MANAGED_OUTPUT.is_dir():
+        managed = output / "CodecRuntime" / "managed"
+        actual = tree_fingerprint(managed)
+        expected = tree_fingerprint(CODEC_MANAGED_OUTPUT)
+        # Signing changes Mach-O bytes and the current hash receipt. Compare
+        # immutable corresponding sources/build data, then verify current hashes.
+        invariant = lambda inventory: {key: value for key, value in inventory.items()
+                                       if not key.startswith("bin/") and key != "receipt.json"}
+        if invariant(actual) != invariant(expected):
+            raise SystemExit("Packaged managed codec differs from its prepared candidate")
+        try:
+            receipt = json.loads((managed / "receipt.json").read_text())
+            identity = json.loads((output / "CodecRuntime" / "manifest.json").read_text())["id"]
+            candidate = json.loads((CODEC_MANAGED_OUTPUT / "receipt.json").read_text())
+            if receipt.get("id") != identity or receipt.get("build_files", receipt.get("files")) != candidate.get("build_files", candidate.get("files")):
+                raise ValueError("identity or build provenance")
+            for name in ("ffmpeg", "ffprobe"):
+                if file_sha256(managed / "bin" / name) != receipt["files"]["bin/" + name]:
+                    raise ValueError("hash")
+        except (OSError, ValueError, KeyError) as error:
+            raise SystemExit("Packaged managed codec receipt is invalid") from error
 
 
 def install_model_capabilities_manifest(output: Path) -> None:
@@ -652,9 +741,22 @@ def verify_distribution(output: Path, *, expect_mlx_vlm: bool) -> None:
                 str(python),
                 "-c",
                 "import importlib.util; "
-                "raise SystemExit(0 if importlib.util.find_spec('nativ_server') and importlib.util.find_spec('nativ_translation_local') else 1)",
+                "raise SystemExit(0 if all(importlib.util.find_spec(name) for name in "
+                "('nativ_server','nativ_translation_local','nativ_generation','nativ_music','nativ_video')) else 1)",
             ]
         )
+        env = os.environ.copy()
+        env.pop("PYTHONPATH", None)
+        env["PYTHONNOUSERSITE"] = "1"
+        env["PYTHONHOME"] = str(output / "python")
+        run([str(python), "-I", "-c",
+             "import nativ_generation.contracts,nativ_music.catalog,nativ_video.catalog; "
+             "assert nativ_music.catalog.profiles(); assert nativ_video.catalog.profiles()"], env=env)
+        verify_packaged_resources(output)
+        try:
+            image_execution_patch().verify(site_packages_dir(output))
+        except (OSError, ValueError) as error:
+            raise SystemExit("Packaged Images execution patch verification failed") from error
         manifest_path = output / MANIFEST_FILENAME
         if not manifest_path.exists():
             raise SystemExit(f"Missing model capability manifest: {manifest_path}")
@@ -746,6 +848,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Do not install mlx-vlm",
     )
+    parser.add_argument(
+        "--require-codecs", action="store_true",
+        default=os.environ.get("NATIV_REQUIRE_MANAGED_CODECS") == "YES",
+        help="Fail if the source-pinned managed codec candidate has not been built",
+    )
     cache_mode = parser.add_mutually_exclusive_group()
     cache_mode.add_argument(
         "--verify-only",
@@ -764,6 +871,8 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     output = args.output.resolve()
+    if args.require_codecs and not (CODEC_MANAGED_OUTPUT / "receipt.json").is_file():
+        raise SystemExit("Managed codecs are required. Build PythonDistribution/CodecRuntime/manage.py first.")
 
     if args.verify_only:
         verify_distribution(output, expect_mlx_vlm=not args.skip_install)

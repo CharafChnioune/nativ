@@ -8,7 +8,7 @@
   "architecture": "arm64",
   "source": null,
   "lock": {
-    "path": "../Requirements/mlx-vlm-server-macos-arm64.txt",
+    "path": "locks/minimax-base-macos-arm64.txt",
     "sha256": "bc0567974fd29a75a64df379f72a82085dc5c5cd26b28617e93d27eed8f088db"
   },
   "worker": {

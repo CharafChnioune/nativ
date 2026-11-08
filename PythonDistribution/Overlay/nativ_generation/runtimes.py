@@ -249,14 +249,16 @@ class RuntimeManager:
             actual=manager.resolve_model_inventory(manifest,token=token) if hasattr(manager,'resolve_model_inventory') else manifest
             model=self._safe(self.root/'models'/pid/fingerprint(manifest['models'])[:20])
             manager.prepare_models(actual,model,cancel,emit,accepted_licenses=True,token=token)
+            emit('building_runtime',None)
             directory=self._profile_dir(pid);directory.mkdir(parents=True,exist_ok=True,mode=0o700)
             runtime=directory/('runtime-'+uuid.uuid4().hex)
-            manager.build_runtime(actual,runtime,self.python_prefix,cancel,emit)
+            manager.build_runtime(actual,runtime,self.python_prefix,cancel,emit,compute_lease_fd=lease.file.fileno())
             marker=runtime/'.nativ-owned-runtime.json';marker.write_text(encode({'schema_version':1,'profile_id':pid,'runtime_id':manifest['id'],'folder':runtime.name,'manifest_sha256':fingerprint(manifest)}));os.chmod(marker,0o600)
             with marker.open('rb') as stream:os.fsync(stream.fileno())
             sync_directory(runtime)
             if cancel.is_set():raise InterruptedError()
             # Prove standalone worker protocol before activation, without loading weights.
+            emit('verifying_worker',None)
             WorkerSupervisor.handshake(runtime/'python',manifest,cancellation=cancel)
             value={'manifest_sha256':fingerprint(manifest),'runtime_path':str(runtime),'model_path':str(model),'qualification':'unqualified'}
             with self.service._lock:

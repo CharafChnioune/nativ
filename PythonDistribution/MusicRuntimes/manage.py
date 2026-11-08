@@ -8,6 +8,7 @@ installed app. Models are never fetched as a side effect of runtime launch.
 from __future__ import annotations
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -121,7 +122,7 @@ def extract_source(archive,destination):
                 with tar.extractfile(item) as source,target.open('wb') as output:shutil.copyfileobj(source,output)
 
 
-def build_runtime(manifest,destination,python_prefix,cancel,emit):
+def build_runtime(manifest,destination,python_prefix,cancel,emit,*,compute_lease_fd=None):
     """Build an isolated relocatable-prefix candidate for release signing/QA.
 
     A verified model is prepared separately. Never upgrades Nativ's base prefix.
@@ -158,14 +159,13 @@ def build_runtime(manifest,destination,python_prefix,cancel,emit):
                 commands.append([str(python),'-m','pip','install','--require-hashes','--no-deps','--only-binary=:all:','-r',str(bootstrap)])
             commands.append([str(python),'-m','pip','install','--require-hashes','--no-build-isolation','-r',str(lock)])
             for command in commands:
-                run=subprocess.Popen(command,env=clean,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,start_new_session=True)
-                while run.poll() is None:
-                    if cancel.wait(0.2):
-                        os.killpg(run.pid,signal.SIGTERM)
-                        try:run.wait(5)
-                        except subprocess.TimeoutExpired:os.killpg(run.pid,signal.SIGKILL);run.wait()
-                        raise InterruptedError('Runtime build cancelled')
-                if run.returncode:raise ValueError('Locked dependency installation failed; inspect builder package availability')
+                candidates=[ROOT.parent/'Overlay',*sorted((prefix/'lib').glob('python*/site-packages'))]
+                helper=next((root/'nativ_generation/setup_command.py' for root in candidates if (root/'nativ_generation/setup_command.py').is_file()),None)
+                if helper is None:raise ValueError('The trusted Python prefix is missing its setup process supervisor')
+                spec=importlib.util.spec_from_file_location('nativ_owned_setup_command',helper)
+                module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+                code=module.run_setup_command(command,env=clean,cancel=cancel,compute_lease_fd=compute_lease_fd)
+                if code:raise ValueError('Locked dependency installation failed; inspect builder package availability')
         source=manifest.get('source')
         if source:
             archive=stage/'source.tar.gz'

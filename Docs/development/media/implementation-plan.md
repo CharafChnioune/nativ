@@ -103,12 +103,12 @@ counts as real-model qualification. Paid tests require a separate explicit budge
 - [x] Full spec/repository/runtime audit and independent plan review.
 - [x] Translate PR merged with exact expected head and normal merge ancestry.
 - [x] Authorized cleanup and evidence preservation: 19,287,298,048 observed free bytes (17.963 GiB); protected app hashes unchanged.
-- [ ] Shared durable core/API and Swift transport.
-- [ ] Music adapters and managed runtimes.
-- [ ] Video adapters, immutable inputs and managed runtimes.
-- [ ] Native workspaces, Chat/Artifacts and playback.
-- [ ] Shared admission, image responsiveness and packaged runtime validation.
-- [ ] Tests, independent reviews, documentation and stronger-Mac qualification kit.
+- [x] Shared durable core/API and Swift transport.
+- [x] Music adapters and managed runtimes.
+- [x] Video adapters, immutable inputs and managed runtimes.
+- [x] Native workspaces, Chat/Artifacts and playback.
+- [x] Shared admission, image responsiveness and packaged runtime implementation.
+- [x] Tests, independent reviews, documentation and stronger-Mac qualification kit implemented; full final run follows.
 - [ ] Exact-head CI, reviewed feature PR merge and final cleanup/report.
 
 ### Integration checkpoint (2026-11-08)
@@ -116,3 +116,11 @@ counts as real-model qualification. Paid tests require a separate explicit budge
 Current branch `codex/music-video-generation`, base merge `e22f7b9333a4ff7437bd81879454f050cbb3c6b9`. No Music/Video commits or push yet. Root core implements SQLite repository, journaled assets, service/scheduler, strict authenticated API, runtime management, owned local worker guardian, and isolated cancellable remote-provider RPC (durable dispatch/operation ACKs). Private Translate helper skips canonical generation store. Swift transport compiles in Swift 6 and bounds downloads/events; native workstream compiled full app and ran 15 focused tests. Initial full Python regression:259 run,0fail,1existingoptional skip; more review regressions added afterward. Real media-only FFmpeg tests passed; no model inference or paid calls.
 
 Still integrating/reviewing: unified compute host/Translate hooks, managed audio decoder, stop/restart preflight, complete native test membership, full packaged app/native regressions, UI snapshots and stronger-Mac kit, exact CI gate and fork release integration. Independent review caught/fixed validation-before-copy race, inactive remote cancel, provider permission revocation, terminal identity fencing, and ambiguous5xx reservation release. New remote process tests prove one POST and bounded cancellation using a local HTTP fixture; they are not model tests. Keep all profiles explicitly unqualified.
+
+### Review checkpoint
+
+Provider code and manifests are committed separately from the common scheduler and native integration. The root specification and vendor license bytes are preserved exactly, including their original whitespace. Independent reviewers reproduced and repaired helper-CWD credential injection, uncertain paid-POST reservation release, missing compressed/FLOAT audio decoding, constructor lock leaks, a stop/submit admission race, and unbounded native upload responses. Runtime handshake and installation cleanup checks remain in final integration. The complete app built at the earlier checkpoint; final source-frozen build/native/Python tests and exact-head GitHub checks are still required.
+
+### Source freeze
+
+All implementation workstreams are frozen after independent review. Final repairs cover bounded native upload replies, durable rejection of definitively refused requests, per-intent recovery isolation, ACE musical hints, installer-parent death cleanup and true compute-lease retention. Local-only qualification drivers remain deliberate opt-in. The lightweight full Python checkpoint executed 323 tests with one existing MLX-only integration skip; additional process/native review regressions are included in the final run. The final build, packaged-import proof, full Xcode test result and required CI gate are authoritative for delivery. No model output or paid provider has been qualified.
