@@ -115,8 +115,7 @@ actor SystemTelemetryRecorder {
     nonisolated static let storageBudgetBytes = 1_000_000_000
     nonisolated static let minimumFreeBytes: Int64 = 1024 * 1024 * 1024
     nonisolated static var defaultDirectory: URL {
-        FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-            .appendingPathComponent("Nativ/Diagnostics", isDirectory: true)
+        NativBuildIdentity.applicationSupportDirectory().appendingPathComponent("Diagnostics", isDirectory: true)
     }
 
     private let directory: URL

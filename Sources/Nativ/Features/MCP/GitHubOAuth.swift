@@ -41,7 +41,7 @@ struct KeychainGitHubOAuthCredentialStore: GitHubOAuthCredentialStoring {
     private let account: String
 
     init(
-        service: String = "dev.nativ.github-oauth",
+        service: String = NativBuildIdentity.identifier("github-oauth"),
         account: String = "github.com"
     ) {
         self.service = service

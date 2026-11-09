@@ -6,7 +6,8 @@ actor ParakeetModelStore {
     static let shared = ParakeetModelStore()
     static let archiveURL = URL(string: "https://huggingface.co/nativ-community/parakeet-redux-coreai-fp16/resolve/main/parakeet-redux-coreai-fp16.zip?download=true")!
     static let cacheDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
-        .appendingPathComponent("Nativ/SpeechModels", isDirectory: true)
+        .appendingPathComponent(NativBuildIdentity.namespace, isDirectory: true)
+        .appendingPathComponent("SpeechModels", isDirectory: true)
 
     typealias Download = @Sendable (URL) async throws -> (URL, URLResponse)
     private let root: URL

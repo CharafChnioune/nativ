@@ -116,9 +116,12 @@ namespace. The real `@AppExtensionPoint.Bind` host literals and embedded
 checks them. The macro needs a compile-time literal, so changing the namespace
 requires an intentional coordinated source/configuration change.
 
-Application Support, keychain services, routine/launch locks and server defaults
-are separate. The default local server port is 8181. No upstream data is migrated
-or deleted. Existing shared model caches remain model artifacts, not conversation
+Application Support (including Diagnostics), the speech-model cache
+(`~/Library/Caches/io.github.charafchnioune.nativ/SpeechModels`), keychain services
+(including GitHub OAuth), routine/launch locks and server defaults are separate.
+Earlier builds wrote Diagnostics and the Parakeet cache under upstream's `Nativ`
+paths; those are now namespaced, not migrated (diagnostics and a re-downloadable
+cache). The default local server port is 8181. No upstream data is migrated or deleted. Existing shared model caches remain model artifacts, not conversation
 history; Translate settings stay in this fork's preferences.
 
 Both update feeds are explicit configuration values:
