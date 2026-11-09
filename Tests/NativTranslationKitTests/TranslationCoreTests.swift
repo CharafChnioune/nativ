@@ -559,7 +559,12 @@ actor SendingBackend: TranslationBackend {
           format: .init(
             sampleRate: 16_000, channels: 1, encoding: .signedInt16LittleEndian),
           sequence: 0))))
-  #expect(await waitForCoreMilestone { await core.snapshot().lastFailure?.code == .invalidEvent })
+  // The failure event follows any forwarded audio on the same ordered host stream.
+  #expect(
+    await waitForCoreMilestone {
+      await collector.events.contains { if case .failure = $0.payload { true } else { false } }
+    })
+  #expect(await core.snapshot().lastFailure?.code == .invalidEvent)
   #expect(!(await collector.hasAudio()))
   await core.stop()
   await reader.value

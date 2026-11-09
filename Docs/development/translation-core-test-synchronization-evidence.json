@@ -115,7 +115,7 @@
   "m3_followup_2026_11_09": {
     "scope": "Test synchronization only; TranslationSession.swift unchanged (sha256 below equals c24781b7).",
     "product_commit": "c24781b73e64aec7a853b8f44ea0fe2465f1b5e6",
-    "tested_source_sha256": "281f556ff6fb480b3d7eec253cbcbf9c77c46315741968aa13c834ea2c5a267d",
+    "tested_source_sha256": "87280159c2557189e3f973e55f6a24d1302f14ec7910a91de6543c6bf758d564",
     "production_source_sha256": "18c7c13bbcd9d40ba9970a28e7b6845cf89afaa15ef95ed4a5d2bcc2deb2a240",
     "observed_ci": {
       "pull_request": {
@@ -181,6 +181,7 @@
         "failed": 0
       }
     },
-    "machine": "Apple M3 Max, 128 GiB, macOS 27.2, Xcode 27.2 / Swift 6.4.2"
+    "machine": "Apple M3 Max, 128 GiB, macOS 27.2, Xcode 27.2 / Swift 6.4.2",
+    "review_followup": "Independent review: tentativeTwoPassTextCannotTriggerSpeech now waits for the ordered host .failure event before the audio-absence check, so a regression that forwards audio before failing cannot pass while the reader lags."
   }
 }
