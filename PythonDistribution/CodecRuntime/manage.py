@@ -143,8 +143,8 @@ def smoke(destination):
     import array,math,struct,tempfile,wave
     destination=Path(destination).resolve();ffmpeg=destination/'bin/ffmpeg';ffprobe=destination/'bin/ffprobe'
     env={'PATH':'/usr/bin:/bin','HOME':os.environ.get('HOME','/tmp')}
-    def execute(command):
-        return subprocess.check_output(command,stderr=subprocess.PIPE,env=env,timeout=60)
+    def execute(command,data=None):
+        return subprocess.check_output(command,input=data,stderr=subprocess.PIPE,env=env,timeout=60)
     with tempfile.TemporaryDirectory(prefix='nativ-codec-smoke-') as directory:
         root=Path(directory);raw=root/'frames.rgb';audio=root/'tone.wav';output=root/'smoke.mp4'
         with raw.open('wb') as stream:
@@ -153,7 +153,7 @@ def smoke(destination):
         with wave.open(str(audio),'wb') as stream:
             stream.setnchannels(2);stream.setsampwidth(2);stream.setframerate(44100)
             stream.writeframes(b''.join(struct.pack('<hh',sample,sample) for sample in (int(16000*math.sin(2*math.pi*440*i/44100)) for i in range(44100))))
-        execute([str(ffmpeg),'-v','error','-f','rawvideo','-pixel_format','rgb24','-video_size','96x64','-framerate','24','-i',str(raw),'-i',str(audio),'-t','1','-c:v','libx264','-pix_fmt','yuv420p','-c:a','aac','-ac','2','-ar','44100','-movflags','+faststart','-y',str(output)])
+        execute([str(ffmpeg),'-v','error','-f','rawvideo','-pixel_format','rgb24','-video_size','96x64','-framerate','24','-i','-','-i',str(audio),'-t','1','-c:v','libx264','-pix_fmt','yuv420p','-c:a','aac','-ac','2','-ar','44100','-movflags','+faststart','-y',str(output)],data=raw.read_bytes())
         data=json.loads(execute([str(ffprobe),'-v','error','-count_frames','-show_streams','-show_format','-of','json',str(output)]))
         video=next(item for item in data['streams'] if item['codec_type']=='video')
         soundtrack=next(item for item in data['streams'] if item['codec_type']=='audio')
@@ -201,7 +201,7 @@ def build(destination,cache,work,cancel,emit,jobs=4):
         '--extra-cflags=-arch arm64 -mmacosx-version-min=26.0 -I'+str(prefix/'include'),
         '--extra-ldflags=-arch arm64 -mmacosx-version-min=26.0 -L'+str(prefix/'lib'),
         '--enable-ffmpeg','--enable-ffprobe','--enable-avcodec','--enable-avformat','--enable-avfilter',
-        '--enable-swscale','--enable-swresample','--enable-zlib','--enable-protocol=file,pipe,data',
+        '--enable-swscale','--enable-swresample','--enable-zlib','--enable-protocol=file,pipe,data,fd',
         '--enable-encoder=libx264,aac,rawvideo,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le,png,mjpeg,flac',
         '--enable-decoder=h264,aac,mp3float,rawvideo,pcm_s16le,pcm_s24le,pcm_s32le,pcm_f32le,pcm_f64le,png,mjpeg,flac',
         '--enable-parser=h264,aac,mpegaudio,png,flac',
