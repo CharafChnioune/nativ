@@ -71,7 +71,7 @@ struct GenerationSetupView: View {
                             Text("MiniMax H3's default weight license excludes the EU, UK, Republic of Korea and USA. A public download does not grant eligibility.").font(.caption).foregroundStyle(.orange)
                             Toggle("I have a separate license approving this deployment", isOn: $separateLicenseApproved)
                         }
-                        Link("Review runtime and model licenses", destination: URL(string: profile.provider == "acestep" ? "https://github.com/ace-step/ACE-Step-1.5" : profile.provider == "minimax_h3_mlx" ? "https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE" : profile.provider == "stable_audio_mlx" ? "https://stability.ai/license" : profile.provider == "ltx_mlx" ? "https://github.com/Lightricks/LTX-2" : "https://huggingface.co/" + profile.model)!)
+                        Link("Review runtime and model licenses", destination: URL(string: profile.provider == "acestep" ? "https://github.com/ace-step/ACE-Step-1.5" : profile.provider == "minimax_h3_mlx" ? "https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE" : profile.provider == "stable_audio_mlx" ? "https://stability.ai/license" : profile.provider == "ltx_mlx" ? "https://github.com/Lightricks/LTX-2/blob/4f521619ae0029e8fbb64d555030c2b121a33b4f/LICENSE-2" : "https://huggingface.co/" + profile.model)!)
                     }
                     if profile.provider == "minimax_cloud" {
                         Text("New paid Music API access ended on August 20, 2026. This adapter is for existing eligible accounts.").font(.caption).foregroundStyle(.secondary)

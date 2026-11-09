@@ -314,8 +314,11 @@ class WorkerSupervisor:
         lease_fd=getattr(context,'compute_lease_fd',None)
         inherited=(parent_read,) if lease_fd is None else (parent_read,lease_fd)
         command=[str(prefix/'bin/python3'),'-m','nativ_generation.worker_guardian','--parent-fd',str(parent_read),'--module',manifest['worker']['module'],'--',*manifest['worker'].get('args',[])]
-        try:process=subprocess.Popen(command,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,env=child_environment(prefix,codec_paths=codecs),cwd=prefix,start_new_session=True,bufsize=0,pass_fds=inherited)
+        # Library diagnostics (failures, mlx-video's own stage timings) stay in the private attempt folder.
+        log=(Path(context.output_dir)/'worker.log').open('ab')
+        try:process=subprocess.Popen(command,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=log,env=child_environment(prefix,codec_paths=codecs),cwd=prefix,start_new_session=True,bufsize=0,pass_fds=inherited)
         except BaseException:os.close(parent_read);os.close(parent_write);raise
+        finally:log.close()
         os.close(parent_read)
         selector=selectors.DefaultSelector();selector.register(process.stdout,selectors.EVENT_READ);os.set_blocking(process.stdout.fileno(),False)
         start=time.monotonic();buffer=bytearray();hello=False;result=None;result_at=None;worker_exit=None
