@@ -56,7 +56,7 @@ def durable_json(path,value):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--profile',choices=('ltx-2.5-distilled-q8-local','ltx-2.5-distilled-q4-local','wan2.2-ti2v-5b-q8-local'),default='ltx-2.5-distilled-q8-local')
+    parser.add_argument('--profile',choices=('ltx-2.3-distilled-local','wan2.2-ti2v-5b-q8-local'),default='ltx-2.3-distilled-local')
     parser.add_argument('--server',default='http://127.0.0.1:8181');parser.add_argument('--key-env',default='NATIV_KEY')
     parser.add_argument('--output',type=Path,default=Path('build/validation/video-qualification'))
     parser.add_argument('--run-models',action='store_true');parser.add_argument('--timeout',type=int,default=14400)

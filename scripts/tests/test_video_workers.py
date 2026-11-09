@@ -1,42 +1,63 @@
-import importlib
 import json
+import subprocess
 import sys
 import tempfile
 import types
 import unittest
 from pathlib import Path
 from unittest.mock import patch
-sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'PythonDistribution'/'Overlay'))
+OVERLAY=Path(__file__).resolve().parents[2]/'PythonDistribution'/'Overlay'
+sys.path.insert(0,str(OVERLAY))
 from nativ_video import workers
 
+def mlx_video(model,**attributes):
+    names=('mlx_video','mlx_video.models','mlx_video.models.'+model)
+    return {**{name:types.ModuleType(name) for name in names},'mlx_video.models.'+model+'.generate':types.SimpleNamespace(**attributes)}
+
 class VideoWorkerTests(unittest.TestCase):
-    def test_ltx_calls_public_pipeline_with_exact_grid_and_image(self):
+    def test_ltx_runs_distilled_with_native_audio_and_local_text_encoder(self):
         calls=[]
-        class Pipeline:
-            def __init__(self,**kw): calls.append(('init',kw))
-            def generate_and_save(self,**kw): calls.append(('generate',kw)); Path(kw['output_path']).write_bytes(b'candidate')
-        with tempfile.TemporaryDirectory() as td:
-            root=Path(td); output=root/'candidate.mp4'; image=root/'image.png'; image.write_bytes(b'image')
-            req={'prompt':'boat','width':704,'height':448,'frame_count':97,'fps':24,'seed':42,'audio_mode':'native_generated','operation':'image_to_video'}
-            with patch.dict(sys.modules,{'ltx_pipelines_mlx':types.SimpleNamespace(DistilledPipeline=Pipeline)}):
-                meta=workers.run_ltx(req,{'model_path':td,'inputs':{'first_frame':str(image)}},output,lambda *a,**k:None)
-            self.assertEqual(calls[1][1]['image'],str(image)); self.assertEqual(calls[1][1]['num_frames'],97)
-            self.assertEqual(calls[1][1]['frame_rate'],24); self.assertEqual(meta['audio_sample_rate'],48000)
-            self.assertNotIn('generate_audio',calls[1][1])
-    def test_wan_actual_progress_and_save_contract(self):
-        calls=[]; events=[]
-        class Result:
-            def save(self,path,**kw): calls.append(('save',kw)); Path(path).write_bytes(b'video')
-        class Model:
-            def __init__(self,**kw): calls.append(('init',kw))
-            def generate_video(self,**kw):
-                calls.append(('generate',kw)); kw['progress_callback'](types.SimpleNamespace(phase='denoise',step=4,total_steps=50)); return Result()
-        mods={'mflux':types.ModuleType('mflux'),'mflux.models':types.ModuleType('mflux.models'),'mflux.models.wan':types.ModuleType('mflux.models.wan'),'mflux.models.wan.variants':types.ModuleType('mflux.models.wan.variants'),'mflux.models.wan.variants.wan2_2_ti2v':types.SimpleNamespace(Wan2_2_TI2V=Model)}
+        def generate_video(**kw): calls.append(kw); Path(kw['output_path']).write_bytes(b'candidate')
+        mods=mlx_video('ltx_2',PipelineType=types.SimpleNamespace(DISTILLED='distilled'),generate_video=generate_video)
         with tempfile.TemporaryDirectory() as td,patch.dict(sys.modules,mods):
-            r=workers.run_wan(dict(prompt='boat',seed=42,width=832,height=480,frame_count=81,fps=24,steps=50,flow_shift=3,operation='text_to_video',audio_mode='silent'),{'model_path':td},Path(td)/'candidate.mp4',lambda *a,**kw:events.append((a,kw)))
-            self.assertEqual(calls[1][1]['num_frames'],81); self.assertEqual(calls[1][1]['flow_shift'],3); self.assertEqual(calls[1][1]['canvas_policy'],'exact-resize')
-            self.assertIsNone(calls[1][1].get('last_image_path')); self.assertEqual(events[-2][1]['progress'],0.08)
-            self.assertEqual(r['audio_mode'],'silent')
+            image=Path(td)/'image.png'; image.write_bytes(b'image')
+            req={'prompt':'boat','width':704,'height':448,'frame_count':97,'fps':24,'seed':42,'audio_mode':'native_generated','operation':'image_to_video'}
+            meta=workers.run_ltx(req,{'model_path':td,'inputs':{'first_frame':str(image)}},Path(td)/'candidate.mp4',lambda *a,**k:None)
+        kw=calls[0]
+        self.assertEqual((kw['model_repo'],kw['text_encoder_repo'],kw['pipeline'],kw['audio']),(td,None,'distilled',True))
+        self.assertEqual((kw['image'],kw['width'],kw['height'],kw['num_frames'],kw['fps'],kw['seed']),(str(image),704,448,97,24,42))
+        self.assertEqual(meta['audio_sample_rate'],48000)
+    def test_wan_maps_steps_and_shift_and_serves_only_umt5_from_pinned_folder(self):
+        calls=[];tokenizers=[]
+        class AutoTokenizer:
+            @classmethod
+            def from_pretrained(cls,name,**kw): tokenizers.append(name)
+        transformers=types.SimpleNamespace(AutoTokenizer=AutoTokenizer)
+        def generate_video(**kw):
+            transformers.AutoTokenizer.from_pretrained('google/umt5-xxl'); transformers.AutoTokenizer.from_pretrained('other/model')
+            calls.append(kw); Path(kw['output_path']).write_bytes(b'video')
+        with tempfile.TemporaryDirectory() as td,patch.dict(sys.modules,{'transformers':transformers,**mlx_video('wan_2',generate_video=generate_video)}):
+            r=workers.run_wan(dict(prompt='boat',seed=42,width=832,height=480,frame_count=81,fps=24,steps=50,flow_shift=3,operation='text_to_video',audio_mode='silent'),{'model_path':td},Path(td)/'candidate.mp4',lambda *a,**kw:None)
+        self.assertEqual(tokenizers,[str(Path(td)/'tokenizer'),'other/model'])
+        self.assertEqual((calls[0]['num_frames'],calls[0]['steps'],calls[0]['shift'],calls[0]['seed'],calls[0]['image']),(81,50,3,42,None))
+        self.assertEqual(r['audio_mode'],'silent')
+    def test_library_stdout_never_reaches_protocol_channel(self):
+        code=f'''import os,subprocess,sys
+sys.path.insert(0,{str(OVERLAY)!r})
+from nativ_video import workers
+workers.verify_prepared=lambda prepared,request:None
+def run(request,prepared,output,emit):
+    print('library print'); os.write(1,b'native write\\n'); subprocess.run(['/bin/echo','child process'])
+    output.write_bytes(b'candidate'); return {{}}
+workers.run_ltx=run
+sys.exit(workers.main())'''
+        with tempfile.TemporaryDirectory() as td:
+            envelope=json.dumps({'protocol':1,'type':'generate','provider':'ltx_mlx','output_dir':td,'request':{},'prepared':{}})
+            done=subprocess.run([sys.executable,'-c',code,'--runtime-id',workers.RUNTIMES['ltx_mlx']],input=envelope+'\n',capture_output=True,text=True,timeout=60)
+        events=[json.loads(line) for line in done.stdout.splitlines()]
+        self.assertEqual([e['type'] for e in events],['handshake','result'],done.stderr)
+        self.assertIn('child process',done.stderr)
+        self.assertIsNone(events[1]['metadata']['mlx_peak_memory_bytes']); self.assertGreater(events[1]['metadata']['max_rss_bytes'],0)
     def test_h3_public_api_keeps_joint_audio_and_uses_fl2va(self):
         calls=[]
         def load(model,**kw): calls.append(('load',model,kw)); return object()

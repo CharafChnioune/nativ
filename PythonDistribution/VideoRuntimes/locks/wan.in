@@ -1,7 +1,0 @@
-# mlx-gen application API, no dev/concept/training extras.
-mlx-gen==0.38.0
-mlx==0.32.4
-mlx-metal==0.32.4
-numpy==2.4.4
-transformers==5.15.1
-pillow==12.2.0

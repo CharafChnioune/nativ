@@ -4,15 +4,13 @@ from copy import deepcopy
 import hashlib
 import json
 
-LTX_REVISION = '747b30ef10e92a011e85b2aa0f6c4ee86ced5218'
-WAN_REVISION = '99fb94dd3eaa9dd1931cd3cd8eae1ae3e20f2ef3'
-LTX_Q8_REVISION = '746ca9aacb697d2c739f544d68b584214dedcc75'
-LTX_Q4_REVISION = 'e9a20add8c5937fcab635fb8e7a52926487a5776'
-WAN_MODEL_REVISION = '6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3'
+MLX_VIDEO_REVISION = '87db56a51758fefb748a359b90a5283bb8ba4837'
+LTX_MODEL_REVISION = '65b104b9387fb173d8e4b92fc5effc47625baf2a'
+WAN_MODEL_REVISION = '9624723c94ddf509832555c45e223a035baa7d1c'
 
 
 def _profile(id, provider, model, runtime, defaults, capabilities, *, revision=None):
-    title=('LTX 2.5 Distilled Q'+str(8 if 'q8' in id else 4)+' (Local)') if provider=='ltx_mlx' else 'Wan 2.2 TI2V-5B mixed Q8 (Local)' if provider=='wan_mlx' else 'MiniMax H3 (License gated)' if provider=='minimax_h3_mlx' else 'Runway Gen-4.5' if provider=='runway' else model.replace('ltx-','LTX ').replace('-',' ').title()+' (Cloud)'
+    title='LTX 2.3 Distilled (Local)' if provider=='ltx_mlx' else 'Wan 2.2 TI2V-5B mixed Q8 (Local)' if provider=='wan_mlx' else 'MiniMax H3 (License gated)' if provider=='minimax_h3_mlx' else 'Runway Gen-4.5' if provider=='runway' else model.replace('ltx-','LTX ').replace('-',' ').title()+' (Cloud)'
     p = dict(id=id, modality='video', provider=provider,
              deployment='local' if runtime else 'hosted', display_name=title,
              model=model, model_revision=revision, runtime=runtime,
@@ -29,23 +27,21 @@ def profiles():
                   input_transform_version=1, output_containers=['mp4'],
                   output_codecs=['h264'], progress='stage', preview=False,
                   output_count=1, negative_prompt=False,retrieval_supported=False)
-    result=[]
-    for bits, revision in ((8,LTX_Q8_REVISION),(4,LTX_Q4_REVISION)):
-        result.append(_profile(f'ltx-2.5-distilled-q{bits}-local','ltx_mlx',f'dgrauet/ltx-2.5-mlx-q{bits}',
-            'ltx-mlx-0.18.0', dict(output_preset='draft-landscape',audio_mode='native_generated'),
-            dict(common, input_roles=['first_frame'],audio_modes=['native_generated'],
-                 audio_sample_rate=48000,audio_channels=2,frame_grid={'modulus':8,'remainder':1},
-                 spatial_alignment=64,fps=[24],seed=True,cancellation='owned_process',
-                 pipeline='DistilledPipeline', runtime_revision=LTX_REVISION,
-                 presets={'draft-landscape':{'width':704,'height':448,'frame_count':97,'fps':24},
-                          'draft-portrait':{'width':448,'height':704,'frame_count':97,'fps':24}},
-                 gate='runtime_checkpoint_license_and_hardware_qualification'), revision=revision))
-    result.append(_profile('wan2.2-ti2v-5b-q8-local','wan_mlx','AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit',
-        'wan-mlx-gen-0.38.0',dict(output_preset='wan-draft-landscape',audio_mode='silent'),
+    result=[_profile('ltx-2.3-distilled-local','ltx_mlx','prince-canuma/LTX-2.3-distilled',
+        'mlx-video-87db56a', dict(output_preset='draft-landscape',audio_mode='native_generated'),
+        dict(common, input_roles=['first_frame'],audio_modes=['native_generated'],
+             audio_sample_rate=48000,audio_channels=2,frame_grid={'modulus':8,'remainder':1},
+             spatial_alignment=64,fps=[24],seed=True,cancellation='owned_process',
+             pipeline='distilled', runtime_revision=MLX_VIDEO_REVISION,
+             presets={'draft-landscape':{'width':704,'height':448,'frame_count':97,'fps':24},
+                      'draft-portrait':{'width':448,'height':704,'frame_count':97,'fps':24}},
+             gate='runtime_checkpoint_license_and_hardware_qualification'), revision=LTX_MODEL_REVISION)]
+    result.append(_profile('wan2.2-ti2v-5b-q8-local','wan_mlx','Anes1032/Wan2.2-TI2V-5B-mlx-q8',
+        'mlx-video-87db56a',dict(output_preset='wan-draft-landscape',audio_mode='silent'),
         dict(common,input_roles=['first_frame'],audio_modes=['silent'],audio_sample_rate=None,
              frame_grid={'modulus':4,'remainder':1},spatial_alignment=32,fps=[24],seed=True,
-             cancellation='owned_process',runtime_revision=WAN_REVISION,
-             quantization='mixed q8 transformer; text encoder and VAE retain source precision',
+             cancellation='owned_process',runtime_revision=MLX_VIDEO_REVISION,
+             quantization='q8 transformer (group 64); UMT5 text encoder bf16 and VAE fp32',
              presets={'wan-draft-landscape':{'width':832,'height':480,'frame_count':81,'fps':24,'steps':50,'flow_shift':3},
                       'wan-draft-portrait':{'width':480,'height':832,'frame_count':81,'fps':24,'steps':50,'flow_shift':3}},
              gate='runtime_checkpoint_and_hardware_qualification'),revision=WAN_MODEL_REVISION))

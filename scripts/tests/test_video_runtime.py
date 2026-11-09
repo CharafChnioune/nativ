@@ -33,11 +33,12 @@ class VideoRuntimeTests(unittest.TestCase):
             download.assert_not_called()
     def test_runtime_manifests_have_hashed_locks_and_no_qualified_claim(self):
         paths=list((ROOT/'PythonDistribution/VideoRuntimes').glob('*.json'))
-        self.assertGreaterEqual(len(paths),4)
+        self.assertGreaterEqual(len(paths),3)
         for path in paths:
             m=json.loads(path.read_text()); lock=path.parent/m['lock']['path']
             self.assertEqual(hashlib.sha256(lock.read_bytes()).hexdigest(),m['lock']['sha256'])
             self.assertEqual(m['qualification'],'unqualified')
+            self.assertTrue(all(isinstance(f['sha256'],str) and len(f['sha256'])==64 for f in m['models']['files']))
 
     def test_packaged_prefix_resolves_workers_without_checkout_overlay(self):
         with tempfile.TemporaryDirectory() as td:

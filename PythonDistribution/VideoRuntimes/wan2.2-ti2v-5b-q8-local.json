@@ -13,174 +13,112 @@
     "protocol": 1,
     "args": [
       "--runtime-id",
-      "wan-mlx-gen-0.38.0"
+      "mlx-video-87db56a"
     ]
   },
   "codec_runtime": "ffmpeg-9.0.2-x264-b3560",
   "licenses": [
     {
-      "component": "runtime",
+      "component": "mlx-video runtime",
       "spdx": "MIT",
-      "source": "https://github.com/lpalbou/mlx-gen/blob/99fb94dd3eaa9dd1931cd3cd8eae1ae3e20f2ef3/LICENSE"
+      "source": "https://github.com/Blaizzy/mlx-video/blob/87db56a51758fefb748a359b90a5283bb8ba4837/LICENSE"
     },
     {
-      "component": "Wan2.2 checkpoint",
+      "component": "Wan2.2 TI2V-5B checkpoint",
       "spdx": "Apache-2.0",
-      "source": "https://huggingface.co/AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit/blob/6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3/README.md",
+      "source": "https://huggingface.co/Anes1032/Wan2.2-TI2V-5B-mlx-q8/blob/9624723c94ddf509832555c45e223a035baa7d1c/LICENSE",
       "requires_acceptance": true
+    },
+    {
+      "component": "UMT5-XXL tokenizer",
+      "spdx": "Apache-2.0",
+      "source": "https://huggingface.co/google/umt5-xxl/blob/66cb9e7e85526fe440a945569e42c72fb6cbc0ad/README.md"
     }
   ],
-  "id": "wan-mlx-gen-0.38.0",
+  "id": "mlx-video-87db56a",
   "profile_id": "wan2.2-ti2v-5b-q8-local",
   "provider": "wan_mlx",
-  "source": null,
-  "source_revision": "99fb94dd3eaa9dd1931cd3cd8eae1ae3e20f2ef3",
-  "source_verification": {
-    "distribution": "mlx_gen-0.38.0-py3-none-any.whl",
-    "sha256": "bfb5a50420b3ea29388510ea5eed9657c648162180d2a7f4860e98d53770619a",
-    "python_files": 745,
-    "result": "all byte-identical to the pinned source commit",
-    "verified_at": "2026-11-08"
+  "source": {
+    "url": "https://codeload.github.com/Blaizzy/mlx-video/tar.gz/87db56a51758fefb748a359b90a5283bb8ba4837",
+    "revision": "87db56a51758fefb748a359b90a5283bb8ba4837",
+    "sha256": "174adddb7797125438adbf1996f5c344cfbc6187ac0b49d58615e302302a7a45",
+    "bytes": 22144111
   },
   "lock": {
-    "path": "locks/wan-macos-arm64.txt",
-    "sha256": "b9ac62248463049cc44c0848e2f3c96ca7abf62f15c4a12f5755f40ba79f79d3"
+    "path": "locks/mlx-video-macos-arm64.txt",
+    "sha256": "8a5f220082a2a5e48a0c522cd9857a3f68e61cbbbfd6c3064eb3b8ecc97e1d98"
   },
   "models": {
-    "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
+    "revision": "9624723c94ddf509832555c45e223a035baa7d1c",
     "files": [
       {
-        "path": "README.md",
-        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
-        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
-        "remote_path": "README.md",
-        "bytes": 4554,
-        "sha256": "6a77e71290d4eb61b405f547d9a7078ead95e1f5bf9c3b81258e2ba474205f31"
+        "path": "config.json",
+        "repo": "Anes1032/Wan2.2-TI2V-5B-mlx-q8",
+        "revision": "9624723c94ddf509832555c45e223a035baa7d1c",
+        "remote_path": "config.json",
+        "bytes": 1683,
+        "sha256": "dcc3fc689bf9bcb97cb3028ec4018e1e9020a66bc9d5c0d03c26b10a4194ce2f"
       },
       {
-        "path": "model_index.json",
-        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
-        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
-        "remote_path": "model_index.json",
-        "bytes": 499,
-        "sha256": "6a72faeb564b0e894aea8fc4ef27241106eb739e8584e869b61589a65473add7"
+        "path": "model.safetensors",
+        "repo": "Anes1032/Wan2.2-TI2V-5B-mlx-q8",
+        "revision": "9624723c94ddf509832555c45e223a035baa7d1c",
+        "remote_path": "model.safetensors",
+        "bytes": 5399618803,
+        "sha256": "1140cdfc191673afb562165c4f51802a84c2cfa4427474e91d7eee39b65bb5d8"
       },
       {
-        "path": "scheduler/scheduler_config.json",
-        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
-        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
-        "remote_path": "scheduler/scheduler_config.json",
-        "bytes": 820,
-        "sha256": "571a3eed68bcd943a61b9fea8efa9e141472216ada59f928c8b5128ce24b32e0"
+        "path": "t5_encoder.safetensors",
+        "repo": "Anes1032/Wan2.2-TI2V-5B-mlx-q8",
+        "revision": "9624723c94ddf509832555c45e223a035baa7d1c",
+        "remote_path": "t5_encoder.safetensors",
+        "bytes": 11361845505,
+        "sha256": "e86ee4199903e00a88dcd43583a43a6eb898cef600e38670f222d7e37d163787"
       },
       {
-        "path": "text_encoder/config.json",
-        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
-        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
-        "remote_path": "text_encoder/config.json",
-        "bytes": 855,
-        "sha256": "a2bcb24699f6c009a2427432bdd483ef8b2b42a712abc9503759cdc77d171f07"
+        "path": "tokenizer/special_tokens_map.json",
+        "repo": "google/umt5-xxl",
+        "revision": "66cb9e7e85526fe440a945569e42c72fb6cbc0ad",
+        "remote_path": "special_tokens_map.json",
+        "bytes": 6623,
+        "sha256": "14ef492a69e59396e918521a5f8394af1acf9f8dddd47273693b2b42570dfd12"
       },
       {
-        "path": "text_encoder/model-00001-of-00003.safetensors",
-        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
-        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
-        "remote_path": "text_encoder/model-00001-of-00003.safetensors",
-        "bytes": 4935812536,
-        "sha256": "a8e861969c7433e707cc5a74065d795d36cca07ec96eb6763eb4083df7248f58"
-      },
-      {
-        "path": "text_encoder/model-00002-of-00003.safetensors",
-        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
-        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
-        "remote_path": "text_encoder/model-00002-of-00003.safetensors",
-        "bytes": 4983103192,
-        "sha256": "d57d948ece4837d850b7a859a4415121d57cacf8b9ee1d4db200c67f592902d7"
-      },
-      {
-        "path": "text_encoder/model-00003-of-00003.safetensors",
-        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
-        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
-        "remote_path": "text_encoder/model-00003-of-00003.safetensors",
-        "bytes": 1442935480,
-        "sha256": "0da9ee284e21d1406df708788db1d502d95d75f69faa25cd26151bf8829b7c5f"
-      },
-      {
-        "path": "text_encoder/model.safetensors.index.json",
-        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
-        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
-        "remote_path": "text_encoder/model.safetensors.index.json",
-        "bytes": 22476,
-        "sha256": "31c4c7bcce679eaa0dd4667462394ddb013dc2f748e0bffc893dc9146a320dab"
+        "path": "tokenizer/spiece.model",
+        "repo": "google/umt5-xxl",
+        "revision": "66cb9e7e85526fe440a945569e42c72fb6cbc0ad",
+        "remote_path": "spiece.model",
+        "bytes": 4548313,
+        "sha256": "e3909a67b780650b35cf529ac782ad2b6b26e6d1f849d3fbb6a872905f452458"
       },
       {
         "path": "tokenizer/tokenizer.json",
-        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
-        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
-        "remote_path": "tokenizer/tokenizer.json",
-        "bytes": 16837418,
-        "sha256": "e87c960c36d5fbf4e7e76c2469b7eab877be7f8c5992efbf97e44d3123cc6521"
+        "repo": "google/umt5-xxl",
+        "revision": "66cb9e7e85526fe440a945569e42c72fb6cbc0ad",
+        "remote_path": "tokenizer.json",
+        "bytes": 16853013,
+        "sha256": "af904105ce1071b1202bba0059a841f4a7b85b48b6ec179c4948e3483476e0dd"
       },
       {
         "path": "tokenizer/tokenizer_config.json",
-        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
-        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
-        "remote_path": "tokenizer/tokenizer_config.json",
-        "bytes": 6922,
-        "sha256": "6622f4dea346e23b4813a0c9a70cb7c41210113eb240746b13fbe0ae06e49376"
+        "repo": "google/umt5-xxl",
+        "revision": "66cb9e7e85526fe440a945569e42c72fb6cbc0ad",
+        "remote_path": "tokenizer_config.json",
+        "bytes": 6841,
+        "sha256": "616015e2b6c26f9a98ae3171634518d440a46260ebc1115c2596792d33827bdc"
       },
       {
-        "path": "transformer/0.safetensors",
-        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
-        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
-        "remote_path": "transformer/0.safetensors",
-        "bytes": 2143814575,
-        "sha256": "3252d7ac118bc33774e11dee2fef4c2ff6e9a5b302348b860318488db51473d7"
-      },
-      {
-        "path": "transformer/1.safetensors",
-        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
-        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
-        "remote_path": "transformer/1.safetensors",
-        "bytes": 2117693374,
-        "sha256": "113895039a17b78f4cfc408b75c5b90799de573ace006df7638182f8d488629d"
-      },
-      {
-        "path": "transformer/2.safetensors",
-        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
-        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
-        "remote_path": "transformer/2.safetensors",
-        "bytes": 1138634137,
-        "sha256": "7d03bae2c8a838a77f0d648b8d0c21799cefe5a7b19a3fc65c8e000bce927d3d"
-      },
-      {
-        "path": "transformer/model.safetensors.index.json",
-        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
-        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
-        "remote_path": "transformer/model.safetensors.index.json",
-        "bytes": 73940,
-        "sha256": "5bf095e55bd01fef2a9e91a89fa4facad2cee853beab265a2331a25c8fd2ffe6"
-      },
-      {
-        "path": "vae/0.safetensors",
-        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
-        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
-        "remote_path": "vae/0.safetensors",
-        "bytes": 1409401388,
-        "sha256": "8ba84d3014ef6a77ebdbbdc16c339054bdb298c37a992f0f3926fe6c5d6d4769"
-      },
-      {
-        "path": "vae/model.safetensors.index.json",
-        "repo": "AbstractFramework/wan2.2-ti2v-5b-diffusers-8bit",
-        "revision": "6875952a110b6bdbcfc00d72b1d89a8e02ab0fc3",
-        "remote_path": "vae/model.safetensors.index.json",
-        "bytes": 13977,
-        "sha256": "81e89534c9e7f1b3027ae06bb29d15ecda7af4c70876fa40011b7929c33b852f"
+        "path": "vae.safetensors",
+        "repo": "Anes1032/Wan2.2-TI2V-5B-mlx-q8",
+        "revision": "9624723c94ddf509832555c45e223a035baa7d1c",
+        "remote_path": "vae.safetensors",
+        "bytes": 2818778952,
+        "sha256": "a2d3602f692144facc3d58c56db30820c4400e67d4bb821feff3ea8347629804"
       }
     ],
-    "bytes": 18188356143,
+    "bytes": 19601659733,
     "gated": false,
     "integrity_resolved": true
   },
-  "quantization": "mixed q8 transformer; text encoder and VAE source precision"
+  "quantization": "q8 transformer (group 64); UMT5 text encoder bf16 and VAE fp32"
 }

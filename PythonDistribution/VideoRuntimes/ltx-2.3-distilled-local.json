@@ -1,0 +1,371 @@
+{
+  "schema_version": 1,
+  "python_version": "3.12",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "minimum_macos": "14.0",
+  "qualification": "unqualified",
+  "qualified_hardware": [],
+  "minimum_memory_bytes": null,
+  "execution_ceiling_seconds": 14400,
+  "worker": {
+    "module": "nativ_video.workers",
+    "protocol": 1,
+    "args": [
+      "--runtime-id",
+      "mlx-video-87db56a"
+    ]
+  },
+  "codec_runtime": "ffmpeg-9.0.2-x264-b3560",
+  "licenses": [
+    {
+      "component": "mlx-video runtime",
+      "spdx": "MIT",
+      "source": "https://github.com/Blaizzy/mlx-video/blob/87db56a51758fefb748a359b90a5283bb8ba4837/LICENSE"
+    },
+    {
+      "component": "LTX-2.3 weights",
+      "source": "https://github.com/Lightricks/LTX-2/blob/4f521619ae0029e8fbb64d555030c2b121a33b4f/LICENSE-2",
+      "requires_acceptance": true,
+      "commercial_revenue_threshold_terms": true
+    },
+    {
+      "component": "Gemma 3 text encoder",
+      "source": "https://ai.google.dev/gemma/terms",
+      "requires_acceptance": true
+    }
+  ],
+  "id": "mlx-video-87db56a",
+  "profile_id": "ltx-2.3-distilled-local",
+  "provider": "ltx_mlx",
+  "source": {
+    "url": "https://codeload.github.com/Blaizzy/mlx-video/tar.gz/87db56a51758fefb748a359b90a5283bb8ba4837",
+    "revision": "87db56a51758fefb748a359b90a5283bb8ba4837",
+    "sha256": "174adddb7797125438adbf1996f5c344cfbc6187ac0b49d58615e302302a7a45",
+    "bytes": 22144111
+  },
+  "lock": {
+    "path": "locks/mlx-video-macos-arm64.txt",
+    "sha256": "8a5f220082a2a5e48a0c522cd9857a3f68e61cbbbfd6c3064eb3b8ecc97e1d98"
+  },
+  "models": {
+    "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+    "files": [
+      {
+        "path": "audio_vae/decoder/config.json",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "audio_vae/decoder/config.json",
+        "bytes": 508,
+        "sha256": "08462df98b63ab119aceec75c1ff35686027409d2b97f9c01474468f162a5880"
+      },
+      {
+        "path": "audio_vae/decoder/model.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "audio_vae/decoder/model.safetensors",
+        "bytes": 63836681,
+        "sha256": "919f03edd099c5393eb5889be8abd74bf283a98081bce9859cf5d49f57a5c7fa"
+      },
+      {
+        "path": "ltx-2.3-spatial-upscaler-x2-1.0.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "ltx-2.3-spatial-upscaler-x2-1.0.safetensors",
+        "bytes": 995743504,
+        "sha256": "93800de87dbc448b5b31f3c5c3a1579ba6335151de061a564f6f026b0fc770ad"
+      },
+      {
+        "path": "text_encoder/added_tokens.json",
+        "repo": "mlx-community/gemma-3-12b-it-bf16",
+        "revision": "b8b9b412cb795bd6115fdce8c9a0ef0d1664db3a",
+        "remote_path": "added_tokens.json",
+        "bytes": 35,
+        "sha256": "50b2f405ba56a26d4913fd772089992252d7f942123cc0a034d96424221ba946"
+      },
+      {
+        "path": "text_encoder/config.json",
+        "repo": "mlx-community/gemma-3-12b-it-bf16",
+        "revision": "b8b9b412cb795bd6115fdce8c9a0ef0d1664db3a",
+        "remote_path": "config.json",
+        "bytes": 1039,
+        "sha256": "16a876d6326c4762377a74118847bd3410b66a1875ba05aeb6b695ddbf64b21f"
+      },
+      {
+        "path": "text_encoder/model-00001-of-00005.safetensors",
+        "repo": "mlx-community/gemma-3-12b-it-bf16",
+        "revision": "b8b9b412cb795bd6115fdce8c9a0ef0d1664db3a",
+        "remote_path": "model-00001-of-00005.safetensors",
+        "bytes": 5301386994,
+        "sha256": "319b50ee905f2cfb3f2a9061ed4858ad77a31a73a35a119ea6b7492347069968"
+      },
+      {
+        "path": "text_encoder/model-00002-of-00005.safetensors",
+        "repo": "mlx-community/gemma-3-12b-it-bf16",
+        "revision": "b8b9b412cb795bd6115fdce8c9a0ef0d1664db3a",
+        "remote_path": "model-00002-of-00005.safetensors",
+        "bytes": 5261631359,
+        "sha256": "c6d569f73b66667ad5c4ad5d34f98a301868f2b98ca1c2deada9da9f002cc0d1"
+      },
+      {
+        "path": "text_encoder/model-00003-of-00005.safetensors",
+        "repo": "mlx-community/gemma-3-12b-it-bf16",
+        "revision": "b8b9b412cb795bd6115fdce8c9a0ef0d1664db3a",
+        "remote_path": "model-00003-of-00005.safetensors",
+        "bytes": 5348137629,
+        "sha256": "8038b2b0e059d3d7a3cdcc911dc3f499952341564526eb9b3b4e6036041b2b37"
+      },
+      {
+        "path": "text_encoder/model-00004-of-00005.safetensors",
+        "repo": "mlx-community/gemma-3-12b-it-bf16",
+        "revision": "b8b9b412cb795bd6115fdce8c9a0ef0d1664db3a",
+        "remote_path": "model-00004-of-00005.safetensors",
+        "bytes": 5363867587,
+        "sha256": "7211182ea44707e0857413691164fc146940cf6b3cdf85f7ff037c59a71d5ffa"
+      },
+      {
+        "path": "text_encoder/model-00005-of-00005.safetensors",
+        "repo": "mlx-community/gemma-3-12b-it-bf16",
+        "revision": "b8b9b412cb795bd6115fdce8c9a0ef0d1664db3a",
+        "remote_path": "model-00005-of-00005.safetensors",
+        "bytes": 5113526967,
+        "sha256": "71666d602253574a56bb07719d5d8a958baa9a1373c2c4255ebbec1fc796bc45"
+      },
+      {
+        "path": "text_encoder/special_tokens_map.json",
+        "repo": "mlx-community/gemma-3-12b-it-bf16",
+        "revision": "b8b9b412cb795bd6115fdce8c9a0ef0d1664db3a",
+        "remote_path": "special_tokens_map.json",
+        "bytes": 662,
+        "sha256": "2f7b0adf4fb469770bb1490e3e35df87b1dc578246c5e7e6fc76ecf33213a397"
+      },
+      {
+        "path": "text_encoder/tokenizer.json",
+        "repo": "mlx-community/gemma-3-12b-it-bf16",
+        "revision": "b8b9b412cb795bd6115fdce8c9a0ef0d1664db3a",
+        "remote_path": "tokenizer.json",
+        "bytes": 33384568,
+        "sha256": "4667f2089529e8e7657cfb6d1c19910ae71ff5f28aa7ab2ff2763330affad795"
+      },
+      {
+        "path": "text_encoder/tokenizer_config.json",
+        "repo": "mlx-community/gemma-3-12b-it-bf16",
+        "revision": "b8b9b412cb795bd6115fdce8c9a0ef0d1664db3a",
+        "remote_path": "tokenizer_config.json",
+        "bytes": 1157007,
+        "sha256": "0d95398b39395e5cfb290683a78f3fb0551223c672d8b033333c1a5307473760"
+      },
+      {
+        "path": "text_projections/model.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "text_projections/model.safetensors",
+        "bytes": 6344492796,
+        "sha256": "94565b15dc9019c2383f9dc3e2d26d89a7b231baf8960449d7de2574dff5c3a0"
+      },
+      {
+        "path": "transformer/config.json",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "transformer/config.json",
+        "bytes": 899,
+        "sha256": "a48117b641855fcc65996a84915932b461cef6fca9fa186f8f1e00eae5d50fec"
+      },
+      {
+        "path": "transformer/model-00000-of-00018.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "transformer/model-00000-of-00018.safetensors",
+        "bytes": 2082912296,
+        "sha256": "9213093a4bd4fc675a8d50404f0ed434aceb1ea1f8ce870698945a36fd4eb4d2"
+      },
+      {
+        "path": "transformer/model-00001-of-00018.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "transformer/model-00001-of-00018.safetensors",
+        "bytes": 2144029888,
+        "sha256": "ca232148fc188b19c0bc158a0a9882cfaaf2c2f8fe71e53258cc5ee8b337253a"
+      },
+      {
+        "path": "transformer/model-00002-of-00018.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "transformer/model-00002-of-00018.safetensors",
+        "bytes": 2144171152,
+        "sha256": "11ba2b546405155d1a2215f41d9b0b6dc113764398424fc076220321c9c21054"
+      },
+      {
+        "path": "transformer/model-00003-of-00018.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "transformer/model-00003-of-00018.safetensors",
+        "bytes": 2034806928,
+        "sha256": "f97c23b4ad9b47bf0de089b61c33a93b0f64a53b8b2c5426e297108d4418fa1e"
+      },
+      {
+        "path": "transformer/model-00004-of-00018.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "transformer/model-00004-of-00018.safetensors",
+        "bytes": 2144582280,
+        "sha256": "b5204bb7d011fcde3c6f6bfd16df183ba39811089d17d03b4c8567a37fe8f8db"
+      },
+      {
+        "path": "transformer/model-00005-of-00018.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "transformer/model-00005-of-00018.safetensors",
+        "bytes": 2143923080,
+        "sha256": "d4d176110a3bcadb8ca2ace2f5f9a2fd396129d2466f7ef66f5ae9b6cefcedcc"
+      },
+      {
+        "path": "transformer/model-00006-of-00018.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "transformer/model-00006-of-00018.safetensors",
+        "bytes": 2119136960,
+        "sha256": "a3222eeeba97da36ec38a56c66eb37c71afb229ab7803efd6fffee6e0b4364a2"
+      },
+      {
+        "path": "transformer/model-00007-of-00018.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "transformer/model-00007-of-00018.safetensors",
+        "bytes": 2101932680,
+        "sha256": "c9928ebfb04a7457e39282d619a72239e006303cd197e69020db633d26ecf5f9"
+      },
+      {
+        "path": "transformer/model-00008-of-00018.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "transformer/model-00008-of-00018.safetensors",
+        "bytes": 2144582280,
+        "sha256": "6568dcce0d5e115b5837f6439649a3a5b1f6c7ba9fccea1d9b6985307c857ee4"
+      },
+      {
+        "path": "transformer/model-00009-of-00018.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "transformer/model-00009-of-00018.safetensors",
+        "bytes": 2143923080,
+        "sha256": "b1c4cd271aa2b0d956ccdc30764bd0c8b730d4a6a651ecbd076520eba4d27eee"
+      },
+      {
+        "path": "transformer/model-00010-of-00018.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "transformer/model-00010-of-00018.safetensors",
+        "bytes": 2119136960,
+        "sha256": "a956731d2ce11b51a3b820227eea31aad92ceda811d0df66ac1bf293b069bf66"
+      },
+      {
+        "path": "transformer/model-00011-of-00018.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "transformer/model-00011-of-00018.safetensors",
+        "bytes": 2101932680,
+        "sha256": "e1102c21c977addae2b152918e12b4134c7f6abcdca4a03be26fac58e67e8b70"
+      },
+      {
+        "path": "transformer/model-00012-of-00018.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "transformer/model-00012-of-00018.safetensors",
+        "bytes": 2144582280,
+        "sha256": "5e677e3f428f6f217fbb4392a816cb6277af0568de50b54065be1bb3375e4153"
+      },
+      {
+        "path": "transformer/model-00013-of-00018.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "transformer/model-00013-of-00018.safetensors",
+        "bytes": 2143923080,
+        "sha256": "455df8d3c56be982d5a6a831930766f01bdff5a271f65166a86f2fd64db400c7"
+      },
+      {
+        "path": "transformer/model-00014-of-00018.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "transformer/model-00014-of-00018.safetensors",
+        "bytes": 2119136960,
+        "sha256": "5d24e1a8ad13d88c245678ad32411e15c095fa14ee5f835447dd23dcd29ae0ef"
+      },
+      {
+        "path": "transformer/model-00015-of-00018.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "transformer/model-00015-of-00018.safetensors",
+        "bytes": 2101932680,
+        "sha256": "b357191a0c1ff8e1fe951d469d9141e8b122227aeda8d385f693e0b958ec0e51"
+      },
+      {
+        "path": "transformer/model-00016-of-00018.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "transformer/model-00016-of-00018.safetensors",
+        "bytes": 2144582104,
+        "sha256": "7142f785ec9941f39f8b0cd430f7f707a5aa34fbb841d62fad61540df6f505eb"
+      },
+      {
+        "path": "transformer/model-00017-of-00018.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "transformer/model-00017-of-00018.safetensors",
+        "bytes": 1908416488,
+        "sha256": "87f0947f7939d535334e6680c28eb713d906abb57c6cdaf7298d10a7987cf6ed"
+      },
+      {
+        "path": "vae/decoder/config.json",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "vae/decoder/config.json",
+        "bytes": 253,
+        "sha256": "96dd67966852fff5eb7ddbeb8be6146a258a16d6d7597668357490c2259b2657"
+      },
+      {
+        "path": "vae/decoder/model.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "vae/decoder/model.safetensors",
+        "bytes": 814348875,
+        "sha256": "40fdcbae2dd2aa3576a3e6ae9e797b110e4b036c80e044f04f75fe5a3cee5451"
+      },
+      {
+        "path": "vae/encoder/config.json",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "vae/encoder/config.json",
+        "bytes": 1209,
+        "sha256": "2aa542caf145a9443e2747af089f1cb9d238a8b77f0bdcadaf066d21266bd6e4"
+      },
+      {
+        "path": "vae/encoder/model.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "vae/encoder/model.safetensors",
+        "bytes": 637884773,
+        "sha256": "e7972f1d06c8a8414f5d12df25689266bce3e288de3056b0760f9629f68afc9d"
+      },
+      {
+        "path": "vocoder/config.json",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "vocoder/config.json",
+        "bytes": 1109,
+        "sha256": "7197b70ccfb95ef61e7d54a96282d273af30bee63081890a0c3a097425e05785"
+      },
+      {
+        "path": "vocoder/model.safetensors",
+        "repo": "prince-canuma/LTX-2.3-distilled",
+        "revision": "65b104b9387fb173d8e4b92fc5effc47625baf2a",
+        "remote_path": "vocoder/model.safetensors",
+        "bytes": 258309247,
+        "sha256": "1d9dcddb114eb1ab00e10e46de30a1d47708362bb9bee8b39c7c3c57fa4ba172"
+      }
+    ],
+    "bytes": 73525357557,
+    "gated": false,
+    "integrity_resolved": true
+  }
+}

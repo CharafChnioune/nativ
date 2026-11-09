@@ -5,14 +5,14 @@ validated a managed runtime, a complete checkpoint receipt and compute admission
 An isolated process is recreated for every job; no freed denoiser is reused.
 """
 from __future__ import annotations
-import contextlib
 import hashlib
 import json
 import os
 from pathlib import Path
+import resource
 import sys
 
-RUNTIMES={'ltx_mlx':'ltx-mlx-0.18.0','wan_mlx':'wan-mlx-gen-0.38.0','minimax_h3_mlx':'h3-mlx-vlm-0.7.12'}
+RUNTIMES={'ltx_mlx':'mlx-video-87db56a','wan_mlx':'mlx-video-87db56a','minimax_h3_mlx':'h3-mlx-vlm-0.7.12'}
 
 
 def _validate(request,kind):
@@ -27,38 +27,30 @@ def _validate(request,kind):
 
 def run_ltx(request,prepared,output,emit):
     _validate(request,'ltx_mlx')
-    from ltx_pipelines_mlx import DistilledPipeline
-    emit('stage',stage='loading')
-    pipeline=DistilledPipeline(model_dir=prepared['model_path'],low_memory=True,low_ram_streaming=False)
+    from mlx_video.models.ltx_2.generate import PipelineType,generate_video
     emit('dispatch'); emit('stage',stage='generating')
-    kwargs=dict(prompt=request['prompt'],output_path=str(output),width=request['width'],height=request['height'],
-                num_frames=request['frame_count'],frame_rate=request['fps'],seed=request['seed'])
-    first=prepared.get('inputs',{}).get('first_frame')
-    if first: kwargs['image']=first
-    # Keep upstream libx264 encoding and model-mandated CRF18 I2V preprocessing.
-    # No unsupported audio toggle, TeaCache, prompt enhancement or fake step log parsing.
-    pipeline.generate_and_save(**kwargs)
+    # Gemma 3 is loaded from the model's text_encoder/ folder; mlx-video muxes its audio with ffmpeg from PATH.
+    generate_video(model_repo=prepared['model_path'],text_encoder_repo=None,prompt=request['prompt'],
+        pipeline=PipelineType.DISTILLED,width=request['width'],height=request['height'],
+        num_frames=request['frame_count'],fps=request['fps'],seed=request['seed'],output_path=str(output),
+        image=prepared.get('inputs',{}).get('first_frame'),audio=True,verbose=True)
     return dict(width=request['width'],height=request['height'],frame_count=request['frame_count'],fps=request['fps'],
                 seed=request['seed'],audio_mode='native_generated',audio_sample_rate=48000,
-                audio_channels=2,pipeline='DistilledPipeline',video_decoder='conv',i2v_preprocess_crf=18 if first else None)
+                audio_channels=2,pipeline='distilled')
 
 
 def run_wan(request,prepared,output,emit):
     _validate(request,'wan_mlx')
-    from mflux.models.wan.variants.wan2_2_ti2v import Wan2_2_TI2V
-    emit('stage',stage='loading')
-    model=Wan2_2_TI2V(model_path=prepared['model_path'],quantize=8,keep_text_encoder_resident=False,prompt_embed_disk_cache=False)
-    def progress(event):
-        phase=str(event.phase)
-        value=min(1,max(0,event.step/event.total_steps)) if event.total_steps>0 and phase in ('denoise','denoising','generate') else None
-        emit('stage',stage=phase,progress=value,step=event.step,total_steps=event.total_steps)
+    from transformers import AutoTokenizer
+    from mlx_video.models.wan_2.generate import generate_video
+    tokenizer=str(Path(prepared['model_path'])/'tokenizer'); load=AutoTokenizer.from_pretrained
+    # mlx-video hardcodes the hub id google/umt5-xxl; the offline worker serves that id from its pinned copy.
+    AutoTokenizer.from_pretrained=lambda name,*a,**kw: load(tokenizer if name=='google/umt5-xxl' else name,*a,**kw)
     emit('dispatch'); emit('stage',stage='generating')
-    result=model.generate_video(seed=request['seed'],prompt=request['prompt'],num_inference_steps=request['steps'],
-        width=request['width'],height=request['height'],num_frames=request['frame_count'],fps=request['fps'],
-        flow_shift=request['flow_shift'],image_path=prepared.get('inputs',{}).get('first_frame'),
-        canvas_policy='exact-resize',resize_mode='resize',progress_callback=progress,release_denoisers_before_decode=True)
-    emit('stage',stage='encoding')
-    result.save(output,export_json_metadata=False,validate_health=True)
+    generate_video(model_dir=prepared['model_path'],prompt=request['prompt'],
+        image=prepared.get('inputs',{}).get('first_frame'),width=request['width'],height=request['height'],
+        num_frames=request['frame_count'],steps=request['steps'],shift=request['flow_shift'],
+        seed=request['seed'],output_path=str(output))
     return dict(width=request['width'],height=request['height'],frame_count=request['frame_count'],fps=request['fps'],
                 seed=request['seed'],steps=request['steps'],flow_shift=request['flow_shift'],audio_mode='silent')
 
@@ -115,7 +107,8 @@ def main():
     runtime=os.environ.get('NATIV_VIDEO_RUNTIME_ID')
     if '--runtime-id' in sys.argv: runtime=sys.argv[sys.argv.index('--runtime-id')+1]
     if runtime not in RUNTIMES.values(): raise ValueError('A known runtime identity is required')
-    stream=sys.stdout
+    # Libraries write to fd 1 (rich, print, C code, child processes): send it to stderr, keep the protocol on a private fd.
+    stream=os.fdopen(os.dup(1),'w'); os.dup2(2,1)
     def emit(kind,**details):
         stream.write(json.dumps(dict(type=kind,**details),allow_nan=False)+'\n'); stream.flush()
     emit('handshake',protocol=1,worker='nativ-video',runtime_id=runtime)
@@ -130,10 +123,12 @@ def main():
         prepared=envelope.get('prepared',{}); request=envelope['request']
         verify_prepared(prepared,request)
         os.environ.update(HF_HUB_OFFLINE='1',TRANSFORMERS_OFFLINE='1',HF_DATASETS_OFFLINE='1',HF_HUB_DISABLE_TELEMETRY='1')
-        with contextlib.redirect_stdout(sys.stderr):
-            effective={'ltx_mlx':run_ltx,'wan_mlx':run_wan,'minimax_h3_mlx':run_h3}[envelope['provider']](request,prepared,output,emit)
+        effective={'ltx_mlx':run_ltx,'wan_mlx':run_wan,'minimax_h3_mlx':run_h3}[envelope['provider']](request,prepared,output,emit)
         if not output.is_file() or output.is_symlink() or output.stat().st_size==0: raise ValueError('Runtime returned no output candidate')
-        emit('result',path=str(output),effective_parameters=effective,metadata={'runtime_id':runtime,'requires_canonical_media_probe':True})
+        mlx=sys.modules.get('mlx.core')  # never import MLX only to measure it
+        # ru_maxrss is in bytes on macOS.
+        emit('result',path=str(output),effective_parameters=effective,metadata={'runtime_id':runtime,'requires_canonical_media_probe':True,
+             'mlx_peak_memory_bytes':mlx.get_peak_memory() if mlx else None,'max_rss_bytes':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss})
     except Exception:
         emit('error',code='video_worker_failed',message='The video runtime failed. Verify its pinned dependencies, checkpoint inventory and managed encoder.')
         return 1

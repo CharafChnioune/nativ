@@ -198,14 +198,11 @@ def build_runtime(manifest,destination,python_prefix,cancel,emit,*,compute_lease
             archive=stage/'source.tar.gz'
             download(source['url'],archive,source['bytes'],source['sha256'],cancel,emit)
             extract_source(archive,stage/'source');archive.unlink()
-            if manifest['provider']=='ltx_mlx':
-                site=next((stage/'python/lib').glob('python*/site-packages'))
-                for package in ('ltx_core_mlx','ltx_pipelines_mlx'):
-                    directory='ltx-core-mlx' if package=='ltx_core_mlx' else 'ltx-pipelines-mlx'
-                    shutil.copytree(stage/'source/packages'/directory/'src'/package,site/package,dirs_exist_ok=True)
-                # Copy source licenses; keep trainer and development extras out of the runtime.
-                notices=stage/'licenses'; notices.mkdir()
-                for notice in (stage/'source').glob('LICENSE*'): shutil.copyfile(notice,notices/notice.name)
+            # Source-only mlx_video (PyPI "mlx-video" is unrelated); keep examples, tests and dev extras out of the runtime.
+            site=next((stage/'python/lib').glob('python*/site-packages'))
+            shutil.copytree(stage/'source/mlx_video',site/'mlx_video',dirs_exist_ok=True)
+            notices=stage/'licenses'; notices.mkdir()
+            for notice in (stage/'source').glob('LICENSE*'): shutil.copyfile(notice,notices/notice.name)
         # Video and shared contracts are copied into the child prefix, outside source checkout.
         site=next((stage/'python/lib').glob('python*/site-packages'))
         overlay=overlay_source(prefix)
@@ -273,7 +270,7 @@ def main():
     args=parser.parse_args()
     if not args.runtime.replace('-','').replace('.','').isalnum():raise ValueError('Invalid runtime ID')
     matches=[path for path in ROOT.glob('*.json') if json.loads(path.read_text()).get('id')==args.runtime or path.stem==args.runtime]
-    if len(matches)!=1: raise ValueError('Select a profile manifest ID (Q8 and Q4 use separate manifests)')
+    if len(matches)!=1: raise ValueError('Select a profile manifest ID (profiles sharing a runtime use separate manifests)')
     manifest=json.loads(matches[0].read_text())
     cancel=Event();signal.signal(signal.SIGTERM,lambda *_:cancel.set());signal.signal(signal.SIGINT,lambda *_:cancel.set())
     emit=lambda stage,progress:print(json.dumps(dict(stage=stage,progress=progress)),flush=True)
