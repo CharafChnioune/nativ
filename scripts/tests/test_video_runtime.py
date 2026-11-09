@@ -19,6 +19,17 @@ class VideoRuntimeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td,patch.object(manage,'download') as download:
             with self.assertRaises(ValueError): manage.prepare_models(manifest,td,Event(),lambda *a:None,accepted_licenses=True)
             download.assert_not_called()
+    def test_pinned_digests_are_authoritative_over_hub_metadata(self):
+        from unittest.mock import MagicMock
+        item={'path':'w','remote_path':'w','repo':'r/n','revision':'a'*40,'bytes':5,'sha256':'b'*64}
+        pinned={'models':{'revision':'a'*40,'files':[item]}}
+        with patch.object(manage,'build_opener',side_effect=AssertionError('pinned inventories need no hub metadata')):
+            self.assertIs(manage.resolve_model_inventory(pinned),pinned)
+        mixed={'models':{'revision':'a'*40,'files':[dict(item),dict(item,path='g',remote_path='g',sha256=None)]}}
+        opener=MagicMock();opener.open.return_value.__enter__.return_value.read.return_value=json.dumps(
+            [{'type':'file','path':'w','size':5,'lfs':{'oid':'c'*64}},{'type':'file','path':'g','size':5,'lfs':{'oid':'d'*64}}]).encode()
+        with patch.object(manage,'build_opener',return_value=opener),self.assertRaises(ValueError):
+            manage.resolve_model_inventory(mixed)  # the hub reports another digest than the pin
     def test_partial_prepare_cancel_and_license_gate(self):
         with tempfile.TemporaryDirectory() as td:
             manifest={'profile_id':'test','models':{'revision':'a'*40,'files':[]}}

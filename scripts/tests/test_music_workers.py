@@ -60,7 +60,8 @@ class MusicWorkerTests(unittest.TestCase):
                     output_dir=directory, request={}, prepared={})) + '\n'); process.stdin.flush()
                 remainder, diagnostic = process.communicate(timeout=5)
             self.assertEqual(json.loads(remainder)['type'], 'error')
-            self.assertNotIn('Traceback', remainder + diagnostic)
+            self.assertNotIn('Traceback', remainder)  # only safe codes cross the protocol pipe
+            self.assertIn('Traceback', diagnostic)  # the cause stays in the private attempt worker.log
         finally:
             if process.poll() is None: process.kill(); process.wait()
 

@@ -16,6 +16,7 @@ import runpy
 import secrets
 import shutil
 import sys
+import traceback
 
 ACE_MODEL_REVISION = '19671f406d603126926c1b7e2adc169acbcade22'
 MINIMAX_MODEL_REVISION = 'd00a12c3c7f80eb66379dd02dd0f30ed0ce2d96e'
@@ -197,7 +198,9 @@ def main():
                        'mlx_peak_memory_bytes': mx.get_peak_memory() if mx else None,
                        'max_rss_bytes': resource.getrusage(resource.RUSAGE_SELF).ru_maxrss})
     except Exception:
-        # Provider stack traces may contain prompt/filesystem details. Only safe codes cross the pipe.
+        # Provider stack traces may contain prompt/filesystem details. Only safe codes cross the pipe;
+        # the traceback goes to stderr, i.e. the private attempt worker.log.
+        traceback.print_exc()
         emit('error', code='music_worker_failed', message='The music worker failed. Verify its pinned runtime and complete prepared model inventory.')
         return 1
     return 0

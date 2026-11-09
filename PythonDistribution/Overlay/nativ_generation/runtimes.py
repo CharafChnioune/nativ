@@ -32,6 +32,7 @@ def child_environment(prefix,*,codec_paths=None):
     # Developer venvs reference their base stdlib through pyvenv.cfg; forcing
     # PYTHONHOME to that venv hides encodings. Standalone app prefixes own it.
     if not (Path(prefix)/'pyvenv.cfg').is_file():env['PYTHONHOME']=str(prefix)
+    env['HF_HOME']=str(Path(prefix)/'hf-home')  # empty: library fallbacks cannot load unpinned cached models
     if codec_paths:
         env['PATH']=str(Path(codec_paths['ffmpeg']).parent)+':'+env['PATH'];env['IMAGEIO_FFMPEG_EXE']=codec_paths['ffmpeg']
     return env
@@ -211,6 +212,8 @@ class RuntimeManager:
         if not matching:raise GenerationError('runtime_manifest_unavailable','Repair the application’s pinned runtime manifest before using this profile.',status=409)
         if len(matching)!=1:raise GenerationError('profile_required','Choose the exact model profile for this runtime action.',field='profile_id',status=409)
         pid=matching[0]
+        if action in {'install','repair'} and self.manifests[pid]['manifest'].get('provider')=='acestep':
+            raise GenerationError('provider_unavailable','ACE-Step is disabled in this build: its runtime runs PyTorch on MPS instead of MLX.',status=409)
         with self._lock:
             active=self._tasks.get(pid)
             if action=='cancel-install':
@@ -310,12 +313,12 @@ class WorkerSupervisor:
     def execute(prefix,manifest,payload,context,codecs=None):
         from .memory import MemoryGuard
         memory=MemoryGuard()
+        # Library diagnostics (failures, mlx-video's own stage timings) stay in the private attempt folder.
+        log=(Path(context.output_dir)/'worker.log').open('ab')
         parent_read,parent_write=os.pipe()
         lease_fd=getattr(context,'compute_lease_fd',None)
         inherited=(parent_read,) if lease_fd is None else (parent_read,lease_fd)
         command=[str(prefix/'bin/python3'),'-m','nativ_generation.worker_guardian','--parent-fd',str(parent_read),'--module',manifest['worker']['module'],'--',*manifest['worker'].get('args',[])]
-        # Library diagnostics (failures, mlx-video's own stage timings) stay in the private attempt folder.
-        log=(Path(context.output_dir)/'worker.log').open('ab')
         try:process=subprocess.Popen(command,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=log,env=child_environment(prefix,codec_paths=codecs),cwd=prefix,start_new_session=True,bufsize=0,pass_fds=inherited)
         except BaseException:os.close(parent_read);os.close(parent_write);raise
         finally:log.close()

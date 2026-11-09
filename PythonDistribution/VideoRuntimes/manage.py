@@ -225,6 +225,8 @@ def resolve_model_inventory(manifest, *, token=None):
     signed URLs or private HF error responses; never downloads large weights.
     """
     import copy
+    if all(isinstance(x.get('sha256'),str) and len(x['sha256'])==64 for x in manifest['models']['files']):
+        return manifest  # every component is already pinned; prepare_models verifies downloads against it
     resolved=copy.deepcopy(manifest)
     groups={}
     for item in resolved['models']['files']:
@@ -253,6 +255,7 @@ def resolve_model_inventory(manifest, *, token=None):
                         data=response.read(item['bytes']+1)
                     if len(data)!=item['bytes']:raise ValueError('Pinned component byte-size mismatch')
                     sha=hashlib.sha256(data).hexdigest()
+                if item.get('sha256') and item['sha256']!=sha:raise ValueError('Pinned component digest mismatch')
                 item['sha256']=sha;item.pop('integrity',None)
         except Exception:
             raise ValueError('Authorized access to every pinned model component is required to resolve its integrity inventory') from None

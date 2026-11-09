@@ -75,3 +75,5 @@ class GenerationProtocolBoundsTests(unittest.TestCase):
                 cwd=prefix,env=child_environment(prefix),capture_output=True,text=True,timeout=5)
             self.assertEqual(result.returncode,0,result.stderr)
             self.assertEqual(Path(result.stdout.strip()).resolve(),prefix.resolve())
+            # Library fallbacks must not find unpinned models in the user's Hugging Face cache.
+            self.assertTrue(Path(child_environment(prefix)['HF_HOME']).is_relative_to(prefix))

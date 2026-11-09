@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import resource
 import sys
+import traceback
 
 RUNTIMES={'ltx_mlx':'mlx-video-87db56a','wan_mlx':'mlx-video-87db56a','minimax_h3_mlx':'h3-mlx-vlm-0.7.12'}
 
@@ -130,6 +131,7 @@ def main():
         emit('result',path=str(output),effective_parameters=effective,metadata={'runtime_id':runtime,'requires_canonical_media_probe':True,
              'mlx_peak_memory_bytes':mlx.get_peak_memory() if mlx else None,'max_rss_bytes':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss})
     except Exception:
+        traceback.print_exc()  # stderr = private attempt worker.log, never the protocol pipe
         emit('error',code='video_worker_failed',message='The video runtime failed. Verify its pinned dependencies, checkpoint inventory and managed encoder.')
         return 1
     return 0

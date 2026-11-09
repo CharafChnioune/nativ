@@ -50,6 +50,15 @@ class MusicInstallationTests(unittest.TestCase):
             with self.assertRaises(ValueError): manager.prepare_models(manifest, Path(directory), Event(), print, accepted_licenses=False)
             event=Event();event.set()
             with self.assertRaises(InterruptedError): manager.prepare_models(manifest, Path(directory), event, print, accepted_licenses=True)
+    def test_acestep_install_is_refused_before_any_setup(self):
+        overlay=FILE.parents[1]/'Overlay';sys.path.insert(0,str(overlay))
+        from nativ_generation.runtimes import RuntimeManager
+        from nativ_generation.contracts import GenerationError
+        with tempfile.TemporaryDirectory() as directory:
+            runtime=RuntimeManager(Path(directory)/'state',resources=FILE.parents[1])
+            with self.assertRaises(GenerationError) as refused:
+                runtime.action('acestep-1.5-ca1e85f','install','acestep-v15-turbo-local')
+            self.assertIn('MLX',refused.exception.message)
     def test_malformed_manifests_are_isolated_from_runtime_discovery(self):
         overlay=FILE.parents[1]/'Overlay';sys.path.insert(0,str(overlay))
         from nativ_generation.runtimes import RuntimeManager
