@@ -7,14 +7,17 @@ gedaan. Een geslaagde build of mocktest kwalificeert een model niet.
 
 ## Dezelfde kandidaat bouwen
 
-Gebruik de definitieve Music/Video-revisie uit het GitHub-PR-rapport. Bewaar je
+Begin bij de actuele overdracht in [`prompt.md`](../../../prompt.md). PR #2
+was bij overdracht nog open: de code staat op `codex/music-video-generation`,
+niet alleen op de oude `main`. Controleer de actuele PR/CI-status en gebruik de
+revisie uit dat rapport. Bewaar je
 bestaande modellen en gegevens; een schone gebruikersbibliotheek is niet nodig.
 Voor een developmentbuild zijn Xcode, XcodeGen en CMake nodig. Die ontwikkeltools
 zijn geen verplichte Homebrew-installatie voor eindgebruikers van een verpakte app.
 
 ```sh
 git fetch origin
-git switch main
+git switch codex/music-video-generation
 git pull --ff-only
 python3 PythonDistribution/CodecRuntime/manage.py build
 NATIV_REQUIRE_MANAGED_CODECS=YES make xcode-build

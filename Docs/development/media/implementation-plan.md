@@ -142,3 +142,17 @@ pip; source app bytes remain unchanged. The compact before/after receipt is in
 not a complete model-runtime installation or inference. An independent reviewer
 checked the containment and signing change. Final exact-revision results and the
 merge receipt are recorded in PR #2; heavy hardware and release gates remain open.
+
+### M3 / 128 GB handoff (2026-11-09)
+
+The owner moved remaining qualification and repairs to the stronger Mac. Read
+[`prompt.md`](../../../prompt.md) at repository root before continuing. Product
+HEAD c24781b73e64aec7a853b8f44ea0fe2465f1b5e6 builds on CI Xcode 26.6; its push gate
+passed, but the PR native run failed two TranslationCoreTests assertions. Exact
+run IDs, assertions and artifact IDs are recorded in `evidence/m3-handoff-ci.json`.
+PR #2 is therefore still open and unmerged; no validation requirement was waived.
+The seven reviewed build directories and separately inventoried test caches were
+removed. `evidence/m3-handoff-cleanup.json` records observed free-space changes and
+preservation scope. Source, models, user data, active FinalReviewed, one signed
+media candidate and full local test evidence remain. No model qualification or
+release publication is implied by this handoff.
