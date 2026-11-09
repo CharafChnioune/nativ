@@ -75,7 +75,6 @@ func frame(
     captureTimestampNanoseconds: sequence * 1_000_000_000, sequence: sequence, sourceID: "mic",
     sessionID: s.sessionID, turnID: turn, generation: s.generation)
 }
-func settle() async { for _ in 0..<100 { await Task.yield() } }
 
 @Test func queuesOneWaitingTurnUntilCompletion() async throws {
   let backend = ControlledBackend()
@@ -210,8 +209,10 @@ func settle() async { for _ in 0..<100 { await Task.yield() } }
     .init(
       sessionID: after.sessionID, turnID: waiting, generation: after.generation,
       payload: .turnCompleted))
-  await settle()
-  #expect(await session.snapshot().transcript.turns.last?.translatedText == "nieuw")
+  #expect(
+    await waitForCoreMilestone {
+      await session.snapshot().transcript.turns.last?.translatedText == "nieuw"
+    })
   await session.stop()
 }
 
@@ -251,8 +252,7 @@ actor EventCollector {
           format: .init(
             sampleRate: 16_000, channels: 1, encoding: .signedInt16LittleEndian),
           sequence: 0))))
-  await settle()
-  #expect(await collector.hasAudio())
+  #expect(await waitForCoreMilestone { await collector.hasAudio() })
   #expect(await core.snapshot().activeTurnID == turn)
   #expect(await core.snapshot().transcript.turns.isEmpty)
   await core.stop()
@@ -266,7 +266,8 @@ actor EventCollector {
   config.buffering.contextTokenLimit = 100
   _ = try await core.prepare(configuration: config)
   let events = try await core.start()
-  defer { withExtendedLifetime(events) {} }
+  let collector = EventCollector()
+  let reader = Task { do { for try await event in events { await collector.record(event) } } catch {} }
   let s = await core.snapshot()
   let a = TranslationTurnID()
   let b = TranslationTurnID()
@@ -278,16 +279,17 @@ actor EventCollector {
     .init(
       sessionID: s.sessionID, generation: s.generation,
       payload: .metrics(.init(name: .contextTokens, value: 70))))
-  await settle()
+  // The host sees a metric only after the core applied it.
+  #expect(await waitForCoreMilestone { await collector.events.contains { if case .metrics = $0.payload { true } else { false } } })
   #expect(await backend.starts == 1)
   await backend.emit(
     .init(sessionID: s.sessionID, turnID: a, generation: s.generation, payload: .turnCompleted))
-  await settle()
+  #expect(await waitForCoreMilestone { await backend.frames.last?.turnID == b })
   #expect(await backend.starts == 2)
-  #expect(await backend.frames.last?.turnID == b)
   #expect(await backend.frames.last?.generation == s.generation)
   #expect(await core.snapshot().activity.acceptingInput)
   await core.stop()
+  await reader.value
 }
 
 @Test func slowHostFailsExplicitlyAndReleasesRuntime() async throws {
@@ -308,9 +310,8 @@ actor EventCollector {
         sessionID: s.sessionID, generation: s.generation,
         payload: .metrics(.init(name: .contextTokens, value: 1))))
   }
-  await settle()
+  #expect(await waitForCoreMilestone { await core.snapshot().state == .failed })
   let result = await core.snapshot()
-  #expect(result.state == .failed)
   #expect(result.lastFailure?.code == .consumerOverload)
   #expect(result.incompleteTurns.contains(turn))
   await core.stop()
@@ -337,11 +338,7 @@ actor CancellationBackend: TranslationBackend {
   let backend = CancellationBackend()
   let core = TranslationSession(backend: backend)
   let preparation = Task { try await core.prepare(configuration: configuration()) }
-  for _ in 0..<10_000 {
-    if await backend.preparing { break }
-    await Task.yield()
-  }
-  #expect(await backend.preparing)
+  #expect(await waitForCoreMilestone { await backend.preparing })
   await core.stop()
   await #expect(throws: CancellationError.self) { try await preparation.value }
   #expect(await backend.didStop)
@@ -357,8 +354,7 @@ actor CancellationBackend: TranslationBackend {
   await core.interrupt()
   reader.cancel()
   await reader.value
-  await settle()
-  #expect(await core.snapshot().state == .stopped)
+  #expect(await waitForCoreMilestone { await core.snapshot().state == .stopped })
   await core.stop()
 }
 
@@ -412,7 +408,8 @@ actor StartingBackend: TranslationBackend {
   let core = TranslationSession(backend: backend)
   _ = try await core.prepare(configuration: configuration())
   let events = try await core.start()
-  defer { withExtendedLifetime(events) {} }
+  let collector = EventCollector()
+  let reader = Task { do { for try await event in events { await collector.record(event) } } catch {} }
   let s = await core.snapshot()
   let turn = TranslationTurnID()
   try await core.accept(frame: frame(s, turn: turn))
@@ -421,8 +418,10 @@ actor StartingBackend: TranslationBackend {
     .init(
       sessionID: s.sessionID, turnID: turn, generation: s.generation,
       payload: .translationText(.init(text: "spoken prefix", stability: .stableAppend))))
-  await settle()
+  // The host sees text only after the core applied it to the active turn.
+  #expect(await waitForCoreMilestone { await collector.events.contains { if case .translationText = $0.payload { true } else { false } } })
   await core.stop()
+  await reader.value
   let result = await core.snapshot()
   #expect(result.incompleteTurns.contains(turn))
   #expect(result.transcript.turns.last?.incomplete == true)
@@ -466,7 +465,7 @@ actor StartingBackend: TranslationBackend {
     .init(
       sessionID: s.sessionID, turnID: turn, generation: s.generation, payload: .turnCompleted)
   )
-  await settle()
+  #expect(await waitForCoreMilestone { await core.snapshot().transcript.turns.last?.turnID == turn })
   await #expect(throws: TranslationFailure.self) { try await core.retryLastTurn() }
   await core.stop()
   await #expect(throws: TranslationFailure.self) { try await core.retryLastTurn() }
@@ -520,13 +519,11 @@ actor SendingBackend: TranslationBackend {
   let s = await core.snapshot()
   let turn = TranslationTurnID()
   let sending = Task { try await core.accept(frame: frame(s, turn: turn)) }
-  for _ in 0..<10_000 {
-    if await backend.sending { break }
-    await Task.yield()
-  }
+  #expect(await waitForCoreMilestone { await backend.sending })
   let stopping = Task { await core.stop() }
-  await settle()
-  #expect(await backend.didStop)
+  #expect(await waitForCoreMilestone { await backend.didStop })
+  // Seen before the fallback release below: stop() itself cancelled the send first.
+  #expect(await backend.sendContinuation == nil)
   // Release a broken implementation without leaving a minute-long test.
   await backend.releaseSend()
   await stopping.value
@@ -562,9 +559,8 @@ actor SendingBackend: TranslationBackend {
           format: .init(
             sampleRate: 16_000, channels: 1, encoding: .signedInt16LittleEndian),
           sequence: 0))))
-  await settle()
+  #expect(await waitForCoreMilestone { await core.snapshot().lastFailure?.code == .invalidEvent })
   #expect(!(await collector.hasAudio()))
-  #expect(await core.snapshot().lastFailure?.code == .invalidEvent)
   await core.stop()
   await reader.value
 }
@@ -598,8 +594,7 @@ actor SendingBackend: TranslationBackend {
           format: .init(
             sampleRate: 16_000, channels: 1, encoding: .signedInt16LittleEndian),
           sequence: 0))))
-  await settle()
-  #expect(await collector.hasAudio())
+  #expect(await waitForCoreMilestone { await collector.hasAudio() })
   #expect(await core.snapshot().activeTurnID == turn)
   await core.stop()
   await reader.value
@@ -621,22 +616,17 @@ actor SendingBackend: TranslationBackend {
     .init(
       sessionID: firstState.sessionID, turnID: first, generation: firstState.generation,
       payload: .turnCompleted))
-  for _ in 0..<10_000 {
-    if await backend.isHoldingStop() { break }
-    await Task.yield()
-  }
+  #expect(await waitForCoreMilestone { await backend.isHoldingStop() })
   let resettingState = await core.snapshot()
   let sending = Task {
     try await core.accept(frame: frame(resettingState, turn: next, sequence: 1))
   }
-  await settle()
-  #expect(await core.snapshot().waitingTurnID == next)
+  #expect(await waitForCoreMilestone { await core.snapshot().waitingTurnID == next })
   await backend.releaseStop()
   do { try await sending.value } catch {
     Issue.record("New speech was lost during context release: \(error)")
   }
-  await settle()
-  #expect(await backend.frames.last?.turnID == next)
+  #expect(await waitForCoreMilestone { await backend.frames.last?.turnID == next })
   #expect(await core.snapshot().lastFailure == nil)
   await core.stop()
 }
@@ -649,9 +639,8 @@ actor SendingBackend: TranslationBackend {
   defer { withExtendedLifetime(stream) {} }
   weak let reference = core
   core = nil
-  await settle()
-  #expect(reference == nil)
-  #expect(await backend.stopped)
+  #expect(await waitForCoreMilestone { reference == nil })
+  #expect(await waitForCoreMilestone { await backend.stopped })
 }
 
 @Test func queuedAudioUsesDurationBudgetRatherThanEventCount() async throws {
@@ -676,8 +665,7 @@ actor SendingBackend: TranslationBackend {
             format: .init(sampleRate: 16000, channels: 1, encoding: .signedInt16LittleEndian),
             sequence: UInt64(sequence)))))
   }
-  await settle()
-  #expect(await core.snapshot().lastFailure?.code == .consumerOverload)
+  #expect(await waitForCoreMilestone { await core.snapshot().lastFailure?.code == .consumerOverload })
   #expect(await core.snapshot().state == .paused)
   await core.stop()
 }
@@ -695,13 +683,12 @@ actor SendingBackend: TranslationBackend {
     .init(
       sessionID: state.sessionID, turnID: turn, generation: state.generation,
       payload: .failure(.init(code: .providerFailure, message: "fixture failure"))))
-  await settle()
-  let current = await core.snapshot()
   var foundFailure = false
   for try await event in stream {
     if case .failure = event.payload {
       foundFailure = true
-      #expect(event.generation == current.generation)
+      // Read after the host received it, so the core has already invalidated.
+      #expect(await core.snapshot().generation == event.generation)
       break
     }
   }
@@ -733,10 +720,9 @@ actor SendingBackend: TranslationBackend {
     .init(
       sessionID: snapshot.sessionID, turnID: turn, generation: snapshot.generation,
       payload: .audio(forwarded)))
-  await settle()
-  #expect(budget.reservedSeconds == 1.5)
   for try await event in stream {
     if case .audio = event.payload {
+      #expect(budget.reservedSeconds == 1.5)  // forwarded by the core without a second reservation
       event.acknowledgeAudioDelivery()
       event.acknowledgeAudioDelivery()  // release must be idempotent across copied values
       break
@@ -835,7 +821,7 @@ private func waitForCoreMilestone(_ condition: @Sendable () async -> Bool) async
     .init(
       sessionID: before.sessionID, turnID: original, generation: before.generation,
       payload: .failure(.init(code: .providerFailure, message: "fixture"))))
-  await settle()
+  #expect(await waitForCoreMilestone { await core.snapshot().canRetry })
   let failed = await core.snapshot()
   #expect(failed.state == .paused)
   #expect(failed.canRetry)
@@ -890,15 +876,11 @@ private actor ControlledTranslationClock: TranslationClock {
     .init(
       sessionID: snapshot.sessionID, turnID: turn, generation: snapshot.generation,
       payload: .failure(.init(code: .providerFailure, message: "fixture"))))
-  for _ in 0..<10_000 {
-    if await clock.isWaiting { break }
-    await Task.yield()
-  }
+  #expect(await waitForCoreMilestone { await clock.isWaiting })
   #expect(await core.snapshot().canRetry)
   #expect(await clock.requestedSeconds == 30)
   await clock.advance()
-  await settle()
-  #expect(!(await core.snapshot().canRetry))
+  #expect(await waitForCoreMilestone { !(await core.snapshot().canRetry) })
   await #expect(throws: TranslationFailure.self) { try await core.retryLastTurn() }
   await core.stop()
 }
@@ -969,12 +951,11 @@ private func completeForReplay(_ core: TranslationSession, backend: ControlledBa
   try await core.accept(frame: frame(snapshot, turn: turn))
   try await core.commit(turnID: turn)
   #expect(await completeForReplay(core, backend: backend, turn: turn, snapshot: snapshot))
-  for _ in 0..<10_000 { if await clock.isWaiting { break }; await Task.yield() }
+  #expect(await waitForCoreMilestone { await clock.isWaiting })
   #expect(await clock.requestedSeconds == 30)
   #expect(!(await core.snapshot().canRetry))
   await clock.advance()
-  await settle()
-  #expect(!(await core.snapshot().canReplay))
+  #expect(await waitForCoreMilestone { !(await core.snapshot().canReplay) })
   await #expect(throws: TranslationFailure.self) { try await core.replayLastTurn(languagePair: .init(source: "nl", target: "en")) }
   await core.stop()
 }
@@ -993,15 +974,15 @@ private func completeForReplay(_ core: TranslationSession, backend: ControlledBa
   let oldProvider = await backend.continuation
   await backend.holdStop()
   let replay = Task { try await core.replayLastTurn(languagePair: .init(source: "nl", target: "en")) }
-  for _ in 0..<10_000 { if await backend.isHoldingStop() { break }; await Task.yield() }
-  #expect(await backend.isHoldingStop())
+  #expect(await waitForCoreMilestone { await backend.isHoldingStop() })
   let during = await core.snapshot()
   #expect(during.generation != snapshot.generation)
   #expect(!during.activity.acceptingInput && !during.activity.generating)
   oldProvider?.yield(.init(sessionID: snapshot.sessionID, turnID: turn, generation: snapshot.generation,
                           payload: .translationText(.init(text: "late wrong output", stability: .final))))
   let stop = Task { await core.stop() }
-  await settle()
+  // Release only after stop() invalidated the replay, so its re-prepare must be cancelled.
+  #expect(await waitForCoreMilestone { await core.snapshot().state == .stopping })
   await backend.releaseStop()
   await stop.value
   await #expect(throws: CancellationError.self) { try await replay.value }
@@ -1047,8 +1028,7 @@ private func completeForReplay(_ core: TranslationSession, backend: ControlledBa
   try await core.commit(turnID: failed)
   await backend.emit(.init(sessionID: snapshot.sessionID, turnID: failed, generation: snapshot.generation,
                           payload: .failure(.init(code: .providerFailure, message: "fixture"))))
-  await settle()
-  #expect(await core.snapshot().canRetry)
+  #expect(await waitForCoreMilestone { await core.snapshot().canRetry })
   #expect(await core.snapshot().canReplay)
   _ = try await core.replayLastTurn(languagePair: .init(source: "nl", target: "en"))
   #expect(await backend.frames.last?.sequence == 1)
