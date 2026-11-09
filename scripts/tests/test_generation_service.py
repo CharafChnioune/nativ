@@ -34,6 +34,9 @@ class GenerationServiceTests(unittest.TestCase):
             if job['state'] in states: return job
             time.sleep(.01)
         self.fail(str(job))
+    def test_acestep_is_disabled_as_non_mlx_runtime(self):
+        reason=self.s.readiness(dict(self.profile,id='ace',provider='acestep'))['unavailable_reason']
+        self.assertIn('MLX',reason)
     def test_submit_is_durable_and_duplicate_uses_frozen_defaults(self):
         j=self.s.submit('music',{'model':'fixture','prompt':'one'},'key')
         self.s.configure('fixture',{'enabled':False})

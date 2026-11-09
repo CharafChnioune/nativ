@@ -3,160 +3,6 @@
   "description": "Original Nativ qualification prompts and lyrics; no user audio or provider output.",
   "cases": [
     {
-      "id": "ace-01-soul",
-      "request": {
-        "model": "acestep-v15-turbo-local",
-        "prompt": "Warm soul with Rhodes piano, soft bass and restrained drums",
-        "instrumental": true,
-        "duration_seconds": 30,
-        "seed": 42,
-        "output_format": "wav",
-        "allow_remote": false
-      },
-      "language": null,
-      "review_focus": [
-        "complete finite audio",
-        "pitch and timing",
-        "style adherence",
-        "absence of unintended vocals"
-      ]
-    },
-    {
-      "id": "ace-02-folk",
-      "request": {
-        "model": "acestep-v15-turbo-local",
-        "prompt": "Acoustic folk with fingerpicked guitar and a clear chorus",
-        "instrumental": false,
-        "duration_seconds": 30,
-        "seed": 7,
-        "output_format": "wav",
-        "allow_remote": false,
-        "lyrics": "[Verse]\nMorning light across the floor\nA quiet road becomes a song\n[Chorus]\nWe are finding our way home\nWe have carried hope along"
-      },
-      "language": "en",
-      "review_focus": [
-        "complete finite audio",
-        "pitch and timing",
-        "style adherence",
-        "lyric adherence"
-      ]
-    },
-    {
-      "id": "ace-03-ambient",
-      "request": {
-        "model": "acestep-v15-turbo-local",
-        "prompt": "Slow ambient piano with spacious pads and no percussion",
-        "instrumental": true,
-        "duration_seconds": 30,
-        "seed": 42,
-        "output_format": "wav",
-        "allow_remote": false
-      },
-      "language": null,
-      "review_focus": [
-        "complete finite audio",
-        "pitch and timing",
-        "style adherence",
-        "absence of unintended vocals"
-      ]
-    },
-    {
-      "id": "ace-04-jazz",
-      "request": {
-        "model": "acestep-v15-turbo-local",
-        "prompt": "Small jazz trio with upright bass, brushed drums and warm piano",
-        "instrumental": false,
-        "duration_seconds": 30,
-        "seed": 7,
-        "output_format": "wav",
-        "allow_remote": false,
-        "lyrics": "[Couplet]\nDe ochtend kleurt de stille straat\nEen zachte wind die verder gaat\n[Refrein]\nWij vinden samen onze weg\nEen nieuw begin bij elke stap"
-      },
-      "language": "nl",
-      "review_focus": [
-        "complete finite audio",
-        "pitch and timing",
-        "style adherence",
-        "lyric adherence"
-      ]
-    },
-    {
-      "id": "ace-05-electronic",
-      "request": {
-        "model": "acestep-v15-turbo-local",
-        "prompt": "Bright electronic music with rounded bass and an evolving melody",
-        "instrumental": true,
-        "duration_seconds": 60,
-        "seed": 42,
-        "output_format": "wav",
-        "allow_remote": false
-      },
-      "language": null,
-      "review_focus": [
-        "complete finite audio",
-        "pitch and timing",
-        "style adherence",
-        "absence of unintended vocals"
-      ]
-    },
-    {
-      "id": "ace-06-orchestral",
-      "request": {
-        "model": "acestep-v15-turbo-local",
-        "prompt": "Gentle orchestral music with strings, woodwinds and a gradual build",
-        "instrumental": true,
-        "duration_seconds": 60,
-        "seed": 7,
-        "output_format": "wav",
-        "allow_remote": false
-      },
-      "language": null,
-      "review_focus": [
-        "complete finite audio",
-        "pitch and timing",
-        "style adherence",
-        "absence of unintended vocals"
-      ]
-    },
-    {
-      "id": "ace-07-soul",
-      "request": {
-        "model": "acestep-v15-turbo-local",
-        "prompt": "Warm soul with Rhodes piano, soft bass and restrained drums",
-        "instrumental": true,
-        "duration_seconds": 30,
-        "seed": 42,
-        "output_format": "wav",
-        "allow_remote": false
-      },
-      "language": null,
-      "review_focus": [
-        "complete finite audio",
-        "pitch and timing",
-        "style adherence",
-        "absence of unintended vocals"
-      ]
-    },
-    {
-      "id": "ace-08-folk",
-      "request": {
-        "model": "acestep-v15-turbo-local",
-        "prompt": "Acoustic folk with fingerpicked guitar and a clear chorus",
-        "instrumental": true,
-        "duration_seconds": 30,
-        "seed": 7,
-        "output_format": "wav",
-        "allow_remote": false
-      },
-      "language": null,
-      "review_focus": [
-        "complete finite audio",
-        "pitch and timing",
-        "style adherence",
-        "absence of unintended vocals"
-      ]
-    },
-    {
       "id": "minimax-01-soul",
       "request": {
         "model": "minimax-music3-mxfp8-local",
@@ -258,6 +104,84 @@
       "request": {
         "model": "minimax-music3-mxfp8-local",
         "prompt": "Gentle orchestral music with strings, woodwinds and a gradual build",
+        "instrumental": true,
+        "duration_seconds": 60,
+        "seed": 7,
+        "output_format": "wav",
+        "allow_remote": false
+      },
+      "language": null,
+      "review_focus": [
+        "complete finite audio",
+        "pitch and timing",
+        "style adherence",
+        "absence of unintended vocals"
+      ]
+    },
+    {
+      "id": "minimax-07-soul-repeat",
+      "request": {
+        "model": "minimax-music3-mxfp8-local",
+        "prompt": "Warm soul with Rhodes piano, soft bass and restrained drums",
+        "instrumental": true,
+        "duration_seconds": 30,
+        "seed": 42,
+        "output_format": "wav",
+        "allow_remote": false
+      },
+      "language": null,
+      "review_focus": [
+        "complete finite audio",
+        "pitch and timing",
+        "style adherence",
+        "absence of unintended vocals"
+      ]
+    },
+    {
+      "id": "minimax-08-pop",
+      "request": {
+        "model": "minimax-music3-mxfp8-local",
+        "prompt": "Bright synth-pop with a punchy beat and a sung hook",
+        "instrumental": false,
+        "duration_seconds": 30,
+        "seed": 42,
+        "output_format": "wav",
+        "allow_remote": false,
+        "lyrics": "[Verse]\nCity lights are turning gold\nEvery story waits to be told\n[Chorus]\nHold on, the night is young\nSing it loud with everyone"
+      },
+      "language": "en",
+      "review_focus": [
+        "complete finite audio",
+        "pitch and timing",
+        "style adherence",
+        "lyric adherence"
+      ]
+    },
+    {
+      "id": "minimax-09-ballad",
+      "request": {
+        "model": "minimax-music3-mxfp8-local",
+        "prompt": "Slow piano ballad with soft strings and an intimate voice",
+        "instrumental": false,
+        "duration_seconds": 60,
+        "seed": 7,
+        "output_format": "wav",
+        "allow_remote": false,
+        "lyrics": "[Couplet]\nIk tel de sterren boven zee\nEn neem de stilte met me mee\n[Refrein]\nBlijf nog even hier bij mij\nDan is de nacht niet meer voorbij"
+      },
+      "language": "nl",
+      "review_focus": [
+        "complete finite audio",
+        "pitch and timing",
+        "style adherence",
+        "lyric adherence"
+      ]
+    },
+    {
+      "id": "minimax-10-rock",
+      "request": {
+        "model": "minimax-music3-mxfp8-local",
+        "prompt": "Driving instrumental rock with crunchy guitars and live drums",
         "instrumental": true,
         "duration_seconds": 60,
         "seed": 7,
@@ -375,6 +299,82 @@
         "instrumental": true,
         "duration_seconds": 120,
         "seed": 7,
+        "output_format": "wav",
+        "allow_remote": false
+      },
+      "language": null,
+      "review_focus": [
+        "complete finite audio",
+        "pitch and timing",
+        "style adherence",
+        "absence of unintended vocals"
+      ]
+    },
+    {
+      "id": "stable-07-soul-repeat",
+      "request": {
+        "model": "stable-audio-3-small-local",
+        "prompt": "Warm soul with Rhodes piano, soft bass and restrained drums",
+        "instrumental": true,
+        "duration_seconds": 30,
+        "seed": 42,
+        "output_format": "wav",
+        "allow_remote": false
+      },
+      "language": null,
+      "review_focus": [
+        "complete finite audio",
+        "pitch and timing",
+        "style adherence",
+        "absence of unintended vocals"
+      ]
+    },
+    {
+      "id": "stable-08-lofi",
+      "request": {
+        "model": "stable-audio-3-small-local",
+        "prompt": "Relaxed lo-fi hip hop with dusty drums and mellow keys",
+        "instrumental": true,
+        "duration_seconds": 30,
+        "seed": 42,
+        "output_format": "wav",
+        "allow_remote": false
+      },
+      "language": null,
+      "review_focus": [
+        "complete finite audio",
+        "pitch and timing",
+        "style adherence",
+        "absence of unintended vocals"
+      ]
+    },
+    {
+      "id": "stable-09-cinematic",
+      "request": {
+        "model": "stable-audio-3-small-local",
+        "prompt": "Cinematic tension with low brass, pulsing strings and taiko drums",
+        "instrumental": true,
+        "duration_seconds": 60,
+        "seed": 7,
+        "output_format": "wav",
+        "allow_remote": false
+      },
+      "language": null,
+      "review_focus": [
+        "complete finite audio",
+        "pitch and timing",
+        "style adherence",
+        "absence of unintended vocals"
+      ]
+    },
+    {
+      "id": "stable-10-percussion",
+      "request": {
+        "model": "stable-audio-3-small-local",
+        "prompt": "Layered world percussion groove with hand drums and shakers",
+        "instrumental": true,
+        "duration_seconds": 120,
+        "seed": 42,
         "output_format": "wav",
         "allow_remote": false
       },

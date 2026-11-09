@@ -36,7 +36,9 @@ class MusicInstallationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory); (root/'model').write_bytes(b'fixture')
             item=dict(path='model', bytes=7, sha256=hashlib.sha256(b'fixture').hexdigest(), repo='a/b', revision='a'*40, remote_path='model')
-            manifest=dict(profile_id='profile', provider='acestep', models=dict(revision='a'*40, files=[item]))
+            manifest=dict(profile_id='profile', provider='stable_audio_mlx', models=dict(revision='a'*40, files=[item]))
+            with self.assertRaises(ValueError):  # ACE-Step (torch on MPS) is disabled; nothing is downloaded.
+                manager.prepare_models(dict(manifest, provider='acestep'), root, Event(), lambda *args: None, accepted_licenses=True)
             manager.prepare_models(manifest, root, Event(), lambda *args: None, accepted_licenses=True)
             receipt=json.loads((root/'nativ-model.json').read_text())
             self.assertEqual(receipt['files']['model'], item['sha256'])

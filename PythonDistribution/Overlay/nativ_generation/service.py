@@ -109,7 +109,8 @@ class GenerationService:
         return p
     def readiness(self,p):
         cfg=self._config(p['id']);reason=None
-        if not cfg.get('enabled'):reason='Enable this provider explicitly in generation settings.'
+        if p['provider']=='acestep':reason='ACE-Step is disabled in this build: its runtime runs PyTorch on MPS instead of MLX.'
+        elif not cfg.get('enabled'):reason='Enable this provider explicitly in generation settings.'
         elif p.get('qualification')!='qualified' and not cfg.get('experimental_enabled'):reason='This profile has not passed real-model qualification. Explicit experimental opt-in is required.'
         elif self.factory is build_provider and p['modality']=='music' and not self.assets.codec_paths:reason='Repair the application’s managed audio decoder before submitting music, including paid requests.'
         elif p['deployment']=='local':

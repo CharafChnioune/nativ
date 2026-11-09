@@ -80,6 +80,7 @@ def download(url, target, size, sha256, cancel, emit, token=None):
 def prepare_models(manifest,destination,cancel,emit,*,accepted_licenses=False,token=None):
     check(cancel)
     if not accepted_licenses:raise ValueError('Review and accept the pinned runtime/model license terms before download')
+    if manifest.get('provider')=='acestep':raise ValueError('ACE-Step is disabled: its runtime runs PyTorch on MPS instead of MLX')
     destination=Path(destination)
     if destination.is_symlink():raise ValueError('Managed model root may not be a symlink')
     destination.mkdir(parents=True,exist_ok=True);destination=destination.resolve()

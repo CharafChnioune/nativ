@@ -11,6 +11,7 @@ import json
 import math
 import os
 from pathlib import Path
+import resource
 import runpy
 import secrets
 import shutil
@@ -190,8 +191,11 @@ def main():
             effective = dict(acestep=run_ace, minimax_mlx=run_minimax, stable_audio_mlx=run_stable)[provider](
                 envelope['request'], envelope.get('prepared', {}), output, emit)
         if not output.is_file(): raise ValueError('Worker returned no audio')
+        mx = sys.modules.get('mlx.core')  # measured, never imported just for metrics
         emit('result', path=str(output), effective_parameters=effective,
-             metadata={'runtime_id': runtime, 'sample_rate': effective['sample_rate'], 'channels': 2})
+             metadata={'runtime_id': runtime, 'sample_rate': effective['sample_rate'], 'channels': 2,
+                       'mlx_peak_memory_bytes': mx.get_peak_memory() if mx else None,
+                       'max_rss_bytes': resource.getrusage(resource.RUSAGE_SELF).ru_maxrss})
     except Exception:
         # Provider stack traces may contain prompt/filesystem details. Only safe codes cross the pipe.
         emit('error', code='music_worker_failed', message='The music worker failed. Verify its pinned runtime and complete prepared model inventory.')
