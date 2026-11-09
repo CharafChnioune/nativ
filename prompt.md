@@ -1,5 +1,11 @@
 # Opdracht voor Codex op de Mac M3 met 128 GB — Nativ afmaken
 
+> **Status (9 november 2026):** dit is de oorspronkelijke overdracht. De
+> profiellijst hieronder is historisch: lokale media draait nu alleen op MLX
+> (mlx-video met LTX-2.3 en Wan2.2; LTX-2.5 Q8/Q4 verwijderd, ACE-Step
+> uitgeschakeld). Actuele stand, metingen en bewust open gates:
+> [`Docs/development/media/testen-op-sterkere-mac.md`](Docs/development/media/testen-op-sterkere-mac.md#stand-op-de-m3-max-9-november-2026).
+
 Voer deze opdracht uit; stop niet na een nieuw plan. Je neemt bestaand werk over
 van een M5 met 16 GB. De gebruiker wil op deze sterkere Mac de resterende
 implementatie, echte modelproeven, reparaties en integratie afronden. Communiceer

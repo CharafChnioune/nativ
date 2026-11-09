@@ -2,11 +2,11 @@
 
 Music uses the same durable generation service for native workspaces, Chat and API clients. The server owns jobs and original audio. A submitted job continues when a window closes or changes workspace, while that server remains running. Playback is explicit; completion never autoplays.
 
-The provider catalog distinguishes the checkpoint, runtime, execution location and qualification. Installing a runtime or listing a model does not qualify its audio quality or memory use. The initial local profiles are unqualified; MiniMax MLX is experimental. No music weights were downloaded or generated on the development machine. See [runtime qualification](../development/music-runtime-qualification.md).
+The provider catalog distinguishes the checkpoint, runtime, execution location and qualification. Installing a runtime or listing a model does not qualify its audio quality or memory use. Local music runs on MLX only: MiniMax MLX is experimental, Stable Small is unqualified and ACE-Step is disabled. Both MLX profiles generated real songs on an M3 Max (128 GB); without the human listening review that qualifies neither them nor smaller Macs. See [runtime qualification](../development/music-runtime-qualification.md).
 
 | Profile | Execution | Supported controls | Original output |
 | --- | --- | --- | --- |
-| ACE-Step 1.5 Turbo | Owned Python 3.12 process on this Mac | Instrumental/vocals, supplied lyrics, 10–60 second target, seed, BPM/key/time signature hints; fixed 8 steps/shift 1; no automatic lyric/caption rewrite | WAV, 48 kHz stereo |
+| ACE-Step 1.5 Turbo | Disabled in this build: its runtime runs PyTorch on MPS (only the DiT on MLX) and mlx-audio has no ACE-Step. Listed with that reason; install/repair are refused | — | — |
 | MiniMax-Music3 MLX MXFP8 | Separate owned process using the pinned music-capable base environment | Supplied lyrics or explicit `[instrumental]`, 1–60 second ceiling, seed; fixed 30 steps | WAV, 44.1 kHz stereo |
 | Stable Audio 3 Small Music | Isolated official pure MLX process | Instrumental descriptions, 1–120 seconds, seed; fixed post-trained 8-step profile/CFG 1; progressive model release | WAV, 44.1 kHz stereo |
 | MiniMax-Music3 Remote GPU | Explicit configured SGLang-Omni service | Lyrics/description, seed, 1–30 second acoustic-frame ceiling | WAV, 32 kHz stereo |
@@ -20,22 +20,22 @@ Durations, musical structure and lyric adherence remain generative. A requested 
 
 The native setup flow calls managed runtime installation and model preparation. It must show licenses, download sizes, available space and qualification before enabling a profile. Models are never fetched by opening Music, importing the API or launching a worker.
 
-Pinned inventories total approximately 6.34 GB for ACE (DiT, VAE and text encoder; no LM in the initial direct-conditioning profile), 13.87 GB for MiniMax MXFP8, and 1.705 GB for Stable Small Music. These are download sizes, not peak memory claims. Optional ACE 0.6B LM files are separately inventoried and not enabled by the initial profile. Downloads verify SHA-256 and keep resumable partial files; cancellation does not erase existing songs.
+Pinned inventories total approximately 13.87 GB for MiniMax MXFP8 and 1.705 GB for Stable Small Music; with their runtimes the installs took 15.0 GB and 2.2 GB on the M3 Max. These are download sizes, not peak memory claims: the measured peak process footprint there was 34–46 GB for MiniMax and 2.3–2.8 GB for Stable, before workers capped MLX's buffer cache at 4 GiB. Downloads verify SHA-256 and keep resumable partial files; cancellation does not erase existing songs.
 
 The builder integration is under `PythonDistribution/MusicRuntimes/manage.py`. Release engineers can explicitly prepare a candidate with the app's standalone Python prefix:
 
 ```sh
 python3 PythonDistribution/MusicRuntimes/manage.py build \
-  --runtime acestep-1.5-ca1e85f --python-prefix /path/to/bundled/python \
+  --runtime stable-audio-3-mlx-790793b --python-prefix /path/to/bundled/python \
   --destination /path/to/new/runtime --accept-licenses
 python3 PythonDistribution/MusicRuntimes/manage.py models \
-  --runtime acestep-1.5-ca1e85f --destination /path/to/new/checkpoints \
+  --runtime stable-audio-3-mlx-790793b --destination /path/to/new/checkpoints \
   --accept-licenses
 ```
 
 These are reproducible builder commands, not a requirement to install Homebrew, uv or a terminal server on an end user's Mac. A release builder still needs to execute isolated dependency installation, bundled imports, relocation, nested signing/notarization and real audio qualification. The installer never updates the base Nativ interpreter. Missing/gated files leave the profile unready.
 
-Private named profile configuration supplies `checkpoints_dir` for ACE; `model_path` for MiniMax; `model_path` plus `source_path` for Stable. Prepared directories carry a pinned `nativ-model.json` receipt. Workers verify every recorded component before loading. The host supplies worker interpreter paths; ordinary generation requests cannot choose paths or endpoints.
+Private named profile configuration supplies `model_path` for MiniMax and `model_path` plus `source_path` for Stable. Prepared directories carry a pinned `nativ-model.json` receipt. Workers verify every recorded component before loading. The host supplies worker interpreter paths; ordinary generation requests cannot choose paths or endpoints.
 
 Remote GPU configuration supplies an HTTPS `endpoint` pointing to the service root. Loopback HTTP requires explicit `allow_local_http=true`. A read-only health probe verifies `/health` and that `/v1/models` advertises `MiniMaxAI/MiniMax-Music3`. Cloud MiniMax supports the documented `https://api.minimax.io` and `https://api.minimax.cn` regions; credentials must match the selected region. New paid Music/Lyrics access closed on August 20, 2026; the adapter is for eligible existing accounts. Nativ does not enroll accounts or buy credit.
 

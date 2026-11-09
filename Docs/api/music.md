@@ -40,7 +40,7 @@ export MUSIC_INTENT='<one persisted random UUID for this user intent>'
 curl -fsS -X POST "$NATIV_URL/v1/music/generations" \
   -H "Authorization: Bearer $NATIV_KEY" -H "X-Nativ-Store-ID: $NATIV_STORE_ID" \
   -H "Idempotency-Key: $MUSIC_INTENT" -H 'Content-Type: application/json' \
-  -d '{"model":"acestep-v15-turbo-local","prompt":"Warm instrumental soul with Rhodes piano and restrained drums","instrumental":true,"duration_seconds":30,"seed":42,"output_format":"wav","allow_remote":false}'
+  -d '{"model":"stable-audio-3-small-local","prompt":"Warm instrumental soul with Rhodes piano and restrained drums","instrumental":true,"duration_seconds":30,"seed":42,"output_format":"wav","allow_remote":false}'
 ```
 
 This requires the selected profile to be configured, installed, license-accepted
@@ -50,8 +50,10 @@ admission. An omitted session creates one atomically. Requested/accepted setting
 provider-reported effective parameters and independently measured asset metadata
 remain distinct.
 
-The model catalogue is authoritative. ACE, MiniMax MLX/remote GPU, Stable Audio
-local/hosted and Lyria have different duration/seed/lyrics/audio contracts. Lyria
+The model catalogue is authoritative. MiniMax MLX/remote GPU, Stable Audio
+local/hosted and Lyria have different duration/seed/lyrics/audio contracts.
+ACE-Step stays listed but disabled (its runtime runs PyTorch on MPS, not MLX):
+readiness reports that reason and runtime install/repair return 409. Lyria
 and hosted MiniMax reject unsupported hard duration/seed controls. MiniMax local
 and remote GPU use a duration ceiling. Instrumental MiniMax local/remote maps to
 `[instrumental]`; hosted MiniMax has a native instrumental option. Stable Audio

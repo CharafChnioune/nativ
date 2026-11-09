@@ -1,0 +1,80 @@
+{
+  "date": "2026-11-09",
+  "evidence_class": "real model runs: pinned weights, real MLX inference, canonical API submission and validated media import; not mocks and not codec fixtures",
+  "qualified": false,
+  "human_listening_review": "open by owner decision (not now); quality-review.json not filled",
+  "machine": "Apple M3 Max (16 cores), 128 GiB unified memory, macOS 27.2",
+  "server": "headless server of the relocated ad-hoc candidate app, 127.0.0.1:8181, bearer key; every request allow_remote=false",
+  "worker_code": "runs predate 29cbf1f4: no MLX buffer-cache limit",
+  "corpus": "scripts/benchmarks/music/corpus.json (case ids only here)",
+  "units": "seconds, dBFS and GB as reported by the measuring tools; sha256_16 = first 16 hex digits of the output WAV SHA-256",
+  "minimax-music3-mxfp8-local": {
+    "runtime_manifest": "PythonDistribution/MusicRuntimes/minimax-music3-mlx-0.6.4.json",
+    "runs": 1,
+    "succeeded": 10,
+    "format": "WAV 44.1 kHz stereo 16-bit (all cases)",
+    "columns": ["case", "lyrics", "requested_s", "seed", "generate_s", "output_s", "peak_dbfs", "rms_dbfs", "clipped_samples", "silent_fraction", "mlx_peak_gb", "max_rss_gb", "sha256_16"],
+    "cases": [
+      ["minimax-01-soul", null, 30, 42, 124.2, 19.772, -6.76, -22.92, 0, 0.0, 22.32, 13.25, "d9460cf5a0d47f57"],
+      ["minimax-02-folk", "en", 30, 7, 189.52, 30.023, -0.89, -19.77, 0, 0.0, 28.34, 13.24, "53a71168e320fef7"],
+      ["minimax-03-ambient", null, 30, 42, 186.0, 29.222, -3.66, -22.86, 0, 0.0, 28.24, 13.25, "38c4a6b4f4a1a95c"],
+      ["minimax-04-jazz", "nl", 30, 7, 189.99, 30.023, -0.07, -19.74, 0, 0.0, 28.47, 13.24, "8798cb44bad0b41c"],
+      ["minimax-05-electronic", null, 60, 42, 186.38, 28.502, -2.45, -22.49, 0, 0.0, 28.1, 13.24, "7c54568b6f5de611"],
+      ["minimax-06-orchestral", null, 60, 7, 118.59, 19.725, -0.24, -18.33, 0, 0.0, 22.31, 13.25, "566a1d499824c440"],
+      ["minimax-07-soul-repeat", null, 30, 42, 118.13, 19.772, -6.76, -22.92, 0, 0.0, 22.32, 13.25, "d9460cf5a0d47f57"],
+      ["minimax-08-pop", "en", 30, 42, 191.43, 30.023, -1.52, -22.77, 0, 0.0, 28.47, 13.24, "35c7162c83f920c1"],
+      ["minimax-09-ballad", "nl", 60, 7, 389.43, 60.07, -0.1, -20.58, 0, 0.0, 27.88, 13.25, "f52517add9d6f40c"],
+      ["minimax-10-rock", null, 60, 7, 171.86, 26.982, -0.35, -21.57, 0, 0.0, 26.53, 13.24, "b88de8c489a5042d"]
+    ],
+    "queue_s": "0.50-0.51",
+    "validate_import_s": "0.51-0.52 (not captured for cases 03, 06, 08)",
+    "peak_footprint_gb": {"min": 34.16, "max": 46.44, "samples": 10},
+    "swap_growth": 0,
+    "findings": [
+      "Duration is a ceiling: instrumental cases ended at 19.7-29.2 s; lyric cases reached the requested 30 s or 60 s.",
+      "About 6x slower than real time. Each job is a fresh worker, so times include model load; load and inference share the preparing stage and mlx-audio prints no timings.",
+      "Same-seed repeat (07 vs 01) is byte-identical.",
+      "Process footprint exceeds the MLX active peak (MLX buffer cache); worker max_rss underestimates it. Not re-measured with the 4 GiB cache limit."
+    ]
+  },
+  "stable-audio-3-small-local": {
+    "runtime_manifest": "PythonDistribution/MusicRuntimes/stable-audio-3-mlx-790793b.json",
+    "runs": 2,
+    "succeeded": 20,
+    "format": "WAV 44.1 kHz stereo 16-bit (all cases)",
+    "columns": ["case", "requested_s", "seed", "generate_s_run1", "generate_s_run2", "output_s", "peak_dbfs", "rms_dbfs", "clipped_samples", "silent_fraction", "sha256_16"],
+    "cases": [
+      ["stable-01-soul", 30, 42, 3.86, 1.8, 30.0, -2.46, -18.55, 0, 0.01, "0700325f214740cf"],
+      ["stable-02-folk", 30, 7, 2.25, 1.75, 30.0, -2.36, -16.86, 0, 0.06, "de895c826b9fbf7c"],
+      ["stable-03-ambient", 30, 42, 1.76, 1.75, 30.0, -4.21, -20.65, 0, 0.023, "0674a1eb1d77ec3e"],
+      ["stable-04-jazz", 30, 7, 1.75, 1.75, 30.0, -1.77, -19.47, 0, 0.047, "23c28a8d16817a4d"],
+      ["stable-05-electronic", 60, 42, 2.61, 2.61, 60.0, 0.0, -16.59, 712, 0.028, "227f512c914d2385"],
+      ["stable-06-orchestral", 120, 7, 4.36, 4.33, 120.0, -0.42, -18.24, 0, 0.02, "58078f78fe0d2630"],
+      ["stable-07-soul-repeat", 30, 42, 1.75, 1.75, 30.0, -2.46, -18.55, 0, 0.01, "0700325f214740cf"],
+      ["stable-08-lofi", 30, 42, 1.76, 1.76, 30.0, 0.0, -12.3, 364, 0.007, "2cdebef809409cb9"],
+      ["stable-09-cinematic", 60, 7, 2.6, 2.66, 60.0, -0.54, -19.25, 0, 0.01, "b835a693d9871eae"],
+      ["stable-10-percussion", 120, 42, 4.35, 4.34, 120.0, 0.0, -26.29, 50, 0.04, "9c09f7158f736ca9"]
+    ],
+    "queue_s": "0.50-0.51",
+    "validate_import_s": "0.50-0.52 (not captured for run-1 case 02)",
+    "max_rss_gb": "1.02-1.39",
+    "mlx_peak_gb": null,
+    "peak_footprint_gb": {"min": 2.29, "max": 2.82, "samples": 10},
+    "swap_growth": 0,
+    "memory_pressure": "normal",
+    "findings": [
+      "Both runs are byte-identical per case; the same-seed repeat (07 vs 01) is identical.",
+      "Durations are exact. Warm: 1.75 s per 30 s, 2.6 s per 60 s, 4.3 s per 120 s; first job 3.86 s.",
+      "3 of 10 cases clip (05, 08, 10): raw model output peaks up to 1.289 per the SA3 log, written as int16.",
+      "MLX peak not measurable from the worker: the SA3 script resets the peak counter."
+    ]
+  },
+  "acestep-v15-turbo-local": "disabled (PyTorch on MPS with an MLX DiT, not in mlx-audio); listed with its reason; install/repair refused with 409; nothing downloaded",
+  "not_covered": [
+    "human listening review (owner: not now)",
+    "MiniMax with the 4 GiB MLX cache limit (29cbf1f4)",
+    "contention with Chat, Images, STT/TTS and Live Translate; sleep/wake; SIGKILL/restart",
+    "16 GB Macs and other chips",
+    "paid cloud and remote GPU profiles"
+  ]
+}

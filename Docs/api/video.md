@@ -9,8 +9,8 @@ matching that info response. Missing=428; changed=409. The default local port is
 8181. Never retarget a saved intent to another store.
 
 These examples require an installed, enabled, license-accepted and explicitly
-experimental/qualified profile. A catalogue entry alone is not readiness. Local
-inference and paid cloud qualification were not run in this implementation.
+experimental/qualified profile. A catalogue entry alone is not readiness. No local
+or cloud video profile is qualified, and no paid cloud request was run.
 Provider credentials use named server profiles/environment configuration; generation
 JSON cannot choose a credential, path, endpoint or public input URL.
 
@@ -37,7 +37,7 @@ export VIDEO_INTENT='replace-with-one-persisted-random-uuid'
 curl -fsS -X POST "$NATIV_URL/v1/video/generations" \
   -H "Authorization: Bearer $NATIV_KEY" -H "X-Nativ-Store-ID: $NATIV_STORE_ID" -H "Idempotency-Key: $VIDEO_INTENT" \
   -H 'Content-Type: application/json' \
-  -d '{"model":"ltx-2.5-distilled-q8-local","operation":"text_to_video", "prompt":"A wooden boat drifts across a calm lake at sunrise", "output_preset":"draft-landscape","audio_mode":"native_generated","seed":42,"allow_remote":false}'
+  -d '{"model":"ltx-2.3-distilled-local","operation":"text_to_video", "prompt":"A wooden boat drifts across a calm lake at sunrise", "output_preset":"draft-landscape","audio_mode":"native_generated","seed":42,"allow_remote":false}'
 ```
 
 The server returns 202 and a durable job immediately, before compute admission.
@@ -62,8 +62,8 @@ Crop coordinates are normalized after EXIF orientation with a top-left origin.
 `crop` is `{x,y,width,height}` within `[0,1]`, positive nonempty area, and allowed
 only with `fit_policy: crop`. The server deterministically materializes RGB/sRGB
 PNG at the accepted target size, strips metadata and records the derivative hash.
-T2V rejects references. Wan and Runway reject last-frame references. H3 remains
-license-gated; ref2va is not a still-input API capability.
+T2V rejects references. Local LTX, Wan and Runway reject last-frame references.
+H3 remains license-gated; ref2va is not a still-input API capability.
 
 Cloud generation is deliberate, for example `model: runway-gen4.5`,
 `audio_mode: silent`, `output_preset: cloud-landscape`, `duration: 5`,
