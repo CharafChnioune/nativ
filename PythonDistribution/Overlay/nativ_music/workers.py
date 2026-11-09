@@ -7,6 +7,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import importlib.metadata
+import importlib.util
 import json
 import math
 import os
@@ -188,6 +189,8 @@ def main():
     output = output_dir / 'candidate.wav'
     os.environ.update(HF_HUB_OFFLINE='1', TRANSFORMERS_OFFLINE='1', HF_DATASETS_OFFLINE='1')
     try:
+        if provider != 'acestep' and importlib.util.find_spec('mlx'):  # bound MLX's buffer cache (see nativ_video.workers)
+            importlib.import_module('mlx.core').set_cache_limit(4 << 30)
         with contextlib.redirect_stdout(sys.stderr):
             effective = dict(acestep=run_ace, minimax_mlx=run_minimax, stable_audio_mlx=run_stable)[provider](
                 envelope['request'], envelope.get('prepared', {}), output, emit)

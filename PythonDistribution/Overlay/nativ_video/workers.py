@@ -6,6 +6,7 @@ An isolated process is recreated for every job; no freed denoiser is reused.
 """
 from __future__ import annotations
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -124,6 +125,9 @@ def main():
         prepared=envelope.get('prepared',{}); request=envelope['request']
         verify_prepared(prepared,request)
         os.environ.update(HF_HUB_OFFLINE='1',TRANSFORMERS_OFFLINE='1',HF_DATASETS_OFFLINE='1',HF_HUB_DISABLE_TELEMETRY='1')
+        # Measured on M3 Max: without a limit MLX's buffer cache grew a 37 GB tiled Wan VAE decode to a 105 GB
+        # footprint (swap growth stopped the job); 4 GiB keeps it at 38 GB with the same tiling and output.
+        if importlib.util.find_spec('mlx'): importlib.import_module('mlx.core').set_cache_limit(4<<30)
         effective={'ltx_mlx':run_ltx,'wan_mlx':run_wan,'minimax_h3_mlx':run_h3}[envelope['provider']](request,prepared,output,emit)
         if not output.is_file() or output.is_symlink() or output.stat().st_size==0: raise ValueError('Runtime returned no output candidate')
         mlx=sys.modules.get('mlx.core')  # never import MLX only to measure it
