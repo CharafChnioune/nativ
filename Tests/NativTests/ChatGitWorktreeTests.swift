@@ -298,7 +298,7 @@ final class ChatGitWorktreeTests: XCTestCase {
 
     func testFileAccessInsideManagedAppStorageCheckoutPreservesPrivateDataProtection() throws {
         let fixture = try makeFixture()
-        let appData = fixture.root.appendingPathComponent("Library/Application Support/Nativ")
+        let appData = fixture.root.appendingPathComponent("Library/Application Support/" + NativBuildIdentity.applicationSupportDirectoryName)
         let store = ChatGitWorktreeStore(root: appData.appendingPathComponent("Chat/Worktrees"))
         let tree = try store.create(store.plan(projectPath: fixture.repository.path, sessionID: UUID()))
         let reads = try FileReadAccessPolicy(rootPath: tree.projectPath)
@@ -323,6 +323,11 @@ final class ChatGitWorktreeTests: XCTestCase {
         XCTAssertThrowsError(try FileReadAccessPolicy(rootPath: appData.path).resolve(path: "settings.json"))
         XCTAssertThrowsError(try FileWriteAccessPolicy(rootPath: appData.path).resolve(path: "settings.json"))
         XCTAssertThrowsError(try FileReadAccessPolicy(rootPath: fixture.root.path).resolve(path: privateFile.path))
+        let upstream = fixture.root.appendingPathComponent("Library/Application Support/Nativ")  // the official app's data
+        try FileManager.default.createDirectory(at: upstream, withIntermediateDirectories: true)
+        _ = try write("upstream", to: upstream.appendingPathComponent("settings.json"))
+        XCTAssertThrowsError(try FileReadAccessPolicy(rootPath: upstream.path).resolve(path: "settings.json"))
+        XCTAssertThrowsError(try FileWriteAccessPolicy(rootPath: upstream.path).resolve(path: "settings.json"))
         // A folder with the right name, but no Git registration, is still protected.
         try FileManager.default.removeItem(at: URL(fileURLWithPath: tree.path).appendingPathComponent(".git"))
         XCTAssertThrowsError(try reads.resolve(path: "Sources/value.txt"))

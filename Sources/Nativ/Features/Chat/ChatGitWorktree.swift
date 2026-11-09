@@ -121,7 +121,7 @@ struct ChatGitWorktree: Codable, Equatable, Sendable {
             if UUID(uuidString: checkout.lastPathComponent) != nil,
                storage.lastPathComponent == "Worktrees",
                storage.deletingLastPathComponent().lastPathComponent == "Chat",
-               storage.deletingLastPathComponent().deletingLastPathComponent().lastPathComponent == "Nativ" {
+               storage.deletingLastPathComponent().deletingLastPathComponent().lastPathComponent == NativBuildIdentity.applicationSupportDirectoryName {
                 let marker = checkout.appendingPathComponent(".git")
                 guard let line = try? String(contentsOf: marker, encoding: .utf8), line.hasPrefix("gitdir: ") else { return false }
                 let admin = URL(fileURLWithPath: String(line.dropFirst(8)).trimmingCharacters(in: .whitespacesAndNewlines),

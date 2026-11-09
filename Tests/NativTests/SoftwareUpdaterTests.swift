@@ -174,5 +174,6 @@ final class SoftwareUpdaterTests: XCTestCase {
             XCTAssertTrue(url.path.contains("/\(NativBuildIdentity.namespace)/"), url.path)
             XCTAssertFalse(url.path.contains("/Nativ/"), url.path)
         }
+        XCTAssertEqual(KeychainGitHubOAuthCredentialStore.defaultService, NativBuildIdentity.namespace + ".github-oauth")
     }
 }
