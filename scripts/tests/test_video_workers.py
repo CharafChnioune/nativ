@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import subprocess
 import sys
@@ -57,7 +58,9 @@ sys.exit(workers.main())'''
         events=[json.loads(line) for line in done.stdout.splitlines()]
         self.assertEqual([e['type'] for e in events],['handshake','result'],done.stderr)
         self.assertIn('child process',done.stderr)
-        self.assertIsNone(events[1]['metadata']['mlx_peak_memory_bytes']); self.assertGreater(events[1]['metadata']['max_rss_bytes'],0)
+        # The worker loads MLX itself (to bound its cache) only when MLX is installed; otherwise no peak is reported.
+        peak=events[1]['metadata']['mlx_peak_memory_bytes']
+        self.assertEqual(peak is None,importlib.util.find_spec('mlx') is None); self.assertGreater(events[1]['metadata']['max_rss_bytes'],0)
     def test_h3_public_api_keeps_joint_audio_and_uses_fl2va(self):
         calls=[]
         def load(model,**kw): calls.append(('load',model,kw)); return object()
