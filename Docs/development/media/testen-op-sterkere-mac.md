@@ -11,7 +11,8 @@ meting kwalificeert een model niet.
 Apple M3 Max (16 cores), 128 GiB, macOS 27.2, Xcode 27.2/Swift 6.4.2. Elke meting
 hoort bij de verplaatste ad-hoc-kandidaat waarop ze is gedaan. De productcode is
 gemeten op `6f4ae0c3` en Wan op `3f92ecdf` (de Wan-workercode is daarna niet
-gewijzigd); Images en Translate volgen op `2e5bf71e`. Eerdere kandidaten:
+gewijzigd); Images op `2e5bf71e` en de Translate-matrix met de harness van
+`b79f6803`, waarop ook de Translate-duurproef nog loopt. Eerdere kandidaten:
 `181a78c3`, `f17ea0a9`, `29cbf1f4`, `fca2a3d3` en `5288300c`. Lokale media draait
 alleen op MLX: video via [mlx-video](https://github.com/Blaizzy/mlx-video) `87db56a`
 met LTX-2.3 distilled (alleen tekst-naar-video) en Wan2.2 TI2V-5B Q8, muziek via
@@ -61,28 +62,56 @@ Gedaan:
 - Gevonden en hersteld op de M3: MLX-buffercache (`29cbf1f4`), `fd`-protocol in de
   beheerde FFmpeg (`2f5b4be9`), LTX-mux zonder `-shortest` (`862c0c3b`),
   verouderde runtimecode weigeren en tonen (`5288300c`, `2e5bf71e`), LTX-2.3
-  alleen tekst-naar-video (`6f4ae0c3`) en de Images-thread die zijn eigen
-  compute-flock opnieuw claimde (`21e2f89c`).
+  alleen tekst-naar-video (`6f4ae0c3`), de Images-thread die zijn eigen
+  compute-flock opnieuw claimde (`21e2f89c`) en geheugen-/swaptelemetrie onder
+  `nl_NL.UTF-8` (`b79f6803`): `sysctl` drukt daar "619,69M" af, waardoor de
+  MemoryGuard van de server niets las en zijn swap- en drukstops stil uit stonden,
+  en de Translate-harness bij de baseline faalde. Beide lezen nu met `LC_ALL=C`.
 
 Bewust open (eigenaar: "nu niet"): menselijke luister- en kijkbeoordeling,
 menselijke Translate-opnames en fysieke UI-tests. H3 blijft geblokkeerd (geen
 checkpointinventaris; de licentie sluit de EU uit). ACE-Step is uitgeschakeld
 (PyTorch op MPS met een MLX-DiT, niet in mlx-audio): zichtbaar met reden,
 installatie geweigerd. Restrisico: de video's hebben geen kleurtags, dus de
-speler kiest zelf BT.601 of BT.709. Alle profielen blijven
+speler kiest zelf BT.601 of BT.709. Open gat: de inhoudsguard van Translate
+vergelijkt geen weekdagnamen. Alle profielen blijven
 experimenteel/ongekwalificeerd; niets slaagt automatisch en resultaten op 128 GB
 kwalificeren geen 16 GB-Mac. Developer ID, notarisatie, een echte Sparkle-upgrade
 en betaalde cloudproeven blijven afzonderlijke gates.
 
-### TODO: Images-resultaten (FLUX.2-klein-4B op `2e5bf71e`)
+### Images (FLUX.2-klein-4B op `2e5bf71e`)
 
-Nog niet ingevuld; de cijfers volgen. De eerste poging op `6f4ae0c3` gaf bij elke
-generatie HTTP 500, omdat de Images-thread zijn eigen compute-flock opnieuw
-claimde; hersteld in `21e2f89c`.
+FLUX.2-klein-4B (Apache-2.0, niet gated; 4 stappen, guidance 1,0) maakte
+1024×1024-beelden in 162,6 s bij de eerste aanvraag (inclusief laden) en daarna in
+14,4–14,7 s; de eerste bewerking duurde 29,1 s. Dezelfde seed en prompt gaven een
+bytegelijke PNG. De API bleef tijdens inferentie bereikbaar met p50 2–11 ms
+(maximaal 188 ms tijdens de koude aanvraag, warm hooguit 15 ms). De server-RSS was
+10,0 GB met het generatiemodel en 17,9 GB met ook het bewerkingsmodel geladen,
+zonder swapgroei. De eerste poging op `6f4ae0c3` gaf bij elke aanvraag HTTP 500,
+omdat de Images-thread zijn eigen compute-flock opnieuw claimde; hersteld in
+`21e2f89c`. Restrisico: onbekende Images-parameters worden geaccepteerd en
+genegeerd (upstream request-modellen, ongewijzigd). Dit is een technische meting,
+geen beeldbeoordeling. Zie
+[`evidence/m3-images-probe.json`](evidence/m3-images-probe.json).
 
-### TODO: Translate-resultaten (op `2e5bf71e`)
+### Translate-matrix (Q8_0 en Q4_K_M)
 
-Nog niet ingevuld; de cijfers volgen.
+Met de repo-harness (productieprompt en uitvoerguard) en dezelfde synthetische
+NL/EN-WAV's zijn beide matrices technisch voltooid: 6/6 probes per quantisatie,
+helper-piek-RSS 2,87 GB (Q8) en 2,12 GB (Q4), nul swapgroei en normale druk. De
+eerste poging brak af in de baseline door de nl_NL-locale; hersteld in `b79f6803`.
+Inhoudelijk zijn het dezelfde foutklassen als op de 16 GB-Mac: half vier wordt
+"half past four", Q8 maakt van "book" "Bekijk" of "Vul", Q4 "Bekijk" of
+"Vergeten" en verandert bovendien donderdag in dinsdag. Nieuw is "The call" voor
+"De afspraak". De
+productieroute accepteerde alle acht teksten; de volledige guard met bron weigert
+de kloktijdfout, maar niet de weekdagwissel. LFM3 blijft ongekwalificeerd. Zie
+[Translate-acceptatie](../live-translation-acceptance.md#m3-max-productiepromptmatrix-10-november-2026).
+
+### TODO: Translate-duurproef (Q8_0)
+
+Loopt nog met de harness van `b79f6803`: minimaal 30 minuten, minimaal 100 warme
+turns, 10 koude starts en 5 onderbrekingen. De cijfers volgen.
 
 ## Dezelfde kandidaat bouwen
 

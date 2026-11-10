@@ -108,6 +108,13 @@ memory. Since `29cbf1f4` the video workers and the MLX music workers call
 unchanged, decode time +14%. Workers report `mlx_peak_memory_bytes` and
 `max_rss_bytes` in result metadata; neither is the process footprint.
 
+The MemoryGuard behind `system_swap_growth` reads `sysctl vm.swapusage` and
+`memory_pressure`. Before `b79f6803` it parsed their output in the server's
+inherited locale; under a decimal-comma locale such as `nl_NL.UTF-8` (`used =
+619,69M`) it read nothing, so its swap-growth and critical-pressure stops were
+silently off whenever the server inherited such a locale from the app. Since
+`b79f6803` it runs both commands with `LC_ALL=C`.
+
 ## M3 Max results
 
 Real model runs through the canonical API of relocated ad-hoc candidates on the

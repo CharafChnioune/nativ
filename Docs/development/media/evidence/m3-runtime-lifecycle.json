@@ -10,8 +10,10 @@
     "fca2a3d3": "LTX r2",
     "5288300c": "outdated-runtime refusal, repairs of all four profiles, LTX r3",
     "6f4ae0c3": "product code measured here: LTX r4, video cancellation, shared job flows, server SIGKILL",
-    "2e5bf71e": "Images and Translate (pending)"
+    "2e5bf71e": "Images probe (m3-images-probe.json)",
+    "b79f6803": "memory and swap telemetry read with LC_ALL=C; Translate matrix harness (../../translation-m3-matrix-evidence.json); Translate endurance still running"
   },
+  "memory_guard_locale": "before b79f6803 the MemoryGuard parsed sysctl/memory_pressure output in the inherited locale; under nl_NL.UTF-8 ('used = 619,69M') it read nothing, so its swap-growth and critical-pressure stops were off whenever the server inherited that locale; now LC_ALL=C",
   "server": "headless launcher inside the relocated candidate (Contents/Frameworks/NativServerKit.framework/Resources/mlx-vlm-server/bin/mlx-vlm-server), 127.0.0.1:8181, bearer key; same code path the app starts",
   "api": {
     "no_bearer": 401,
@@ -91,11 +93,11 @@
       "ci_note": "Each listed run includes the native app tests and the Required validation gate. Later heads are not recorded here."
     },
     "codec_probes": "none in these receipts; the earlier FFmpeg 9.0.2 marker fixture (video-runtime-qualification.md) validates media plumbing only",
-    "real_model_runs": "m3-music-qualification.json (30 music generations) and m3-video-qualification.json (8 clips); the shared job flows above ran real Stable Audio and LTX jobs"
+    "real_model_runs": "m3-music-qualification.json (30 music generations), m3-video-qualification.json (8 clips), m3-images-probe.json (4 image requests) and ../../translation-m3-matrix-evidence.json (Q8_0 and Q4_K_M, 6 probes each); the shared job flows above ran real Stable Audio and LTX jobs"
   },
   "not_covered": [
     "human listening/viewing review, human Translate recordings and physical UI tests (owner: not now)",
-    "Images (FLUX.2-klein-4B) and Translate results on 2e5bf71e (pending)",
+    "Translate endurance run (Q8_0; running on b79f6803's harness)",
     "MiniMax H3: blocked (no checkpoint inventory; license excludes the EU)",
     "Developer ID signing, notarisation and a real Sparkle upgrade",
     "16 GB Macs"

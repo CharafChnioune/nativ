@@ -2,7 +2,7 @@
 
 Het beknopte [Nederlandse eindrapport](live-translation-delivery.md) vat de oplevering, gemeten beperkingen en open kwalificatiepunten samen.
 
-Stand: 8 november 2026. Dit document vergelijkt de oorspronkelijke opdracht van de eigenaar (lokaal opdrachtbestand, niet gepubliceerd), het goedgekeurde uitvoeringsplan en de huidige implementatie met daadwerkelijk beschikbaar bewijs. **De volledige productacceptatie is nog niet behaald.** De implementatie bevat echte lokale transports en native adapters, maar geen gekwalificeerde hoofdprovider of hoofdstem. Een technische test, code-inspectie of screenshot vervangt geen echte gesprekssessie.
+Stand: 8 november 2026, aangevuld op 10 november 2026 met de [M3 Max-matrix](#m3-max-productiepromptmatrix-10-november-2026). Dit document vergelijkt de oorspronkelijke opdracht van de eigenaar (lokaal opdrachtbestand, niet gepubliceerd), het goedgekeurde uitvoeringsplan en de huidige implementatie met daadwerkelijk beschikbaar bewijs. **De volledige productacceptatie is nog niet behaald.** De implementatie bevat echte lokale transports en native adapters, maar geen gekwalificeerde hoofdprovider of hoofdstem. Een technische test, code-inspectie of screenshot vervangt geen echte gesprekssessie.
 
 Aanvullende testcorrectie: de volledige CI op `ce2a838f` gaf één bestaande
 Swift Testing-race in de PR-run (1872 totaal, 1861 geslaagd, één failure,
@@ -15,6 +15,32 @@ budgetten. Volledige SwiftPM- en native Kit-validatie slagen; zie
 De actuele PR-head wordt afzonderlijk door de volledige CI en gate beoordeeld.
 
 De aanvullingen van de eigenaar blijven leidend: lokale modellen als hoofdroute; evaluatievolgorde LFM3-Omni direct → dezelfde Omni in twee passes → expliciet gekozen alternatief; Apple uitsluitend een handmatige TTS-optie; taalondersteuning per taak; menselijke beoordeling van natuurlijkheid, prosodie en emotionele intentie; geen universele 16-GB-beperking.
+
+## M3 Max: productiepromptmatrix (10 november 2026)
+
+Op een Apple M3 Max (128 GB, macOS 27.2, `LANG=nl_NL.UTF-8`) is de Q8_0/Q4_K_M-matrix opnieuw uitgevoerd met de repo-harness `scripts/benchmarks/live_translation/run_matrix.py`, het productiecontract (productieprompt en uitvoerguard) en dezelfde synthetische NL- en EN-WAV voor beide quantisaties. De eerste poging brak voor beide matrices af in de baseline (“memory guard unavailable during baseline: ValueError”): onder nl_NL drukt `sysctl` “619,69M” af. Sinds `b79f6803` leest de harness geheugen en swap met `LC_ALL=C`; dezelfde localefout zette ook de swap- en drukstops van de generatieserver stil uit.
+
+Beide matrices zijn technisch voltooid: 6/6 probes voor Q8_0 en voor Q4_K_M, zonder mislukte probe. Piek-RSS van de helper was 2.872.688.640 bytes (Q8) en 2.119.761.920 bytes (Q4), met nul swapgroei en drukniveau 1. De tijden zijn losse waarnemingen per cel in seconden, geen percentielen en geen microfoon-, VAD- of akoestische latency:
+
+| Probe | Q8_0 | Q4_K_M |
+| --- | ---: | ---: |
+| NL→EN direct: eerste tekst / eerste audio / klaar | 0,669 / 0,994 / 1,492 | 0,471 / 0,507 / 0,935 |
+| NL→EN twee passes, tekstpass: eerste tekst / klaar | 0,185 / 0,270 | 0,183 / 0,249 |
+| EN→NL direct: eerste tekst / eerste audio / klaar | 0,193 / 0,239 / 0,768 | 0,181 / 0,218 / 0,658 |
+| EN→NL twee passes, tekstpass: eerste tekst / klaar | 0,187 / 0,325 | 0,212 / 0,291 |
+| `/tts` NL: eerste audio / klaar | 0,045 / 0,565 | 0,043 / 0,438 |
+| `/tts` EN: eerste audio / klaar | 0,045 / 0,611 | 0,043 / 0,497 |
+
+| Model / route | Werkelijke NL→EN-tekst | Werkelijke EN→NL-tekst |
+| --- | --- | --- |
+| Q8 direct | “The call is at half past four, not at four o'clock.” | “Bekijk twee zitjes voor vrijdag, niet voor donderdag.” |
+| Q8 twee passes | “The call is at half past four, not at four o'clock.” | “Vul alstublieft twee zitplaatsen voor vrijdag, niet voor donderdag.” |
+| Q4 direct | “The call is at half past four, not at four o'clock.” | “Bekijk twee zitjes voor vrijdag, niet voor dinsdag.” |
+| Q4 twee passes | “The call is at half past four, not at four o'clock.” | “Vergeten twee zitjes voor vrijdag, niet voor dinsdag.” |
+
+Inhoudelijk zijn dit dezelfde foutklassen als op de [16 GB-Mac](translation-omni-production.md), al zijn de teksten niet woordelijk gelijk. Half vier (15:30) wordt in alle vier NL→EN-teksten “half past four” (16:30), direct én in twee passes, bij Q8 én Q4. Waar de bron “De afspraak” zegt, staat “The call” (op de 16 GB-Mac “The appointment”). Q8 maakt van “book” “Bekijk” of “Vul”; Q4 “Bekijk” of “Vergeten” en verandert donderdag bovendien in dinsdag.
+
+De LFM3-productieroute draait alleen `validateOutput` (doeltaal, geen brontranscript) en accepteerde alle acht teksten. De volledige inhoudsguard met de fixturebron weigert de kloktijdfout (`unsupportedOutput`), maar accepteert donderdag→dinsdag: weekdagnamen worden niet vergeleken. Dat is een open gat. LFM3 blijft ongekwalificeerd; deze matrix verandert geen status. De M3-duurproef volgt afzonderlijk. Exacte gegevens: [M3-matrixbewijs](translation-m3-matrix-evidence.json).
 
 ## Vervolgimplementatie: onafhankelijke modellen en eigen updates
 
@@ -143,7 +169,7 @@ De testaantallen betreffen afzonderlijke, soms overlappende runs. Ze mogen niet 
 | Stop tot hoorbare stilte ≤150 ms | Logische flush/cancel-tests en afzonderlijke eerdere backendmetingen. De nieuwste duurproef stopte vóór de onderbrekingsfase: nul van vijf geplande cancellationtrials. | Open akoestisch. Geforceerde eigen-helpercleanup is geen stop-tot-stiltemeting. |
 | 30 minuten zonder groei/backlog/duplicaten/contextfouten | Nieuwste productieproef stopte na 922,103 s warme draaitijd (15m22s) op de vaste +1024 MiB swapguard. Eerste overschrijding +1240,31 MiB; eindsample na cleanup +1825,31 MiB. Druk maximaal 2, alle eigen processen gestopt. | Niet gehaald. Fresh-context-loopback bewijst geen doorlopende mic/playback/contextsoak; globale swap kan niet volledig aan het model worden toegeschreven. De eerdere 412,966-s-run blijft historisch bewijs. |
 | Offline, hoofdtelefoon, speakerfallback, systeemaudio, onderbrekingen | Lokale transportpolicy/contracttests; geen persoonlijke audio vastgelegd. | Open fysieke sessies, afzonderlijk per modus. |
-| 128-GB-Mac | Alleen geïnjecteerde RAM-snapshot in resourceassessmenttest. | Open echte hardware; geen afgeleide prestatie- of fitclaim. |
+| 128-GB-Mac | M3 Max: Q8/Q4-productiepromptmatrix technisch voltooid (6/6 probes elk), helper-piek-RSS 2,87/2,12 GB, nul swapgroei, drukniveau 1; daarnaast de geïnjecteerde RAM-snapshot in de resourceassessmenttest. | Open: alleen technisch transport met kritieke inhoudsfouten; duurproef en echte sessies op 128 GB ontbreken nog; geen afgeleide prestatie- of fitclaim. |
 
 De gemeten machine is een MacBook Air Mac17,3 met Apple M5 (10 cores), 17.179.869.184 bytes RAM (16 GiB), macOS 26.6 (25G72). De finale Xcode/Swift-versie en buildmetadata worden bij de exacte build vastgelegd. De twee latere native proeven van dezelfde twee synthetische cascade-turns tonen uitvoering op deze 16-GiB-Mac. De eerdere load-/hashfouten en globale swapmetingen blijven apart vermeld. Geen van deze proeven kwalificeert alle 16-GB-profielen of een 128-GB-Mac.
 
@@ -153,6 +179,7 @@ Alle lognamen hieronder zijn relatief aan `build/validation/`, een lokale gegene
 
 | Bewijs | Waargenomen resultaat en grens |
 | --- | --- |
+| [M3 Max-matrix](translation-m3-matrix-evidence.json) | Q8_0 en Q4_K_M elk 6/6 technisch voltooid op de M3 Max met harness `b79f6803`; dezelfde tijd-, handelings- en (Q4) weekdagfouten als op de 16 GB-Mac, plus “The call” voor “De afspraak”. Productieguard accepteerde alle acht teksten; volledige guard met bron weigert de kloktijdfout, niet donderdag→dinsdag. Geen kwalificatie. |
 | [Finale build/signing/UI](translation-final-reviewed-bundle-evidence.json), [normale appcache](translation-final-app-cache-evidence.json) | Source `029258629ea8f91ee843734bc2e2bb776274e48b`, Make **BUILD SUCCEEDED**, 41,199 s, Apple Development deep/strict geldig. Werkelijke native UI met gevonden Whisper/Gemma/Omni; beide Prepare-acties geverifieerd. Twee vensters deelden voorbereide status en taalrichting. Hersteld naar direct/Q8/NL→EN, toestemming uit, server gestopt, app idle open. Geen capture/inference/playback of actuele-HEAD-CI-pass hieruit afgeleid. |
 | [Productie-duurproef](translation-production-endurance.md), [exact bewijs](translation-production-endurance-evidence.json) | **Aborted**: 160 voltooide warme transportturns/161 pogingen, tien proceskoude starts, 922,103 s warme draaitijd; nul cancellationtrials. Vaste swapguard +1024 MiB overschreden, geen 30-minuten-/p95-claim; tachtig metingen per modus. Alle elf eigen processen afwezig. Kritieke tijd-/handelingsfouten blijven in alle voltooide relevante teksten zichtbaar. |
 | [Laatste reviewregressies](translation-review-regressions-evidence.json), `runtime-catalog-regression-green.log`, `runtime-catalog-python-regressions.log` | **17/17** gerichte native cases, nul failures/skips; acht gatefixtures geslaagd. Python **172 totaal/171 geslaagd/één opt-in-skip**, 9,237 s. Supervisor-childownership, volledige listenerpoort, Whisper-taalclaims en verplichte critical cases. Exacte bron-/loghashes gecontroleerd; finale Make/signing en idle-UI van `02925862` afzonderlijk geverifieerd; CI-status volgt per exacte review-HEAD. |

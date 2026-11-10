@@ -423,6 +423,21 @@ Two paths produce images:
 `imageGeneration` and `imageEditing` are distinct model capabilities; editing requires a
 reference image and a model that supports it. See [Models](models.md) for capabilities.
 
+### Measured on an M3 Max
+
+On candidate `2e5bf71e` (Apple M3 Max, 128 GiB), FLUX.2-klein-4B (Apache-2.0,
+ungated; 4 steps, guidance 1.0) produced 1024×1024 images in 162.6 s for the first
+request, including the model load, and 14.4–14.7 s afterwards; the first edit took
+29.1 s. The same seed and prompt gave a byte-identical PNG. Server API latency
+during inference stayed at p50 2–11 ms, with a maximum of 188 ms during the cold
+request and at most 15 ms when warm. Server RSS was 10.0 GB with the generate model
+loaded and 17.9 GB with the edit model as well, without swap growth. The first
+attempt on `6f4ae0c3` failed every request with HTTP 500 because the image thread
+re-acquired its own compute lease; `21e2f89c` fixed that. Unknown Images request
+parameters are still accepted and ignored (upstream request models). This is a
+technical measurement, not an image-quality review. Details:
+[`m3-images-probe.json`](../development/media/evidence/m3-images-probe.json).
+
 ## Artifacts
 
 Every image and document generated or uploaded across chats is collected in the **Artifacts**
