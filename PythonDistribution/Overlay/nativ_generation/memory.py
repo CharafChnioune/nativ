@@ -1,5 +1,6 @@
 """Observed system pressure guard, not a fabricated model RAM requirement."""
 from __future__ import annotations
+import os
 import re
 import subprocess
 import sys
@@ -8,9 +9,11 @@ from .contracts import GenerationError
 
 def snapshot():
     if sys.platform!='darwin':return None
+    # sysctl prints locale decimals (nl_NL: "used = 619,69M"); without C the guard silently read nothing.
+    c=dict(os.environ,LC_ALL='C')
     try:
-        pressure=subprocess.check_output(['/usr/bin/memory_pressure','-Q'],text=True,timeout=2,stderr=subprocess.DEVNULL)
-        swap=subprocess.check_output(['/usr/sbin/sysctl','vm.swapusage','hw.memsize'],text=True,timeout=2,stderr=subprocess.DEVNULL)
+        pressure=subprocess.check_output(['/usr/bin/memory_pressure','-Q'],text=True,timeout=2,stderr=subprocess.DEVNULL,env=c)
+        swap=subprocess.check_output(['/usr/sbin/sysctl','vm.swapusage','hw.memsize'],text=True,timeout=2,stderr=subprocess.DEVNULL,env=c)
         free=re.search(r'System-wide memory free percentage:\s*(\d+)%',pressure)
         used=re.search(r'used\s*=\s*([\d.]+)([MG])',swap)
         total=re.search(r'hw.memsize:\s*(\d+)',swap)

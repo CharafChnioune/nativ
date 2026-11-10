@@ -150,7 +150,8 @@ class PCMMeter:
 
 
 def command(args):
-    return subprocess.check_output(args, text=True, timeout=3).strip()
+    # sysctl and ps print locale decimals (nl_NL: "619,69M", "0,0"); the parsers read C-locale output.
+    return subprocess.check_output(args, text=True, timeout=3, env=dict(os.environ, LC_ALL='C')).strip()
 
 
 def system_sample(pid=None):
