@@ -73,7 +73,7 @@
   "not_covered": [
     "human listening review (owner: not now)",
     "MiniMax with the 4 GiB MLX cache limit (29cbf1f4)",
-    "contention with Chat, Images, STT/TTS and Live Translate; sleep/wake; SIGKILL/restart",
+    "contention with real Chat, Images, STT/TTS and Live Translate sessions; sleep/wake (worker SIGKILL, server SIGKILL and an externally held Translate flock: see m3-runtime-lifecycle.json)",
     "16 GB Macs and other chips",
     "paid cloud and remote GPU profiles"
   ]

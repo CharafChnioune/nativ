@@ -6,23 +6,27 @@ generatiemodellen **niet uitgevoerd**; op de M3 Max wel (zie de stand hieronder)
 Er zijn geen betaalde proefaanvragen gedaan. Een geslaagde build, mocktest of
 meting kwalificeert een model niet.
 
-## Stand op de M3 Max (9 november 2026)
+## Stand op de M3 Max (10 november 2026)
 
-Apple M3 Max (16 cores), 128 GiB, macOS 27.2, Xcode 27.2/Swift 6.4.2. Kandidaten:
-verplaatste ad-hoc-apps `181a78c3`, `f17ea0a9` en nu `29cbf1f4` (productcode gelijk
-aan `a54f5db7`). Lokale media draait alleen op MLX: video via
-[mlx-video](https://github.com/Blaizzy/mlx-video) `87db56a` met LTX-2.3 distilled en
-Wan2.2 TI2V-5B Q8, muziek via MiniMax Music3 (mlx-audio) en Stable Audio 3 Small
-(officieel, pure MLX). De eigenaar heeft alle licenties geaccepteerd.
+Apple M3 Max (16 cores), 128 GiB, macOS 27.2, Xcode 27.2/Swift 6.4.2. Elke meting
+hoort bij de verplaatste ad-hoc-kandidaat waarop ze is gedaan. De productcode is
+gemeten op `6f4ae0c3` en Wan op `3f92ecdf` (de Wan-workercode is daarna niet
+gewijzigd); Images en Translate volgen op `2e5bf71e`. Eerdere kandidaten:
+`181a78c3`, `f17ea0a9`, `29cbf1f4`, `fca2a3d3` en `5288300c`. Lokale media draait
+alleen op MLX: video via [mlx-video](https://github.com/Blaizzy/mlx-video) `87db56a`
+met LTX-2.3 distilled (alleen tekst-naar-video) en Wan2.2 TI2V-5B Q8, muziek via
+MiniMax Music3 (mlx-audio) en Stable Audio 3 Small (officieel, pure MLX). De
+eigenaar heeft de licenties van de installeerbare profielen geaccepteerd.
 
 Gedaan:
 
 - Mocks/unit-tests, zonder modellen: native ronde op `181a78c3` met 1.906 tests,
   1.896 geslaagd, 0 fouten, 10 overgeslagen en alle 29 verplichte classes;
-  gebundelde Python 341/341 op `29cbf1f4`; Python 3.12-venv 341 OK met 1
-  opt-in-skip. CI "Live Translate validation" (push en PR, inclusief native tests
-  en Required validation gate) groen op `bbfb61b2` (42689873987, 42689884606) en
-  `f17ea0a9` (42699682243, 42699692503).
+  gebundelde Python 341/341 op elke kandidaat van `f17ea0a9` tot en met
+  `6f4ae0c3`; Python 3.12-venv 341 OK met 1 opt-in-skip. CI "Live Translate
+  validation" (push en PR, inclusief native tests en Required validation gate)
+  groen op `bbfb61b2` (42689873987, 42689884606) en `f17ea0a9` (42699682243,
+  42699692503).
 - Verpakte app: headless server uit de verplaatste kandidaat op 127.0.0.1:8181;
   401 zonder sleutel, 428 zonder store-header, 409 bij een andere store. De
   store-ID blijft behouden na herstart en app-upgrade; codesign blijft geldig vóór
@@ -30,31 +34,53 @@ Gedaan:
 - Runtimes vanuit Nativ: installeren en repareren voor alle vier MLX-profielen,
   verwijderen en herinstalleren voor Stable (modellen blijven bewaard).
   Gelijktijdige setup wordt geweigerd met `compute_busy`; een tweede job wachtte
-  139,7 s in `queued`. Tijden en schijfgroei:
+  139,7 s in `queued`. Repareren zonder download duurt 13–62 s. Een runtime met
+  workercode van een andere Nativ-build staat in de lijst als "Repair this
+  runtime", submit geeft 409 en dispatch/herstel `runtime_outdated`; na een update
+  van `nativ_generation` is per geïnstalleerd profiel één Repair nodig. Zie
   [`evidence/m3-runtime-lifecycle.json`](evidence/m3-runtime-lifecycle.json).
-- Muziek: 10 MiniMax- en 2×10 Stable-generaties via de canonieke API; annuleren
-  bereikt `cancelled` binnen 0,06 s zonder achterblijvende workers. Zie
-  [Music-kwalificatie](../music-runtime-qualification.md#m3-max-results-2026-11-09)
-  en [`evidence/m3-music-qualification.json`](evidence/m3-music-qualification.json).
-- Video: de eerste Wan-clip werd tijdens de VAE-decode door de MemoryGuard
-  gestopt (99 GB). Oorzaak is de MLX-buffercache; `29cbf1f4` begrenst die op
-  4 GiB. Zie
-  [Video-kwalificatie](../video-runtime-qualification.md#wan-vae-decode-and-the-mlx-cache-limit).
+- Muziek: 10 MiniMax- en 2×10 Stable-generaties via de canonieke API; drie
+  MiniMax-annuleringen bereikten `cancelled` binnen 0,06 s zonder achterblijvende
+  workers. De MiniMax-voetafdruk van 34–46 GB is gemeten vóór de cachelimiet van
+  `29cbf1f4` en niet opnieuw gemeten. Zie
+  [Music-kwalificatie](../music-runtime-qualification.md#m3-max-results) en
+  [`evidence/m3-music-qualification.json`](evidence/m3-music-qualification.json).
+- Video: Wan2.2 4/4 (twee T2V, twee I2V) op `3f92ecdf`, 1.079–1.103 s per clip;
+  LTX-2.3 4/4 T2V op `6f4ae0c3`, 91,9 s voor de eerste en 78,4–78,5 s voor de
+  volgende jobs. Alle clips decoderen zonder fouten en spelen af in AVFoundation.
+  LTX-annuleringen tijdens laden, denoisen en VAE-decode bereikten `cancelled`
+  binnen 0,06 s. Zie
+  [Video-kwalificatie](../video-runtime-qualification.md#m3-max-results) en
+  [`evidence/m3-video-qualification.json`](evidence/m3-video-qualification.json).
+- Gedeelde jobflows op `6f4ae0c3`: idempotency (zelfde sleutel geeft dezelfde job,
+  een gewijzigde body 409), twee clients met dezelfde eindstaat en asset,
+  worker-SIGKILL, 20 opeenvolgende jobs zonder groei van open bestanden of
+  workers, een extern vastgehouden Translate-flock die generatie in `queued` houdt
+  en een server-SIGKILL tijdens een LTX-job (geen wezen; na herstart
+  `interrupted`, niet opnieuw uitgevoerd).
+- Gevonden en hersteld op de M3: MLX-buffercache (`29cbf1f4`), `fd`-protocol in de
+  beheerde FFmpeg (`2f5b4be9`), LTX-mux zonder `-shortest` (`862c0c3b`),
+  verouderde runtimecode weigeren en tonen (`5288300c`, `2e5bf71e`), LTX-2.3
+  alleen tekst-naar-video (`6f4ae0c3`) en de Images-thread die zijn eigen
+  compute-flock opnieuw claimde (`21e2f89c`).
 
 Bewust open (eigenaar: "nu niet"): menselijke luister- en kijkbeoordeling,
 menselijke Translate-opnames en fysieke UI-tests. H3 blijft geblokkeerd (geen
 checkpointinventaris; de licentie sluit de EU uit). ACE-Step is uitgeschakeld
 (PyTorch op MPS met een MLX-DiT, niet in mlx-audio): zichtbaar met reden,
-installatie geweigerd. Alle profielen blijven experimenteel/ongekwalificeerd;
-niets slaagt automatisch en resultaten op 128 GB kwalificeren geen 16 GB-Mac.
-Developer ID, notarisatie, een echte Sparkle-upgrade en betaalde cloudproeven
-blijven afzonderlijke gates.
+installatie geweigerd. Restrisico: de video's hebben geen kleurtags, dus de
+speler kiest zelf BT.601 of BT.709. Alle profielen blijven
+experimenteel/ongekwalificeerd; niets slaagt automatisch en resultaten op 128 GB
+kwalificeren geen 16 GB-Mac. Developer ID, notarisatie, een echte Sparkle-upgrade
+en betaalde cloudproeven blijven afzonderlijke gates.
 
-### TODO: videoresultaten (LTX-2.3, Wan2.2-herhaling)
+### TODO: Images-resultaten (FLUX.2-klein-4B op `2e5bf71e`)
 
-Nog niet ingevuld; de cijfers volgen.
+Nog niet ingevuld; de cijfers volgen. De eerste poging op `6f4ae0c3` gaf bij elke
+generatie HTTP 500, omdat de Images-thread zijn eigen compute-flock opnieuw
+claimde; hersteld in `21e2f89c`.
 
-### TODO: Translate-resultaten
+### TODO: Translate-resultaten (op `2e5bf71e`)
 
 Nog niet ingevuld; de cijfers volgen.
 
@@ -86,7 +112,9 @@ Stel in Developer een API-sleutel in en start de Nativ-server. De standaardpoort
 is 8181. Open Music of Video en kies **Providers and runtimes**. Accepteer de
 toepasselijke licenties, schakel het gewenste experimentele profiel expliciet in
 en kies Install. De video-inventarissen (LTX-2.3, Wan2.2) bevatten geen gated
-componenten; daarvoor is geen Hugging Face-sleutel nodig.
+componenten; daarvoor is geen Hugging Face-sleutel nodig. Toont een geïnstalleerd
+profiel na een app-update "Repair this runtime", kies dan Repair; dat downloadt
+geen modellen.
 
 Er is geen automatische cloudfallback. Een grotere Mac maakt een model niet
 vanzelf gekwalificeerd. Controleer de vereiste vrije schijfruimte in de inventaris;
@@ -130,8 +158,9 @@ python3 scripts/benchmarks/video/qualify.py --help
 De Video-driver voert zonder expliciete uitvoeringsoptie geen generatie uit.
 Volg de concrete opdrachten in
 [Video-kwalificatie](../video-runtime-qualification.md). Gebruik per lokaal
-profiel minimaal vier clips en alle geadverteerde workflows, inclusief I2V,
-portret/landschap en native audio waar ondersteund. Bewaar dezelfde ledger bij
+profiel minimaal vier clips en alle geadverteerde workflows, inclusief I2V waar
+aangeboden (LTX-2.3 biedt alleen tekst-naar-video; Wan2.2 is het lokale
+I2V-profiel), portret/landschap en native audio waar ondersteund. Bewaar dezelfde ledger bij
 herstart. Een `retrieval_pending`-resultaat vereist beoordeling; het is geen
 bewijs dat het model klaar of geslaagd is.
 

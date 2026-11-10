@@ -62,8 +62,10 @@ Crop coordinates are normalized after EXIF orientation with a top-left origin.
 `crop` is `{x,y,width,height}` within `[0,1]`, positive nonempty area, and allowed
 only with `fit_policy: crop`. The server deterministically materializes RGB/sRGB
 PNG at the accepted target size, strips metadata and records the derivative hash.
-T2V rejects references. Local LTX, Wan and Runway reject last-frame references.
-H3 remains license-gated; ref2va is not a still-input API capability.
+T2V rejects references. Local LTX-2.3 is text-to-video only: `image_to_video`
+returns 400 `unsupported_parameter` (field `operation`), so use Wan2.2 for local
+image-to-video. Wan and Runway reject last-frame references. H3 remains
+license-gated; ref2va is not a still-input API capability.
 
 Cloud generation is deliberate, for example `model: runway-gen4.5`,
 `audio_mode: silent`, `output_preset: cloud-landscape`, `duration: 5`,
@@ -147,7 +149,7 @@ canonical PNG for an authenticated composer preview. This does not submit a job.
 curl -fsS -X POST "$NATIV_URL/v1/video/inputs/REPLACE_INPUT_ID/transform" \
   -H "Authorization: Bearer $NATIV_KEY" -H "X-Nativ-Store-ID: $NATIV_STORE_ID" \
   -H 'Content-Type: application/json' \
-  -d '{"width":704,"height":448,"transform":{"version":1,"fit_policy":"contain","crop":null,"background":"#000000"}}'
+  -d '{"width":832,"height":480,"transform":{"version":1,"fit_policy":"contain","crop":null,"background":"#000000"}}'
 ```
 
 GET `/configuration` and `/runtimes` report named settings/readiness and exact
@@ -156,6 +158,11 @@ described in [Music API setup](music.md#setup-and-orderly-server-stop), never ke
 or paths. POST `/runtimes/{runtime_id}/{action}` accepts `{profile_id}` for install,
 repair, remove or cancel-install. All mutations require the store header; license
 review and experimental setup are explicit. Reads never download weights.
+Each local runtime keeps a copy of the app's worker packages. After an app update
+that changes them, `models` reports the profile unavailable with "Repair this
+runtime: it holds worker code from another Nativ build.", a submit returns 409, and
+dispatch or recovery fails with `runtime_outdated` (409). `repair` rebuilds the
+runtime without downloading models.
 
 GET `/server-state` reports shared pending/active/queued/setup counts, unresolved
 remote reservations and stopping/ready_to_stop. POST `/prepare-stop` (202) stops

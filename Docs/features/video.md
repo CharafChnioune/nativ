@@ -11,9 +11,10 @@ promised. A separately operated canonical Nativ server has its own lifetime.
 
 ## Current qualification
 
-No local video profile is qualified. Installed code or a passing
-contract fixture does not establish that a model fits memory or makes good
-motion. Local profiles remain unavailable until complete setup, license review
+No local video profile is qualified. Both local mlx-video profiles produced valid
+clips on an M3 Max, but the human viewing review is open. Installed code or a
+passing contract fixture does not establish that a model fits memory or makes
+good motion. Local profiles remain unavailable until complete setup, license review
 and explicit experimental opt-in; a supported default requires recorded hardware
 qualification. No model is downloaded on workspace opening or catalogue requests.
 External execution requires both an enabled named account and
@@ -21,7 +22,7 @@ External execution requires both an enabled named account and
 
 | Profile | Runtime/checkpoint | Initial candidate | Audio |
 | --- | --- | --- | --- |
-| `ltx-2.3-distilled-local` | mlx-video `87db56a51758fefb748a359b90a5283bb8ba4837`; `prince-canuma/LTX-2.3-distilled` `65b104b9387fb173d8e4b92fc5effc47625baf2a` with `mlx-community/gemma-3-12b-it-bf16` text encoder `b8b9b412cb795bd6115fdce8c9a0ef0d1664db3a` | 704×448 / 448×704, 97 frames, 24 FPS, distilled pipeline | Native stereo 48 kHz |
+| `ltx-2.3-distilled-local` | mlx-video `87db56a51758fefb748a359b90a5283bb8ba4837`; `prince-canuma/LTX-2.3-distilled` `65b104b9387fb173d8e4b92fc5effc47625baf2a` with `mlx-community/gemma-3-12b-it-bf16` text encoder `b8b9b412cb795bd6115fdce8c9a0ef0d1664db3a` | Text-to-video only; 704×448 / 448×704, 97 frames, 24 FPS, distilled pipeline | Native stereo 48 kHz |
 | `wan2.2-ti2v-5b-q8-local` | Same mlx-video pin; `Anes1032/Wan2.2-TI2V-5B-mlx-q8` `9624723c94ddf509832555c45e223a035baa7d1c` with `google/umt5-xxl` tokenizer `66cb9e7e85526fe440a945569e42c72fb6cbc0ad` | 832×480 / 480×832, 81 frames, 24 FPS, 50 steps, shift 3 | Silent |
 | `minimax-h3-local` | Public mlx-vlm 0.7.12, source `7230940302cbe602054650f18a2f77db945bc57a` | Fixture-only advanced adapter, 124 frames / 24 FPS | Joint stereo 32 kHz |
 | `ltx-2-5-fast-cloud`, `ltx-2-5-pro-cloud` | Official LTX V2, with separate 2.3 profiles | Curated 720p landscape/portrait, 24 FPS, explicit supported durations | Native or silent |
@@ -32,6 +33,9 @@ and the VAE fp32. Checkpoint bytes are not peak memory requirements. Video and M
 music workers cap MLX's buffer cache at 4 GiB: without it, Wan's tiled VAE decode
 reached a 105 GB footprint in a decode-only probe on an M3 Max (see the
 qualification document).
+LTX-2.3 is text-to-video only: the LTX-2.3 VAE encoder in mlx-video `87db56a` (its
+newest commit) rejects every first frame, so `image_to_video` returns 400 and the
+composer does not offer it. Wan2.2 is the local image-to-video profile.
 The distilled LTX pipeline uses a 64-pixel spatial grid and an `8n+1` temporal
 grid. Its 97/24 candidate is approximately 4.042 seconds, not exactly four seconds.
 Wan uses `4n+1`; H3 uses `17n+5`. Requests outside curated combinations are rejected,
@@ -56,6 +60,14 @@ interpreters, MLX dylibs and managed encoders still require release
 signing/qualification.
 There is no user Homebrew, uv, pip-upgrade or externally started UI requirement.
 
+Each runtime keeps its own copy of the app's `nativ_generation` and `nativ_video`
+packages. After an app update that changes them, an installed profile shows as
+unavailable ("Repair this runtime: it holds worker code from another Nativ
+build."), a submit is refused with 409, and dispatch or recovery stops with
+`runtime_outdated`. Repair rebuilds the runtime without downloading models (about
+40 s for Wan and 60 s for LTX on an M3 Max). A change to `nativ_generation`
+affects every local profile, music included.
+
 LTX-2.3 and Wan2.2 have no gated component, so their setup needs no Hugging Face
 account. Every LTX-2.3, Gemma 3, Wan2.2 and UMT5 tokenizer file is pinned by
 repository, revision, byte size and SHA256: about 73.5 GB for LTX-2.3 (including
@@ -68,8 +80,12 @@ main has no LTX-2.5 pipeline.
 
 The managed codec dependency is FFmpeg 9.0.2 with the pinned x264 build, including
 source/notices. The worker environment puts that binary first on `PATH` and in
-`IMAGEIO_FFMPEG_EXE`, so mlx-video's encoding and LTX audio muxing never use a user
-ffmpeg. No soundtrack resampling is used to conceal timing errors.
+`IMAGEIO_FFMPEG_EXE`: it encodes Wan's frames and muxes LTX's AAC track with a
+video stream copy, without `-shortest`, so all 97 LTX frames are kept. LTX's frames
+themselves are encoded by the FFmpeg bundled in the pinned OpenCV wheel. Neither
+path uses a user-installed ffmpeg. Neither output carries colour tags yet, so
+players choose BT.601 or BT.709 themselves. No soundtrack resampling is used to
+conceal timing errors.
 Cloud MP4 bytes are imported unchanged; the canonical importer verifies actual
 frames, FPS, dimensions, SDR/color/rotation/aspect, sample rate/channels, decoded
 first/middle/last frames, finite nonempty requested audio and timeline alignment.

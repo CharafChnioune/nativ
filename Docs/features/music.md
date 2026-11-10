@@ -20,7 +20,7 @@ Durations, musical structure and lyric adherence remain generative. A requested 
 
 The native setup flow calls managed runtime installation and model preparation. It must show licenses, download sizes, available space and qualification before enabling a profile. Models are never fetched by opening Music, importing the API or launching a worker.
 
-Pinned inventories total approximately 13.87 GB for MiniMax MXFP8 and 1.705 GB for Stable Small Music; with their runtimes the installs took 15.0 GB and 2.2 GB on the M3 Max. These are download sizes, not peak memory claims: the measured peak process footprint there was 34–46 GB for MiniMax and 2.3–2.8 GB for Stable, before workers capped MLX's buffer cache at 4 GiB. Downloads verify SHA-256 and keep resumable partial files; cancellation does not erase existing songs.
+Pinned inventories total approximately 13.87 GB for MiniMax MXFP8 and 1.705 GB for Stable Small Music; with their runtimes the installs took 15.0 GB and 2.2 GB on the M3 Max. These are download sizes, not peak memory claims: the measured peak process footprint there was 34–46 GB for MiniMax and 2.3–2.8 GB for Stable, before workers capped MLX's buffer cache at 4 GiB (`29cbf1f4`); MiniMax has not been re-measured since. Downloads verify SHA-256 and keep resumable partial files; cancellation does not erase existing songs.
 
 The builder integration is under `PythonDistribution/MusicRuntimes/manage.py`. Release engineers can explicitly prepare a candidate with the app's standalone Python prefix:
 
@@ -36,6 +36,8 @@ python3 PythonDistribution/MusicRuntimes/manage.py models \
 These are reproducible builder commands, not a requirement to install Homebrew, uv or a terminal server on an end user's Mac. A release builder still needs to execute isolated dependency installation, bundled imports, relocation, nested signing/notarization and real audio qualification. The installer never updates the base Nativ interpreter. Missing/gated files leave the profile unready.
 
 Private named profile configuration supplies `model_path` for MiniMax and `model_path` plus `source_path` for Stable. Prepared directories carry a pinned `nativ-model.json` receipt. Workers verify every recorded component before loading. The host supplies worker interpreter paths; ordinary generation requests cannot choose paths or endpoints.
+
+Each runtime keeps its own copy of the app's `nativ_generation` and `nativ_music` packages. After an app update that changes them, an installed profile shows as unavailable ("Repair this runtime: it holds worker code from another Nativ build."), a submit is refused with 409, and dispatch or recovery stops with `runtime_outdated`. Repair rebuilds the runtime without downloading models (13.1 s for MiniMax and 19.2 s for Stable on an M3 Max). A video-only update left the music runtimes valid.
 
 Remote GPU configuration supplies an HTTPS `endpoint` pointing to the service root. Loopback HTTP requires explicit `allow_local_http=true`. A read-only health probe verifies `/health` and that `/v1/models` advertises `MiniMaxAI/MiniMax-Music3`. Cloud MiniMax supports the documented `https://api.minimax.io` and `https://api.minimax.cn` regions; credentials must match the selected region. New paid Music/Lyrics access closed on August 20, 2026; the adapter is for eligible existing accounts. Nativ does not enroll accounts or buy credit.
 
