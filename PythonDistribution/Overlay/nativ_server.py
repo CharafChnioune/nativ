@@ -1527,5 +1527,9 @@ install_generation_api(base.app)
 
 from nativ_generation.host_admission import install as install_host_admission; install_host_admission(base)
 
+# Multi-Mac pipeline inference: node routes always, cluster loading only when configured.
+import nativ_cluster
+nativ_cluster.install(base, base_generation)
+
 if __name__ == "__main__":
     main()

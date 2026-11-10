@@ -192,7 +192,7 @@ def validate_bundle_resources(app, *, verify_imports=False):
             if not re.fullmatch(r"[0-9a-f]{64}", receipt.get("build_files", receipt["files"]).get(relative, "")):
                 raise ValueError("Managed codec build provenance is missing")
         # Check source files omitted by the package-tree verifier as well.
-        for name in ("nativ_server.py", "nativ_translation_local.py"):
+        for name in ("nativ_server.py", "nativ_translation_local.py", "nativ_cluster.py"):
             if digest(inside(site / name)) != digest(source / "Overlay" / name):
                 raise ValueError("Packaged server overlay differs from validated source")
     except (SystemExit, OSError, KeyError, TypeError, ValueError) as error:

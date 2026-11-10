@@ -377,6 +377,48 @@ final class NativSettingsTests: XCTestCase {
         XCTAssertEqual(settings.serverHost, "127.0.0.1")
     }
 
+    func testClusterHostServesOneSequenceWithoutCachesThatNodesCannotReplay() throws {
+        var settings = NativSettings()
+        settings.prefixCachingEnabled = true
+        settings.kvQuantizationEnabled = true
+        settings.speculativeDecodingEnabled = true
+        settings.draftModelID = "org/draft"
+        settings.clusterNodeURLs = [" http://100.81.146.84:8080/ ", "http://100.81.146.84:8080", "ftp://x", "nonsense"]
+
+        let normalized = settings.normalized()
+        XCTAssertEqual(normalized.clusterNodeURLs, ["http://100.81.146.84:8080"])
+        XCTAssertTrue(normalized.clusterHostActive)
+        let arguments = settings.launchArguments
+        XCTAssertTrue(arguments.joined(separator: " ").contains("--max-num-seqs 1"))
+        XCTAssertFalse(arguments.contains("--kv-bits"))
+        XCTAssertFalse(arguments.contains("--draft-model"))
+        let environment = settings.launchEnvironment
+        XCTAssertEqual(environment["APC_ENABLED"], "0")
+        XCTAssertNil(environment["NATIV_CLUSTER_NODE"])
+        let config = try XCTUnwrap(environment["NATIV_CLUSTER_CONFIG"])
+        XCTAssertEqual(try JSONSerialization.jsonObject(with: Data(config.utf8)) as? [String: [String]],
+                       ["nodes": ["http://100.81.146.84:8080"]])
+        XCTAssertEqual(settings.runtimeSettings["apc_enabled"], .bool(false))
+        XCTAssertEqual(settings.runtimeSettings["draft_model"], .null)
+    }
+
+    func testClusterRolesRestartTheServerAndSurviveEncoding() throws {
+        let original = NativSettings()
+        XCTAssertFalse(original.clusterHostActive)
+        XCTAssertNil(original.launchEnvironment["NATIV_CLUSTER_CONFIG"])
+        var node = original
+        node.clusterNodeEnabled = true
+        XCTAssertEqual(node.launchEnvironment["NATIV_CLUSTER_NODE"], "1")
+        XCTAssertFalse(original.hasSameLaunchConfiguration(as: node))
+        var host = original
+        host.clusterNodeURLs = ["http://100.81.146.84:8080"]
+        XCTAssertFalse(original.hasSameLaunchConfiguration(as: host))
+
+        let decoded = try PropertyListDecoder().decode(NativSettings.self, from: PropertyListEncoder().encode(host))
+        XCTAssertEqual(decoded.clusterNodeURLs, host.clusterNodeURLs)
+        XCTAssertFalse(decoded.clusterNodeEnabled)
+    }
+
     func testServerHostRequiresServerRestart() {
         let original = NativSettings()
         var changed = original

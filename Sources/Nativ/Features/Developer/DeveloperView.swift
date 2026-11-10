@@ -48,6 +48,7 @@ struct DeveloperView: View {
                                     runtimeGrid
                                     serverEndpointsPanel
                                     authenticationPanels
+                                    ClusterPanel(settings: $model.settings)
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .onGeometryChange(for: CGFloat.self) { proxy in

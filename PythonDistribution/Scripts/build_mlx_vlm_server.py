@@ -32,6 +32,7 @@ PYTHON_DISTRIBUTION_ROOT = REPO_ROOT / "PythonDistribution"
 LAUNCHER_SOURCE = PYTHON_DISTRIBUTION_ROOT / "Launcher" / "mlx_vlm_server_launcher.c"
 OVERLAY_SERVER = PYTHON_DISTRIBUTION_ROOT / "Overlay" / "nativ_server.py"
 OVERLAY_TRANSLATION = PYTHON_DISTRIBUTION_ROOT / "Overlay" / "nativ_translation_local.py"
+OVERLAY_CLUSTER = PYTHON_DISTRIBUTION_ROOT / "Overlay" / "nativ_cluster.py"
 OVERLAY_PACKAGES = tuple(PYTHON_DISTRIBUTION_ROOT / "Overlay" / name for name in (
     "nativ_generation", "nativ_music", "nativ_video"))
 RUNTIME_RESOURCES = tuple(PYTHON_DISTRIBUTION_ROOT / name for name in (
@@ -320,6 +321,7 @@ def build_signature(
         "launcher_sha256": file_sha256(LAUNCHER_SOURCE),
         "overlay_server_sha256": file_sha256(OVERLAY_SERVER),
         "overlay_translation_sha256": file_sha256(OVERLAY_TRANSLATION),
+        "overlay_cluster_sha256": file_sha256(OVERLAY_CLUSTER),
         "overlay_packages": {path.name: tree_fingerprint(path) for path in OVERLAY_PACKAGES},
         "runtime_resources": {path.name: tree_fingerprint(path) for path in RUNTIME_RESOURCES},
         "codec_managed": tree_fingerprint(CODEC_MANAGED_OUTPUT) if CODEC_MANAGED_OUTPUT.is_dir() else None,
@@ -658,7 +660,7 @@ def replace_packaged_tree(source: Path, destination: Path) -> None:
 
 def install_overlay(output: Path) -> None:
     site = site_packages_dir(output)
-    for source in (OVERLAY_SERVER, OVERLAY_TRANSLATION):
+    for source in (OVERLAY_SERVER, OVERLAY_TRANSLATION, OVERLAY_CLUSTER):
         destination = site / source.name
         log(f"Installing runtime overlay {source.name}")
         shutil.copy2(source, destination)
@@ -742,7 +744,7 @@ def verify_distribution(output: Path, *, expect_mlx_vlm: bool) -> None:
                 "-c",
                 "import importlib.util; "
                 "raise SystemExit(0 if all(importlib.util.find_spec(name) for name in "
-                "('nativ_server','nativ_translation_local','nativ_generation','nativ_music','nativ_video')) else 1)",
+                "('nativ_server','nativ_translation_local','nativ_cluster','nativ_generation','nativ_music','nativ_video')) else 1)",
             ]
         )
         env = os.environ.copy()

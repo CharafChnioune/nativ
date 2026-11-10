@@ -68,7 +68,7 @@ class HostAdmissionMiddleware:
     @staticmethod
     def heavy(scope):
         path=scope.get('path','')
-        if path.startswith(('/v1/music/','/v1/video/','/images','/v1/images','/routines/','/v1/routines/')) or path=='/v1/generation/prepare-compute':return False
+        if path.startswith(('/v1/music/','/v1/video/','/images','/v1/images','/routines/','/v1/routines/','/v1/cluster/')) or path=='/v1/generation/prepare-compute':return False
         return scope['type']=='websocket' or (scope['type']=='http' and scope.get('method') in ('POST','PUT','PATCH','DELETE'))
     async def __call__(self,scope,receive,send):
         if scope['type'] not in ('http','websocket') or not self.heavy(scope):return await self.app(scope,receive,send)

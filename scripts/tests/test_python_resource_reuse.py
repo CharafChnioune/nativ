@@ -20,7 +20,7 @@ class TranslationOverlayPackagingTests(unittest.TestCase):
             destination = Path(directory)
             with patch.object(builder, "site_packages_dir", return_value=destination):
                 builder.install_overlay(destination)
-            for source in (builder.OVERLAY_SERVER, builder.OVERLAY_TRANSLATION):
+            for source in (builder.OVERLAY_SERVER, builder.OVERLAY_TRANSLATION, builder.OVERLAY_CLUSTER):
                 self.assertEqual((destination / source.name).read_bytes(), source.read_bytes())
 
     def test_translation_overlay_change_invalidates_cached_runtime(self):

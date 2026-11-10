@@ -653,6 +653,10 @@ struct NativSettings: Codable, Equatable {
     var huggingFaceToken: String?
     var serverHost: String
     var serverPort: Int
+    /// This Mac accepts layers of a model loaded by another Nativ (over Tailscale or the LAN).
+    var clusterNodeEnabled: Bool
+    /// Nativ servers ("http://100.x.y.z:8080") that run part of this Mac's chat model.
+    var clusterNodeURLs: [String]
     var maxTokens: Int
     var maxKVSize: Int
     var compactionEnabled: Bool
@@ -715,6 +719,8 @@ struct NativSettings: Codable, Equatable {
         huggingFaceToken: String? = nil,
         serverHost: String = Self.defaultServerHost,
         serverPort: Int = NativBuildIdentity.defaultServerPort,
+        clusterNodeEnabled: Bool = false,
+        clusterNodeURLs: [String] = [],
         maxTokens: Int = 2048,
         maxKVSize: Int = 0,
         compactionEnabled: Bool = true,
@@ -775,6 +781,8 @@ struct NativSettings: Codable, Equatable {
         self.huggingFaceToken = huggingFaceToken
         self.serverHost = serverHost
         self.serverPort = serverPort
+        self.clusterNodeEnabled = clusterNodeEnabled
+        self.clusterNodeURLs = clusterNodeURLs
         self.maxTokens = maxTokens
         self.maxKVSize = maxKVSize
         self.compactionEnabled = compactionEnabled
@@ -837,6 +845,8 @@ struct NativSettings: Codable, Equatable {
         case huggingFaceToken
         case serverHost
         case serverPort
+        case clusterNodeEnabled
+        case clusterNodeURLs
         case selectedModelID
         case maxTokens
         case maxKVSize
@@ -942,6 +952,10 @@ struct NativSettings: Codable, Equatable {
             try container.decodeIfPresent(String.self, forKey: .serverHost) ?? defaults.serverHost
         serverPort =
             try container.decodeIfPresent(Int.self, forKey: .serverPort) ?? defaults.serverPort
+        clusterNodeEnabled =
+            try container.decodeIfPresent(Bool.self, forKey: .clusterNodeEnabled) ?? defaults.clusterNodeEnabled
+        clusterNodeURLs =
+            try container.decodeIfPresent([String].self, forKey: .clusterNodeURLs) ?? defaults.clusterNodeURLs
         maxTokens =
             try container.decodeIfPresent(Int.self, forKey: .maxTokens) ?? defaults.maxTokens
         maxKVSize =
@@ -1066,6 +1080,8 @@ struct NativSettings: Codable, Equatable {
         try container.encodeIfPresent(embeddingModelID, forKey: .embeddingModelID)
         try container.encode(serverHost, forKey: .serverHost)
         try container.encode(serverPort, forKey: .serverPort)
+        try container.encode(clusterNodeEnabled, forKey: .clusterNodeEnabled)
+        try container.encode(clusterNodeURLs, forKey: .clusterNodeURLs)
         try container.encode(maxTokens, forKey: .maxTokens)
         try container.encode(maxKVSize, forKey: .maxKVSize)
         try container.encode(compactionEnabled, forKey: .compactionEnabled)
@@ -1279,6 +1295,7 @@ struct NativSettings: Codable, Equatable {
             settings.huggingFaceToken)
         settings.serverHost = Self.normalizedServerHost(settings.serverHost)
         settings.serverPort = min(max(settings.serverPort, 1), 65_535)
+        settings.clusterNodeURLs = Self.normalizedClusterNodeURLs(settings.clusterNodeURLs)
         settings.maxTokens = min(max(settings.maxTokens, 1), 262_144)
         settings.maxKVSize = min(max(settings.maxKVSize, 0), 1_048_576)
         settings.compactionThresholdPercent = min(max(settings.compactionThresholdPercent, 20), 90)
@@ -1411,6 +1428,8 @@ struct NativSettings: Codable, Equatable {
             && lhs.huggingFaceToken == rhs.huggingFaceToken
             && lhs.serverHost == rhs.serverHost
             && lhs.serverPort == rhs.serverPort
+            && lhs.clusterNodeEnabled == rhs.clusterNodeEnabled
+            && lhs.clusterNodeURLs == rhs.clusterNodeURLs
             // The engine has no live setting for draft block size yet.
             && (lhsSpeculativeDecodingActive ? lhs.draftBlockSize : 0)
                 == (rhsSpeculativeDecodingActive ? rhs.draftBlockSize : 0)
@@ -1420,16 +1439,17 @@ struct NativSettings: Codable, Equatable {
     /// optional overrides; zero restores the model's full context window.
     var runtimeSettings: [String: MLXJSONValue] {
         let settings = normalized()
+        let cluster = settings.clusterHostActive
         return [
-            "apc_enabled": .bool(settings.prefixCachingEnabled),
+            "apc_enabled": .bool(settings.prefixCachingEnabled && !cluster),
             "apc_num_blocks": .number(Double(settings.prefixCacheBlocks)),
             "apc_block_size": .number(Double(settings.prefixCacheBlockSize)),
             "max_kv_size": .number(Double(settings.maxKVSize)),
-            "kv_bits": settings.kvQuantizationEnabled ? .number(settings.kvBits) : .null,
+            "kv_bits": settings.kvQuantizationEnabled && !cluster ? .number(settings.kvBits) : .null,
             "kv_quant_scheme": .string(settings.kvQuantizationEnabled && settings.turboQuantEnabled ? "turboquant" : "uniform"),
             "kv_group_size": settings.kvQuantizationEnabled ? .number(Double(settings.kvGroupSize)) : .null,
             "quantized_kv_start": settings.kvQuantizationEnabled ? .number(Double(settings.quantizedKVStart)) : .null,
-            "draft_model": settings.speculativeDecodingActive ? .string(settings.draftModelID) : .null,
+            "draft_model": settings.speculativeDecodingActive && !cluster ? .string(settings.draftModelID) : .null,
             "draft_kind": settings.speculativeDecodingActive && settings.draftKind != "auto" ? .string(settings.draftKind) : .null,
         ]
     }
@@ -1449,22 +1469,47 @@ struct NativSettings: Codable, Equatable {
         if let appVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String {
             environment["NATIV_APP_VERSION"] = appVersion
         }
-        environment["APC_ENABLED"] = settings.prefixCachingEnabled ? "1" : "0"
+        let prefixCaching = settings.prefixCachingEnabled && !settings.clusterHostActive
+        environment["APC_ENABLED"] = prefixCaching ? "1" : "0"
         if let serverAPIKey = settings.serverAPIKey {
             environment["MLX_VLM_SERVER_API_KEY"] = serverAPIKey
         }
         if let huggingFaceToken = settings.huggingFaceToken {
             environment[HuggingFaceAuthentication.environmentVariableName] = huggingFaceToken
         }
-        if settings.prefixCachingEnabled {
+        if prefixCaching {
             environment["APC_NUM_BLOCKS"] = "\(settings.prefixCacheBlocks)"
             environment["APC_BLOCK_SIZE"] = "\(settings.prefixCacheBlockSize)"
         }
         if let modelConfigsJSON = encodedModelConfigs {
             environment["NATIV_MODEL_CONFIGS"] = modelConfigsJSON
         }
+        if settings.clusterNodeEnabled {
+            environment["NATIV_CLUSTER_NODE"] = "1"
+        }
+        if settings.clusterHostActive,
+            let data = try? JSONSerialization.data(withJSONObject: ["nodes": settings.clusterNodeURLs]),
+            let config = String(data: data, encoding: .utf8)
+        {
+            environment["NATIV_CLUSTER_CONFIG"] = config
+        }
         environment.merge(GenerationProviderCredentials.launchEnvironment()) { _, new in new }
         return environment
+    }
+
+    /// A non-empty node list makes this Mac the host that splits its chat model across the nodes.
+    var clusterHostActive: Bool { !clusterNodeURLs.isEmpty }
+
+    static func normalizedClusterNodeURLs(_ urls: [String]) -> [String] {
+        var seen = Set<String>()
+        return urls.compactMap { raw in
+            var value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            while value.hasSuffix("/") { value.removeLast() }
+            guard let url = URL(string: value), let scheme = url.scheme, ["http", "https"].contains(scheme),
+                url.host != nil, seen.insert(value).inserted
+            else { return nil }
+            return value
+        }
     }
 
     var encodedModelConfigs: String? {
@@ -1509,7 +1554,11 @@ struct NativSettings: Codable, Equatable {
             arguments.append(contentsOf: ["--max-kv-size", "\(settings.maxKVSize)"])
         }
 
-        if settings.kvQuantizationEnabled {
+        if settings.clusterHostActive {
+            // Every Mac replays the host's decoder calls; that needs one sequence at a time.
+            arguments.append(contentsOf: ["--max-num-seqs", "1"])
+        }
+        if settings.kvQuantizationEnabled && !settings.clusterHostActive {
             arguments.append(contentsOf: ["--kv-bits", Self.numberString(settings.kvBits)])
             arguments.append(contentsOf: [
                 "--kv-quant-scheme", settings.turboQuantEnabled ? "turboquant" : "uniform",
@@ -1518,7 +1567,7 @@ struct NativSettings: Codable, Equatable {
             ])
         }
 
-        if settings.speculativeDecodingActive {
+        if settings.speculativeDecodingActive && !settings.clusterHostActive {
             arguments.append(contentsOf: ["--draft-model", settings.draftModelID])
             if settings.draftKind != "auto" {
                 arguments.append(contentsOf: ["--draft-kind", settings.draftKind])

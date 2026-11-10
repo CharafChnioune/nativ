@@ -806,6 +806,10 @@ final class NativModel: ChatModelSwitchingSurface {
         slot: ModelPreloadSlot,
         availableModels: [LocalModel]
     ) -> ModelPreloadMemoryWarning? {
+        // Split across cluster nodes; the server checks the combined memory when it plans the split.
+        if slot == .language && settings.normalized().clusterHostActive {
+            return nil
+        }
         let totalMemoryBytes = ProcessInfo.processInfo.physicalMemory
         guard let candidateEstimate = candidate.memoryEstimate(
             totalMemoryBytes: totalMemoryBytes

@@ -159,7 +159,7 @@ class GenerationReleaseResourceTests(unittest.TestCase):
         for name in ("nativ_generation", "nativ_music", "nativ_video"):
             shutil.copytree(source / "Overlay" / name, self.site / name,
                             ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
-        for name in ("nativ_server.py", "nativ_translation_local.py"):
+        for name in ("nativ_server.py", "nativ_translation_local.py", "nativ_cluster.py"):
             shutil.copy2(source / "Overlay" / name, self.site / name)
         for name in ("MusicRuntimes", "VideoRuntimes", "CodecRuntime", "Patches"):
             shutil.copytree(source / name, self.runtime / name,
