@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import resource
+import subprocess
 import sys
 import traceback
 
@@ -29,11 +30,15 @@ def _validate(request,kind):
 
 def run_ltx(request,prepared,output,emit):
     _validate(request,'ltx_mlx')
-    from mlx_video.models.ltx_2.generate import PipelineType,generate_video
+    from mlx_video.models.ltx_2 import generate as ltx
+    # mlx-video muxes with -shortest; its audio ends ~30 ms before the video, which cut 97 frames to 93
+    # on the M3 run. Same ffmpeg (managed, from PATH) and codecs, minus -shortest; errors go to worker.log.
+    ltx.mux_video_audio=lambda video,audio,out: subprocess.run(['ffmpeg','-v','error','-y','-i',str(video),'-i',str(audio),
+        '-c:v','copy','-c:a','aac',str(out)]).returncode==0
     emit('dispatch'); emit('stage',stage='generating')
-    # Gemma 3 is loaded from the model's text_encoder/ folder; mlx-video muxes its audio with ffmpeg from PATH.
-    generate_video(model_repo=prepared['model_path'],text_encoder_repo=None,prompt=request['prompt'],
-        pipeline=PipelineType.DISTILLED,width=request['width'],height=request['height'],
+    # Gemma 3 is loaded from the model's text_encoder/ folder.
+    ltx.generate_video(model_repo=prepared['model_path'],text_encoder_repo=None,prompt=request['prompt'],
+        pipeline=ltx.PipelineType.DISTILLED,width=request['width'],height=request['height'],
         num_frames=request['frame_count'],fps=request['fps'],seed=request['seed'],output_path=str(output),
         image=prepared.get('inputs',{}).get('first_frame'),audio=True,verbose=True)
     return dict(width=request['width'],height=request['height'],frame_count=request['frame_count'],fps=request['fps'],

@@ -28,6 +28,10 @@ class VideoWorkerTests(unittest.TestCase):
         self.assertEqual((kw['model_repo'],kw['text_encoder_repo'],kw['pipeline'],kw['audio']),(td,None,'distilled',True))
         self.assertEqual((kw['image'],kw['width'],kw['height'],kw['num_frames'],kw['fps'],kw['seed']),(str(image),704,448,97,24,42))
         self.assertEqual(meta['audio_sample_rate'],48000)
+        # The upstream mux used -shortest, which dropped trailing video frames when the audio ended first.
+        with patch.object(workers.subprocess,'run',return_value=types.SimpleNamespace(returncode=0)) as run:
+            self.assertTrue(mods['mlx_video.models.ltx_2.generate'].mux_video_audio('v.mp4','a.wav','o.mp4'))
+        self.assertEqual(run.call_args.args[0],['ffmpeg','-v','error','-y','-i','v.mp4','-i','a.wav','-c:v','copy','-c:a','aac','o.mp4'])
     def test_wan_maps_steps_and_shift_and_serves_only_umt5_from_pinned_folder(self):
         calls=[];tokenizers=[]
         class AutoTokenizer:
