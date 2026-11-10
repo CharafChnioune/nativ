@@ -25,6 +25,10 @@ De bronvergelijking dekt momenteel alleen Nederlands–Engels:
   van logische reikwijdte: dubbele negatie en onbekende parafrases kunnen buiten
   de dekking vallen of een herhaalverzoek veroorzaken.
 
+Weekdagnamen vallen buiten de vergelijking: op de M3 Max accepteerde de volledige
+controle met bron een verwisseling van donderdag naar dinsdag. Dat is een open gat
+([M3-matrix](live-translation-acceptance.md#m3-max-productiepromptmatrix-10-november-2026)).
+
 Taalherkenning is injecteerbaar. Standaard levert `NLLanguageRecognizer` een lokale
 hint. Alleen langere uitingen met ten minste vijf woorden en 24 letters worden
 op een andere doeltaal geweigerd: bij verwarring tussen Nederlands en Engels

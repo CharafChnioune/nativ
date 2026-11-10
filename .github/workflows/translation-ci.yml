@@ -45,7 +45,12 @@ jobs:
         with:
           ref: ${{ needs.identity.outputs.head }}
           persist-credentials: false
-      - run: python3 -m unittest discover -s scripts/tests -v
+      - name: Install pinned lightweight API and media test dependencies
+        run: |
+          python3 -m venv build/ci-tests
+          build/ci-tests/bin/python -m pip install --require-hashes -r scripts/generation-test-requirements.txt
+          build/ci-tests/bin/python -c 'from fastapi.testclient import TestClient; from PIL import Image; import httpx'
+      - run: build/ci-tests/bin/python -m unittest discover -s scripts/tests -v
       - run: python3 scripts/fork_release.py sources
   swift:
     name: Translation contracts
@@ -70,8 +75,14 @@ jobs:
           persist-credentials: false
       - run: brew install xcodegen cmake
       - run: xcodebuild -downloadComponent MetalToolchain
+      - name: Build and verify managed media codecs
+        run: python3 PythonDistribution/CodecRuntime/manage.py build
       - name: Build pinned native helper and app
-        run: make xcode-build
+        run: NATIV_REQUIRE_MANAGED_CODECS=YES make xcode-build
+      - name: Exercise actual packaged Python and managed media codecs
+        run: |
+          build/NativDevelopmentDerivedData/Build/Products/Debug/Nativ.app/Contents/Frameworks/NativServerKit.framework/Resources/mlx-vlm-server/python/bin/python3 \
+            -B -m unittest discover -s scripts/tests -v
       - name: Run all configured app tests
         run: |
           xcodebuild -project Nativ.xcodeproj -scheme Nativ -configuration Debug \

@@ -1,0 +1,19 @@
+{
+  "PythonDistribution/Overlay/nativ_generation/audio_media.py": "ef57b9608f3f87a11552ec9b0896332022874c1003ae4e19bb3b6e557ee1d9ac",
+  "PythonDistribution/Overlay/nativ_generation/service.py": "19e96d0f2fb781b2c57fa90fbb9ef7ce2ae94f2629723e90796e411175b1a20d",
+  "PythonDistribution/Overlay/nativ_generation/worker_guardian.py": "c4cbde083d8e48afdd1c61dd8d8c4b73d0e995e0d7d62a5c93b0ce51c7c04bc7",
+  "PythonDistribution/Overlay/nativ_generation/memory.py": "b1f191d66c51968d9c1db81f1c2c6c0dd5e3ec13cadcd4df3401d941796d8ef3",
+  "PythonDistribution/Overlay/nativ_generation/host_admission.py": "13c572410f758cb1d0e07936537bf0c4f3c4dccaa6c1f03818ad3daa9538d934",
+  "PythonDistribution/Overlay/nativ_generation/openapi.py": "128c5916825985972598e0e04f3ca819fbddc06faac40133b6611b9b438ce845",
+  "PythonDistribution/Overlay/nativ_generation/runtimes.py": "9a291e2780093d84cff73e7c9a97159550ba1e7084d2975985b19f146278a56f",
+  "PythonDistribution/Overlay/nativ_generation/__init__.py": "52512269e56e8ae8f899128d1dc89d0fa2d66b29006aece748b1240f9bf7b8bf",
+  "PythonDistribution/Overlay/nativ_generation/api.py": "ad030c86c4d14bb78f0fccf1be1cd9f7fc43fe00fc83be60c0988bf57f1888b3",
+  "PythonDistribution/Overlay/nativ_generation/remote_process.py": "863f3102399c9c6a6f7aa8ee680eb4be8911181a828452c8e43d5820df42b520",
+  "PythonDistribution/Overlay/nativ_generation/assets.py": "3172a466388768f9676fe1be8041d106d76c094e8277fe3978ab482416b29a83",
+  "PythonDistribution/Overlay/nativ_generation/contracts.py": "a5abb6099bba4da90f91afa91ddb632c8457e5b218fa0d97aa7f8270a863b5ec",
+  "PythonDistribution/Overlay/nativ_generation/resources.py": "d6866297c432b539e20c7675e20841c4dfb361527191dd866b4465a48b8a5abd",
+  "PythonDistribution/Overlay/nativ_generation/repository.py": "9ddd2f82ad7ab26d4bde8c44b892bb19c5839814eb47f265b8bf5bf3141c2c94",
+  "PythonDistribution/Overlay/nativ_generation/remote_worker.py": "91c0f0cc9ba25e42db8c88847a9b4078d0db911e4b56b8ef098ec6735678fee2",
+  "Sources/NativServerKit/NativGenerationClient.swift": "fae3d7134ca153f72268cdfd96659179f6d714d3765094bc95aa8931bdf7e53d",
+  "Sources/NativServerKit/NativGenerationTypes.swift": "018204d40bc249b97ac2d5d67ebef8d8e75e5687a4eac8b625cbc2bab34d9097"
+}

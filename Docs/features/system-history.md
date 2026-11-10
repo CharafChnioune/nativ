@@ -19,7 +19,7 @@ starts a new history automatically. No new settings UI is introduced by this cha
 
 ## Storage policy
 
-The database is `~/Library/Application Support/Nativ/Diagnostics/SystemTelemetry.sqlite3`,
+The database is `~/Library/Application Support/io.github.charafchnioune.nativ/Diagnostics/SystemTelemetry.sqlite3`,
 with owner-only permissions. The saved-history database is capped at **1 GB (1,000,000,000 bytes)**
 per device. SQLite's temporary rollback journal uses additional working space during a write and
 is removed after the transaction:

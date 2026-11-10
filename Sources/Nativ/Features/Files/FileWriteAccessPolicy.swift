@@ -116,8 +116,10 @@ struct FileWriteAccessPolicy: Sendable {
         {
             throw FileWriteAccessError.sensitivePath
         }
+        let forkData = "/library/application support/" + NativBuildIdentity.namespace
         if !permitsManagedWorktree && (path.contains("/library/application support/nativ/")
-            || path.hasSuffix("/library/application support/nativ"))
+            || path.hasSuffix("/library/application support/nativ")
+            || path.contains(forkData + "/") || path.hasSuffix(forkData))
         {
             throw FileWriteAccessError.sensitivePath
         }

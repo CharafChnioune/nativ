@@ -1,0 +1,6 @@
+This Stability AI Model is licensed under the Stability AI Community License, Copyright © Stability AI Ltd. All Rights Reserved.
+Powered by Stability AI
+
+MiniMax-Music3 Copyright (c) 2026 MiniMax. Community-converted MLX weights retain the MiniMax-Music3 Community License.
+
+Nativ wraps official Stable Audio MLX code in an owned offline worker, constrains Small Music to 120 seconds, and disables mutable automatic downloads. No weights are redistributed in this source repository.

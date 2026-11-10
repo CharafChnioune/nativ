@@ -24,7 +24,9 @@ final class ArtifactFileIndexCoordinator: ObservableObject {
     init(root: URL = NativBuildIdentity.applicationSupportDirectory().appending(path: "Chat"), indexURL: URL? = nil) {
         self.root = ChatWorkFileStore.canonicalRoot(root)
         worker = ArtifactFileIndexer(root: root, indexURL: indexURL ?? root.deletingLastPathComponent().appending(path: "Artifact Files.sqlite"))
-        changes = NotificationCenter.default.publisher(for: ArtifactFileManifest.changed).sink { [weak self] event in
+        // NotificationCenter delivers on the posting executor. Do not inherit
+        // MainActor isolation until the explicit hop below.
+        changes = NotificationCenter.default.publisher(for: ArtifactFileManifest.changed).sink { @Sendable [weak self] event in
             guard let manifest = event.object as? ArtifactFileManifest else { return }
             Task { @MainActor [weak self] in
                 guard let self, ChatWorkFileStore.canonicalRoot(manifest.root).path == self.root.path else { return }

@@ -1601,12 +1601,39 @@ private struct ServerEndpoint: Identifiable {
         .init(method: .get, path: "/v1/cache/stats", category: .metrics),
         .init(method: .post, path: "/v1/cache/reset", category: .metrics),
         .init(method: .post, path: "/unload", category: .metrics),
-    ]
+    ] + generationEndpoints(category: .music, modality: "music")
+      + generationEndpoints(category: .video, modality: "video")
+
+    private static func generationEndpoints(category: ServerEndpointCategory, modality: String) -> [ServerEndpoint] {
+        let prefix = "/v1/" + modality
+        let routes: [(ServerEndpointMethod, String)] = [
+            (.get, "/info"), (.get, "/models"), (.get, "/configuration"),
+            (.put, "/configuration/{profile_id}"), (.get, "/runtimes"),
+            (.post, "/runtimes/{runtime_id}/{action}"), (.get, "/server-state"), (.post, "/prepare-stop"),
+            (.get, "/sessions"), (.post, "/sessions"), (.patch, "/sessions/{session_id}"),
+            (.post, "/generations"), (.get, "/generations"), (.get, "/generations/{job_id}"),
+            (.get, "/generations/{job_id}/events"), (.post, "/generations/{job_id}/cancel"),
+            (.post, "/generations/{job_id}/resume"), (.post, "/generations/{job_id}/retry-download"),
+            (.post, "/generations/{job_id}/release-remote-reservation"),
+            (.get, "/assets/{asset_id}"), (.get, "/assets/{asset_id}/content"), (.head, "/assets/{asset_id}/content"),
+            (.get, "/assets/{asset_id}/usages"), (.put, "/assets/{asset_id}/references/{reference_id}"),
+            (.delete, "/assets/{asset_id}/references/{reference_id}"), (.delete, "/assets/{asset_id}"),
+            (.post, "/assets/{asset_id}/restore")
+        ]
+        let video: [(ServerEndpointMethod, String)] = modality == "video" ? [
+            (.post, "/inputs"), (.get, "/inputs/{input_id}"), (.get, "/inputs/{input_id}/content"),
+            (.delete, "/inputs/{input_id}"), (.post, "/inputs/{input_id}/transform"),
+            (.get, "/inputs/{input_id}/derivatives/{derivative_id}/content"), (.get, "/assets/{asset_id}/poster")
+        ] : []
+        return (routes + video).map { .init(method: $0.0, path: prefix + $0.1, category: category) }
+    }
 }
 
 private enum ServerEndpointCategory: String, CaseIterable, Identifiable {
     case openAI
     case anthropic
+    case music
+    case video
     case metrics
 
     var id: String { rawValue }
@@ -1615,6 +1642,8 @@ private enum ServerEndpointCategory: String, CaseIterable, Identifiable {
         switch self {
         case .openAI: "OpenAI"
         case .anthropic: "Anthropic"
+        case .music: "Music"
+        case .video: "Video"
         case .metrics: "Metrics"
         }
     }
@@ -1625,6 +1654,9 @@ private enum ServerEndpointMethod: String {
     case get = "GET"
     case post = "POST"
     case delete = "DELETE"
+    case put = "PUT"
+    case patch = "PATCH"
+    case head = "HEAD"
 
     var displayTitle: String {
         self == .delete ? "DEL" : rawValue
@@ -1635,6 +1667,9 @@ private enum ServerEndpointMethod: String {
         case .get: .blue
         case .post: .green
         case .delete: .red
+        case .put: .orange
+        case .patch: .purple
+        case .head: .blue
         }
     }
 }

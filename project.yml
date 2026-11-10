@@ -273,7 +273,15 @@ targets:
     sources:
       - path: Tests/NativTests
       - path: Sources/Nativ/Utilities/NativBuildIdentity.swift
+      - path: Sources/Nativ/Utilities/GenerationComputeLease.swift
       - path: Sources/Nativ/Features/Shared/AudioSessionCoordinator.swift
+      - path: Sources/Nativ/Features/Shared
+        includes:
+          - Generation*.swift
+      - path: Sources/Nativ/Features/MusicGeneration
+      - path: Sources/Nativ/Features/VideoGeneration
+      - path: Sources/Nativ/Features/Chat/ChatWorkspacePicker.swift
+      - path: Sources/Nativ/Features/Chat/Tools/ChatGenerationTool.swift
       - path: Sources/Nativ/Features/LiveTranslation/TranslationAudioCapture.swift
       - path: Sources/Nativ/Features/LiveTranslation/TranslationAudioPlayback.swift
       - path: Sources/Nativ/Features/LiveTranslation/TranslationSystemAudioCapture.swift

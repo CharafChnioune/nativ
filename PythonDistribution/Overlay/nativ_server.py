@@ -1521,6 +1521,11 @@ install_translation_local_assets(base)
 install_runtime_settings_overlay()
 install_metrics_overlay()
 
+# Music and Video share one durable library on the existing authenticated server.
+from nativ_generation.api import install as install_generation_api
+install_generation_api(base.app)
+
+from nativ_generation.host_admission import install as install_host_admission; install_host_admission(base)
 
 if __name__ == "__main__":
     main()

@@ -66,7 +66,11 @@ De Q8-duurproef voltooide **160 warme turns en tien proceskoude starts** en
 stopte na **15m22s warme metingen** op de vaste systeemswapgrens. De vereiste
 dertig minuten en vijf geplande onderbrekingsproeven zijn niet voltooid; er zijn
 geen gekwalificeerde p50/p95- of akoestische stopmetingen. De globale swapgroei
-wordt niet uitsluitend aan het model toegeschreven.
+wordt niet uitsluitend aan het model toegeschreven. Op de M3 Max voltooide een
+latere Q8-duurproef de dertig minuten technisch (380 warme turns, nul fouten, tien
+koude starts, vijf onderbrekingen, geen swapgroei), maar elke NL-turn bevatte nog
+de kloktijdfout; ook dat kwalificeert niets
+([M3-bewijs](live-translation-acceptance.md#m3-max-productiepromptmatrix-10-november-2026)).
 
 De eigenaar beoordeelde twee hoorbare MP3-voorbeelden met “goed”. Nieuwe
 menselijke opnamen, dertig beoordeelde turns per richting, gesproken betekenis,

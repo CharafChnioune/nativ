@@ -229,6 +229,28 @@ final class ArtifactFileIndexTests: XCTestCase {
     }
 
     @MainActor
+    func testCoordinatorReceivesSessionSaveFromBackgroundExecutor() async throws {
+        let fixture = try fixture(), session = fixture.session()
+        let coordinator = ArtifactFileIndexCoordinator(root: fixture.chatRoot, indexURL: fixture.database)
+        let encoded = try JSONEncoder().encode(session)
+        let chatRoot = fixture.chatRoot, mediaRoot = fixture.root.appending(path: "Media")
+        // Chat saves and NotificationCenter delivery can occur off MainActor.
+        // Construct non-Sendable stores within the detached task itself.
+        let saved = try await Task.detached {
+            let session = try JSONDecoder().decode(ChatSession.self, from: encoded)
+            return ChatSessionStore(chatDirectory: chatRoot, mediaStore: .init(rootDirectory: mediaRoot)).saveSession(session)
+        }.value
+        XCTAssertTrue(saved)
+        for _ in 0..<100 {
+            if try await !coordinator.worker.search("quokka").isEmpty { break }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        let indexed = try await coordinator.worker.search("quokka")
+        XCTAssertEqual(indexed.count, 1)
+        withExtendedLifetime(coordinator) {}
+    }
+
+    @MainActor
     func testCoordinatorIndexesOnLaunchAndTracksSavesWithoutOpeningArtifacts() async throws {
         let fixture = try fixture()
         var session = fixture.session()

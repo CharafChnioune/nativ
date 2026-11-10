@@ -37,11 +37,12 @@ protocol GitHubOAuthCredentialStoring: Sendable {
 }
 
 struct KeychainGitHubOAuthCredentialStore: GitHubOAuthCredentialStoring {
+    static let defaultService = NativBuildIdentity.identifier("github-oauth")
     private let service: String
     private let account: String
 
     init(
-        service: String = "dev.nativ.github-oauth",
+        service: String = Self.defaultService,
         account: String = "github.com"
     ) {
         self.service = service

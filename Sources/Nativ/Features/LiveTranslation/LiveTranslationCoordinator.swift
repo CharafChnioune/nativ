@@ -50,6 +50,7 @@ final class LiveTranslationCoordinator: ObservableObject {
     private let systemCapture = TranslationSystemAudioCapture()
     private let playback = TranslationAudioPlayback()
     private var session: TranslationSession?
+    private var computeLease: GenerationComputeLease?
     private var segmenter: TranslationSpeechSegmenter?
     private var runID = UUID()
     private var inputEpoch = UUID()
@@ -204,6 +205,9 @@ final class LiveTranslationCoordinator: ObservableObject {
             guard let self else { return }
             defer { if self.preparationOperations.isCurrent(token) { self.isPreparingRecognition = false } }
             do {
+                let preparationLease = try GenerationComputeLease.acquire()
+                defer { preparationLease.close() }
+                try await preparationLease.prepareServerMemory(self.configurationProvider?())
                 try await self.preparationOperations.perform(token: token) { try await prepare(values) }
                 self.status = "Whisper tokenizer verified. Model weights are managed in Models."
             } catch is CancellationError { }
@@ -222,6 +226,9 @@ final class LiveTranslationCoordinator: ObservableObject {
             guard let self else { return }
             defer { if self.preparationOperations.isCurrent(token) { self.isPreparingSpeech = false } }
             do {
+                let preparationLease = try GenerationComputeLease.acquire()
+                defer { preparationLease.close() }
+                try await preparationLease.prepareServerMemory(self.configurationProvider?())
                 let message = try await self.preparationOperations.perform(token: token) { try await prepare(values) }
                 self.status = message
             } catch is CancellationError { }
@@ -297,6 +304,10 @@ final class LiveTranslationCoordinator: ObservableObject {
             await self.teardown?.value
             await previousSession?.stop()
             do {
+                try self.check(id)
+                let acquired = try GenerationComputeLease.acquire()
+                self.computeLease = acquired
+                try await acquired.prepareServerMemory(self.configurationProvider?())
                 try self.check(id)
                 let values = self.settings.value
                 let configuration = self.settings.configuration
@@ -389,12 +400,14 @@ final class LiveTranslationCoordinator: ObservableObject {
         state = next; status = message
         let old = session; session = nil; segmenter = nil
         let previous = teardown
+        let previousComputeLease = computeLease; computeLease = nil
         teardown = Task { [capture, systemCapture, runtime, cascadeRuntime] in
             await previous?.value
             await capture.stopAndWait()
             await systemCapture.stopAndWait()
             await old?.stop()
             if unload { await runtime.stop(); await cascadeRuntime.stop() }
+            previousComputeLease?.close()
         }
         updateOverlay()
     }

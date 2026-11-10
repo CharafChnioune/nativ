@@ -1,0 +1,51 @@
+{
+  "date": "2026-11-10",
+  "evidence_class": "real model runs through the repo harness with synthetic speech; technical transport only, no human review",
+  "qualified": false,
+  "human_review": null,
+  "host": "Apple M3 Max, 128 GB, macOS 27.2, LANG=nl_NL.UTF-8",
+  "harness": "scripts/benchmarks/live_translation/run_matrix.py --contract build/translation-contract (production prompt and output guard)",
+  "harness_revision": "b79f6803 (memory and swap telemetry read with LC_ALL=C)",
+  "fixtures": {
+    "nl": "De afspraak is om half vier, niet om vier uur.",
+    "en": "Please book two seats for Friday, not for Thursday.",
+    "origin": "macOS say, synthetic; same WAV bytes for Q8_0 and Q4_K_M"
+  },
+  "first_attempt": "both matrices aborted in the baseline ('memory guard unavailable during baseline: ValueError') because sysctl prints '619,69M' under nl_NL; fixed in b79f6803, which also fixed the generation server's MemoryGuard",
+  "columns": ["probe", "first_text_s", "first_audio_s", "done_s", "audio_bytes", "output_guard_accepted", "text"],
+  "Q8_0": {
+    "status": "completed-technical-only-unqualified",
+    "failed_probe_count": 0,
+    "probes": [
+      ["nl direct", 0.669, 0.994, 1.492, 149760, true, "The call is at half past four, not at four o'clock."],
+      ["nl two-pass (text pass)", 0.185, null, 0.27, 0, true, "The call is at half past four, not at four o'clock."],
+      ["en direct", 0.193, 0.239, 0.768, 153600, true, "Bekijk twee zitjes voor vrijdag, niet voor donderdag."],
+      ["en two-pass (text pass)", 0.187, null, 0.325, 0, true, "Vul alstublieft twee zitplaatsen voor vrijdag, niet voor donderdag."],
+      ["tts nl", null, 0.045, 0.565, 353280, null, null],
+      ["tts en", null, 0.045, 0.611, 384000, null, null]
+    ],
+    "memory": {"samples": 20, "max_pressure_level": 1, "peak_helper_rss_bytes": 2872688640, "baseline_swap_mib": 619.69, "peak_swap_growth_mib": 0.0}
+  },
+  "Q4_K_M": {
+    "status": "completed-technical-only-unqualified",
+    "failed_probe_count": 0,
+    "probes": [
+      ["nl direct", 0.471, 0.507, 0.935, 157440, true, "The call is at half past four, not at four o'clock."],
+      ["nl two-pass (text pass)", 0.183, null, 0.249, 0, true, "The call is at half past four, not at four o'clock."],
+      ["en direct", 0.181, 0.218, 0.658, 157440, true, "Bekijk twee zitjes voor vrijdag, niet voor dinsdag."],
+      ["en two-pass (text pass)", 0.212, null, 0.291, 0, true, "Vergeten twee zitjes voor vrijdag, niet voor dinsdag."],
+      ["tts nl", null, 0.043, 0.438, 322560, null, null],
+      ["tts en", null, 0.043, 0.497, 368640, null, null]
+    ],
+    "memory": {"samples": 14, "max_pressure_level": 1, "peak_helper_rss_bytes": 2119761920, "baseline_swap_mib": 611.69, "peak_swap_growth_mib": 0.0}
+  },
+  "content_findings": {
+    "time": "half vier (15:30) became 'half past four' (16:30) in all four NL->EN texts, direct and two-pass, Q8 and Q4; the same error as on the 16 GB Mac",
+    "subject": "'De afspraak' became 'The call' in all four NL->EN texts (the 16 GB Mac had 'The appointment')",
+    "action": "Q8 turned 'book' into 'Bekijk'/'Vul'; Q4 into 'Bekijk'/'Vergeten'",
+    "weekday": "Q4 only: Thursday became dinsdag (Tuesday), direct and two-pass",
+    "production_output_guard": "the LFM3 path runs validateOutput only (target language, no source transcript): all eight texts accepted",
+    "full_content_guard_with_source": "rejects the half-hour error (unsupportedOutput, clock time differs); accepts the Thursday->dinsdag swap because weekday names are not compared (open gap)"
+  },
+  "status_change": "none: LFM3 stays unqualified"
+}

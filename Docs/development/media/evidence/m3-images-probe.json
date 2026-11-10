@@ -1,0 +1,26 @@
+{
+  "date": "2026-11-10",
+  "evidence_class": "real model runs: FLUX.2-klein-4B through the Images endpoint of the relocated ad-hoc candidate; not mocks",
+  "qualified": false,
+  "human_image_review": null,
+  "machine": "Apple M3 Max (16 cores), 128 GiB unified memory, macOS 27.2",
+  "candidate": "2e5bf71e",
+  "model": "black-forest-labs/FLUX.2-klein-4B",
+  "model_revision": "e7b7dc27",
+  "license": "Apache-2.0 (ungated)",
+  "defaults": {"generate": {"steps": 4, "guidance": 1.0}, "edit": {"steps": 4, "guidance": 1.0}},
+  "columns": ["run", "http", "seconds", "status_latency_n", "status_latency_p50_ms", "status_latency_max_ms"],
+  "runs": [
+    ["generate, cold (first load)", 200, 162.59, 314, 10.6, 188.3],
+    ["generate, warm, same seed and prompt", 200, 14.36, 29, 2.2, 3.8],
+    ["generate, warm, other seed and prompt", 200, 14.67, 29, 2.3, 14.2],
+    ["edit (first edit)", 200, 29.06, 57, 2.3, 11.8]
+  ],
+  "output_size": "1024x1024",
+  "determinism": "the warm run with the same seed and prompt produced a PNG byte-identical to the cold run",
+  "server_process_rss_after_bytes": {"generate_model_loaded": 10012409856, "generate_and_edit_models_loaded": 17936531456},
+  "swap": "619.69M before and after (no growth)",
+  "first_attempt": "candidate 6f4ae0c3: HTTP 500 for every request; the Images thread re-acquired its own compute flock through host-wrapped model loading; fixed in 21e2f89c",
+  "residual_risk": "unknown Images request parameters are accepted (HTTP 200) and ignored: upstream request models (FlexibleBaseModel), unchanged in this fork",
+  "probe_note": "a relative reference-image path is rejected because the server resolves it against its own working directory; the probe used absolute paths"
+}

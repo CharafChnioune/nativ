@@ -319,6 +319,7 @@ struct ArtifactsView: View {
     }
 
     private func documentTextChunks(for artifact: Artifact) async -> [String] {
+        guard artifact.kind != .audio else { return [] }
         guard let url = store.fileURL(for: artifact) else { return [] }
         switch artifact.kind {
         case .image:
@@ -327,7 +328,7 @@ struct ArtifactsView: View {
                 return Self.chunkedText(text, maxChunks: 4, chunkSize: 1200)
             }
             return []
-        case .video:
+        case .video, .audio:
             return []
         case .document:
             let ext = artifact.fileExtension.lowercased()
@@ -409,6 +410,7 @@ struct ArtifactsView: View {
     }
 
     private func visualDataURLs(for artifact: Artifact) async -> [String] {
+        guard artifact.kind != .audio else { return [] }
         guard let url = store.fileURL(for: artifact) else { return [] }
         switch artifact.kind {
         case .image:
@@ -421,7 +423,7 @@ struct ArtifactsView: View {
             }.value
         case .video:
             return await Self.videoFrameDataURLs(url: url, count: 4)
-        case .document:
+        case .document, .audio:
             return []
         }
     }
@@ -532,7 +534,7 @@ struct ArtifactsView: View {
             .keyboardShortcut(.defaultAction)
             Button("Cancel", role: .cancel) { pendingDelete = [] }
         } message: {
-            Text("This will move each file to the \(ArtifactTrash.localizedName) and remove it from linked chats and image sessions. Use Put Back in the \(ArtifactTrash.localizedName) to restore it.")
+            Text("Local files move to the \(ArtifactTrash.localizedName). Generated music and video unlink only their selected generation session usage, then move to the server’s recoverable Trash when no other usages remain. Restore generated originals in their workspace; use Put Back for local files.")
         }
         .alert("Some files could not be removed", isPresented: $showsDeletionFailure) {
             Button("OK", role: .cancel) {}

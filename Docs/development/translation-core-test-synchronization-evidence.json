@@ -111,5 +111,77 @@
       "held stop is released before cleanup on throwing paths"
     ],
     "scope": "Source-only review; reviewer did not rerun tests."
+  },
+  "m3_followup_2026_11_09": {
+    "scope": "Test synchronization only; TranslationSession.swift unchanged (sha256 below equals c24781b7).",
+    "product_commit": "c24781b73e64aec7a853b8f44ea0fe2465f1b5e6",
+    "tested_source_sha256": "87280159c2557189e3f973e55f6a24d1302f14ec7910a91de6543c6bf758d564",
+    "production_source_sha256": "18c7c13bbcd9d40ba9970a28e7b6845cf89afaa15ef95ed4a5d2bcc2deb2a240",
+    "observed_ci": {
+      "pull_request": {
+        "run": 42529898161,
+        "native_job": 128881584720,
+        "artifact_id": 13637717303,
+        "result": "failure",
+        "failures": [
+          "stopCancelsOutstandingSendBeforeReleaseBarrier(): TranslationCoreTests.swift:529 await backend.didStop",
+          "newSpeechDuringContextReleaseWaitsForFreshStart(): TranslationCoreTests.swift:639 frames.last?.turnID == next (next line lastFailure == nil passed)"
+        ]
+      },
+      "independent_push": {
+        "run": 42529891583,
+        "result": "success",
+        "same_product_and_tests": true
+      },
+      "handoff_head_6968e4ff": "Both macOS jobs cancelled after 15 minutes without a runner; no native evidence for that head."
+    },
+    "cause": "settle() (100 x Task.yield) was used as proof that multi-hop chains finished: stop -> cancel -> fixture onCancel Task -> release -> barrier -> backend.stop (7 hops) and rollover release -> restart -> promote -> send (10-12 hops). Yields give no ordering guarantee under parallel load. No product race: stop() cancels registered sends in invalidate() before queueing backend.stop behind the barrier; lastFailure == nil with the frame still missing means rollover was still in progress.",
+    "fix": {
+      "settle_sites_replaced": 22,
+      "fixed_yield_loops_replaced": 6,
+      "settle_removed": true,
+      "method": "Existing waitForCoreMilestone (2-second bound, unchanged) on the real milestone, or reordering to await the actual host event; negative checks now follow a positive milestone (EventCollector reader where the host event is the only observable).",
+      "added_assertion": "stopCancelsOutstandingSendBeforeReleaseBarrier: sendContinuation == nil when didStop is seen, before the test's fallback release.",
+      "no_skips_timeout_increase_or_assert_removal": true
+    },
+    "deterministic_red_green": {
+      "probe": "Temporary 50 ms Task.sleep at the fixture model boundary (SendingBackend.stop, ControlledBackend.send); not committed.",
+      "old_tests": {
+        "failed_tests": 3,
+        "failures": [
+          "stopCancelsOutstandingSendBeforeReleaseBarrier: await backend.didStop",
+          "newSpeechDuringContextReleaseWaitsForFreshStart: frames.last?.turnID == next",
+          "contextRollsAtTurnBoundaryWithoutInvalidatingCommittedOutput"
+        ]
+      },
+      "new_tests": {
+        "passed": 34,
+        "failed": 0
+      }
+    },
+    "stress_without_probe": {
+      "load": "16 busy-loop processes on 16 cores; swift test --parallel --skip-build",
+      "old": {
+        "runs": 15,
+        "failing_runs": 2,
+        "failures": [
+          "interruptionKeepsWaitingTurnAndRejectsOldGenerationEvents @214",
+          "committedDirectAudioReachesHostBeforeTurnCompletion @255"
+        ]
+      },
+      "new": {
+        "runs": 15,
+        "failing_runs": 0
+      }
+    },
+    "green_local": {
+      "swift_test_parallel": {
+        "xctest_passed": 51,
+        "swift_testing_passed": 34,
+        "failed": 0
+      }
+    },
+    "machine": "Apple M3 Max, 128 GiB, macOS 27.2, Xcode 27.2 / Swift 6.4.2",
+    "review_followup": "Independent review: tentativeTwoPassTextCannotTriggerSpeech now waits for the ordered host .failure event before the audio-absence check, so a regression that forwards audio before failing cannot pass while the reader lags."
   }
 }

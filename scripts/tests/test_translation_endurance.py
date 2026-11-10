@@ -75,6 +75,13 @@ class EnduranceGuardTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             ENDURANCE.parse_swap_mib('unknown')
 
+    def test_system_commands_run_in_the_c_locale(self):
+        # Under LANG=nl_NL sysctl prints "used = 619,69M", which parse_swap_mib cannot read.
+        from unittest.mock import patch
+        with patch.object(ENDURANCE.subprocess, 'check_output', return_value='x\n') as run:
+            ENDURANCE.command(['sysctl', '-n', 'vm.swapusage'])
+        self.assertEqual('C', run.call_args.kwargs['env']['LC_ALL'])
+
     def test_partial_port_is_not_accepted_before_delimiter(self):
         self.assertIsNone(ENDURANCE.listening_port('listening on http://127.0.0.1:4'))
         self.assertEqual(41234, ENDURANCE.listening_port('listening on http://127.0.0.1:41234\n'))

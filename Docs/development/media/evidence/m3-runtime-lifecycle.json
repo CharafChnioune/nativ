@@ -1,0 +1,104 @@
+{
+  "dates": ["2026-11-09", "2026-11-10"],
+  "evidence_class": "real packaged app and real runtime setup: downloads of pinned weights, isolated runtime builds, worker handshakes and real jobs for the flows; no generation-quality claim",
+  "machine": "Apple M3 Max (16 cores), 128 GiB unified memory, macOS 27.2, Xcode 27.2 / Swift 6.4.2 (CI: GitHub macos-26 runners, Xcode 26.6)",
+  "candidates": {
+    "181a78c3": "first relocated ad-hoc candidate",
+    "f17ea0a9": "Wan r1",
+    "29cbf1f4": "4 GiB MLX cache limit; Wan r2",
+    "3f92ecdf": "Wan r3 (4/4); LTX r1",
+    "fca2a3d3": "LTX r2",
+    "5288300c": "outdated-runtime refusal, repairs of all four profiles, LTX r3",
+    "6f4ae0c3": "product code measured here: LTX r4, video cancellation, shared job flows, server SIGKILL",
+    "2e5bf71e": "Images probe (m3-images-probe.json)",
+    "b79f6803": "memory and swap telemetry read with LC_ALL=C; harness for the Translate matrix and endurance run (../../translation-m3-matrix-evidence.json, ../../translation-m3-endurance-evidence.json)"
+  },
+  "memory_guard_locale": "before b79f6803 the MemoryGuard parsed sysctl/memory_pressure output in the inherited locale; under nl_NL.UTF-8 ('used = 619,69M') it read nothing, so its swap-growth and critical-pressure stops were off whenever the server inherited that locale; now LC_ALL=C",
+  "server": "headless launcher inside the relocated candidate (Contents/Frameworks/NativServerKit.framework/Resources/mlx-vlm-server/bin/mlx-vlm-server), 127.0.0.1:8181, bearer key; same code path the app starts",
+  "api": {
+    "no_bearer": 401,
+    "mutation_without_store_header": 428,
+    "wrong_store": 409,
+    "acestep_install_or_repair": 409,
+    "store_id_kept_across_restart_and_app_upgrade": true
+  },
+  "codesign_valid_before_and_after_server_start_and_import_verification": true,
+  "runtime_setup": {
+    "note": "Chronological. delta_bytes = growth of the generation data root during the action, concurrent activity included. stages = observed state transitions as stage@seconds; 'downloading' after 'building_runtime' is the pinned source archive. Repair re-hashes every model file in 'preparing' and rebuilds the runtime; Remove retires only the runtime folder and keeps verified models.",
+    "columns": ["started_unix", "profile", "action", "final", "wall_s", "delta_bytes", "stages"],
+    "entries": [
+      [1794255708, "stable-audio-3-small-local", "install", "ready", 52.52, 2212052992, "preparing@0.00 downloading@1.02 building_runtime@36.39 downloading@49.48 installed@52.52"],
+      [1794256032, "minimax-music3-mxfp8-local", "install", "ready", 256.99, 15000420352, "preparing@0.01 downloading@1.03 building_runtime@250.93 verifying_worker@255.98 installed@256.99"],
+      [1794258692, "stable-audio-3-small-local", "repair", "ready", 2.02, 309547008, "preparing@0.01 building_runtime@1.01; observation ended while building (setup-lease holder for the next entry)"],
+      [1794258696, "minimax-music3-mxfp8-local", "repair", "ready", 2.02, 487694336, "stopped@0.00; refused with compute_busy while the Stable repair held the setup lease; existing install stayed ready; delta is the concurrent Stable build"],
+      [1794258727, "stable-audio-3-small-local", "repair", "ready", 17.16, 0, "preparing@0.01 building_runtime@1.01 downloading@13.11 verifying_worker@16.14 installed@17.16"],
+      [1794258744, "stable-audio-3-small-local", "remove", "not_installed", 0.32, -497602560, "not_installed@0.32; runtime retired, models kept"],
+      [1794258745, "stable-audio-3-small-local", "install", "ready", 15.12, 497602560, "preparing@0.01 building_runtime@1.01 downloading@13.10 installed@15.12; verified models reused"],
+      [1794258760, "minimax-music3-mxfp8-local", "repair", "ready", 13.12, 0, "preparing@0.01 building_runtime@6.05 verifying_worker@11.09 installed@13.12"],
+      [1794258785, "wan2.2-ti2v-5b-q8-local", "install", "ready", 379.92, 20826030080, "preparing@0.01 downloading@1.02 building_runtime@342.62 downloading@378.90 installed@379.92"],
+      [1794259166, "ltx-2.3-distilled-local", "install", "ready", 1335.53, 74922565632, "preparing@0.01 downloading@1.02 building_runtime@1306.17 downloading@1334.51 installed@1335.53"],
+      [1794262571, "wan2.2-ti2v-5b-q8-local", "repair", "ready", 41.56, -126980096, "preparing@0.01 building_runtime@8.11 downloading@38.52 verifying_worker@39.53 installed@41.56"],
+      [1794262613, "ltx-2.3-distilled-local", "repair", "ready", 61.76, 0, "preparing@0.01 building_runtime@29.35 downloading@58.71 verifying_worker@59.72 installed@61.76"],
+      [1794262676, "minimax-music3-mxfp8-local", "repair", "ready", 13.17, 36864, "preparing@0.01 building_runtime@6.08 verifying_worker@12.16 installed@13.17"],
+      [1794262690, "stable-audio-3-small-local", "repair", "ready", 17.25, 0, "preparing@0.01 building_runtime@1.02 downloading@13.18 verifying_worker@16.22 installed@17.25"]
+    ]
+  },
+  "repairs_without_download_s": {
+    "5288300c": {"ltx-2.3-distilled-local": 61.5, "wan2.2-ti2v-5b-q8-local": 40.36, "minimax-music3-mxfp8-local": 13.1, "stable-audio-3-small-local": 19.23},
+    "6f4ae0c3": {"ltx-2.3-distilled-local": 59.63, "wan2.2-ti2v-5b-q8-local": 39.47}
+  },
+  "outdated_runtime": {
+    "cause": "builders copy nativ_generation and nativ_<modality> into each runtime and workers import that copy, so an app update leaves the old worker code in place until Repair",
+    "measured_on_5288300c": "submit HTTP 409 runtime_outdated before any job or worker; the model list still showed the profile ready",
+    "since_2e5bf71e_from_code": "readiness unavailable with 'Repair this runtime: it holds worker code from another Nativ build.'; submit 409 provider_unavailable with that reason; dispatch and recovery still refused with runtime_outdated as a second line; not yet measured on the M3",
+    "granularity": "a nativ_video-only change left the music runtimes valid (a Stable job succeeded without Repair); a nativ_generation change needs one Repair per installed profile, without download"
+  },
+  "cancel_probes": {
+    "scope": "MiniMax Music3 jobs; aimed at the preparing stage, all three landed in generating (LTX cancellation is in m3-video-qualification.json)",
+    "columns": ["delay_s", "stage_at_cancel", "final", "cancel_to_terminal_s", "cancel_to_worker_exit_s", "leftover_workers"],
+    "rows": [
+      [2.0, "generating", "cancelled", 0.06, null, 0],
+      [60.0, "generating", "cancelled", 0.06, null, 0],
+      [45.0, "generating", "cancelled", 0.06, 0.08, 0]
+    ]
+  },
+  "scheduler": {
+    "one_compute_job_at_a_time": "a second job waited 139.7 s in queued while the first ran",
+    "concurrent_setup": "refused with compute_busy while another setup held the lease; the existing install stayed ready"
+  },
+  "responsiveness_during_music_inference_ms": {
+    "/health": {"p50": 1.8, "p95": 628, "max": 1370},
+    "/v1/music/server-state": {"p50": 1.0, "p95": 3.7},
+    "/v1/music/generations": {"p50": 1.4, "p95": 3.7}
+  },
+  "shared_job_flows": {
+    "candidate": "6f4ae0c3",
+    "profile": "stable-audio-3-small-local with 10 s clips, unless noted",
+    "idempotency": "same Idempotency-Key replayed: 202 and the same job; changed body under that key: 409 idempotency_conflict; the job succeeded",
+    "two_clients": "both clients saw succeeded and the same asset",
+    "worker_sigkill": "1 worker killed: the job ended failed/worker_failed 0.11 s later, 0 leftover workers; the next job was accepted (202) and succeeded",
+    "twenty_sequential_jobs": {"succeeded": 20, "seconds": 38.1, "server_rss_bytes_before_after": [171081728, 171524096], "open_files_before_after": [56, 56], "workers_after": 0},
+    "translate_flock_held_externally": "same lock file as the generation compute lease: submit 202; after 3 s still queued with 0 workers; after the release the job ran and succeeded (observed 1.99 s later); 0 leftover workers",
+    "server_sigkill_during_ltx_job": "20 s into generating: guardian and worker gone within 0.02 s, 0 orphans; after restart the job was interrupted (not re-run), the server idle, the store ID unchanged and the compute flock free; the killed process's owner text stays in the lock file until the next acquire overwrites it"
+  },
+  "evidence_separation": {
+    "unit_and_mock_tests_no_models": {
+      "native_full_round_181a78c3": {"tests": 1906, "passed": 1896, "failed": 0, "skipped": 10, "required_classes": 29},
+      "packaged_interpreter_python": {"passed": 341, "total": 341, "candidates": "each candidate from f17ea0a9 to 6f4ae0c3"},
+      "python_3_12_venv": {"ok": 341, "opt_in_skips": 1},
+      "ci_live_translate_validation_success": {
+        "bbfb61b2": {"push_run": 42689873987, "pr_run": 42689884606},
+        "f17ea0a9": {"push_run": 42699682243, "pr_run": 42699692503}
+      },
+      "ci_note": "Each listed run includes the native app tests and the Required validation gate. Later heads are not recorded here."
+    },
+    "codec_probes": "none in these receipts; the earlier FFmpeg 9.0.2 marker fixture (video-runtime-qualification.md) validates media plumbing only",
+    "real_model_runs": "m3-music-qualification.json (30 music generations), m3-video-qualification.json (8 clips), m3-images-probe.json (4 image requests), ../../translation-m3-matrix-evidence.json (Q8_0 and Q4_K_M, 6 probes each) and ../../translation-m3-endurance-evidence.json (Q8_0, 380 warm turns); the shared job flows above ran real Stable Audio and LTX jobs"
+  },
+  "not_covered": [
+    "human listening/viewing review, human Translate recordings and physical UI tests (owner: not now)",
+    "MiniMax H3: blocked (no checkpoint inventory; license excludes the EU)",
+    "Developer ID signing, notarisation and a real Sparkle upgrade",
+    "16 GB Macs"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "id": "mlx-vlm-0.7.12-images-serial-mlx-v1",
+  "package": "mlx-vlm",
+  "version": "0.7.12",
+  "path": "mlx_vlm/server/openai.py",
+  "source_sha256": "382e410e0d2ed00e5fb4294bf0c44fd4c1f63bfbad4c6b6c0d52513c342c83e5",
+  "patched_sha256": "30d48c8fdbde14696e3b35498561e9156cb1dd4476eaac7df0cbdf69ecacafbe",
+  "source_wheel_sha256": "0412a883ed5f0ee2fe65e6c050819ae586ac76f1811f94a373b6293e92568e37",
+  "scope": [
+    "images_generations_endpoint",
+    "images_edits_endpoint"
+  ],
+  "qualification": "contract_only_real_mlx_generation_and_edit_required"
+}

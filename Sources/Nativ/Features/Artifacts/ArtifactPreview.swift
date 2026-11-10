@@ -68,7 +68,7 @@ struct ArtifactPreview: View {
             Spacer(minLength: 0)
 
             Button(action: { onOpenChat(artifact) }) {
-                Label("Open in Chat", systemImage: "bubble.left.and.bubble.right")
+                Label(artifact.workspace == .musicGeneration ? "Open in Music" : artifact.workspace == .videoGeneration ? "Open in Video" : "Open in Chat", systemImage: "bubble.left.and.bubble.right")
             }
             .buttonStyle(.bordered)
             .tint(.white)
@@ -95,8 +95,10 @@ struct ArtifactPreview: View {
                 } else {
                     unavailable
                 }
+            case .audio:
+                GenerationLocalMediaPreview(url: url)
             case .video:
-                ArtifactVideoPlayer(url: url)
+                GenerationLocalMediaPreview(url: url, isVideo: true)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             case .document:
                 ArtifactDocumentPreview(url: url, isWorkFile: artifact.workFileURL != nil)
@@ -170,30 +172,6 @@ struct ArtifactPreview: View {
             return
         }
         selectedID = artifacts[index + 1].id
-    }
-}
-
-private struct ArtifactVideoPlayer: NSViewRepresentable {
-    let url: URL
-
-    func makeNSView(context: Context) -> AVPlayerView {
-        let view = AVPlayerView()
-        view.controlsStyle = .inline
-        view.videoGravity = .resizeAspect
-        view.player = AVPlayer(url: url)
-        return view
-    }
-
-    func updateNSView(_ nsView: AVPlayerView, context: Context) {
-        let currentURL = (nsView.player?.currentItem?.asset as? AVURLAsset)?.url
-        if currentURL != url {
-            nsView.player = AVPlayer(url: url)
-        }
-    }
-
-    static func dismantleNSView(_ nsView: AVPlayerView, coordinator: ()) {
-        nsView.player?.pause()
-        nsView.player = nil
     }
 }
 

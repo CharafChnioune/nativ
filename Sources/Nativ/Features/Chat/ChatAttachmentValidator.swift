@@ -31,6 +31,8 @@ actor ChatAttachmentValidator {
                 return .blocked(message: "“\(attachment.filename)” is empty or couldn’t be read.")
             }
             return .ready
+        case .generatedMedia:
+            return .ready
         case .document:
             return nil
         case .unsupported:

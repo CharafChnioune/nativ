@@ -1,0 +1,47 @@
+{
+  "native": {
+    "revision": "47eeae864cbec5b632f4fe84e300a6e4cf39f3cb",
+    "passed": 1895,
+    "skipped": 10,
+    "failed": 0,
+    "required_classes_executed": 29,
+    "note": "Native source unchanged in subsequent runtime-installation and fixture-isolation commits."
+  },
+  "swift_package": {
+    "passed": 34,
+    "failed": 0
+  },
+  "packaged_python": {
+    "product_revision": "ce9719ddb0e5b7ddc2767a9eba209decd9bb3910",
+    "passed": 337,
+    "failed": 0,
+    "skipped": 0,
+    "test_fixture_sha256": "5708fb0f2d8af0da9a65d592c670885d57047f950cf93e306723efab92643b50",
+    "note": "Complete app lifespan fixture isolated in its own process; real Images coordinator remains exercised. NATIV_CASCADE_RUNTIME_CHECK=1, no weights loaded."
+  },
+  "packaged_server_smoke": {
+    "authenticated": true,
+    "same_music_video_store": true,
+    "music_profiles": 7,
+    "video_profiles": 9,
+    "all_profiles_unqualified": true,
+    "health_status": 200,
+    "chat_route_present": true,
+    "model_inference": false,
+    "paid_calls": false
+  },
+  "limitations": [
+    "No Music/Video model weights, full model installations or real generations qualified.",
+    "Native UI snapshots and codec marker fixtures are not generated-model outputs.",
+    "Developer ID/notarisation/actual Sparkle upgrade validation deferred.",
+    "Exact final GitHub gate and merge receipts belong to PR #2."
+  ],
+  "local_evidence_sha256": {
+    "build/validation/media-native-final-47eeae86.log": "e5f78843881fb66bcfe8ba0eea91c03196795f5344578e49eb16b894c0645e17",
+    "build/validation/media-native-summary-47eeae86.json": "1ea13a71094ea103e026f3e44e9c3ddeadbb6cc1e51dadd39f6127f3801563dc",
+    "build/validation/media-final-build-ce9719dd.log": "e169752cb221031783c6501308aabfd3e9adf9c4f87df0b35fbaa3bf1626d9f8",
+    "build/validation/media-packaged-python-fixturefix.log": "3eb42dd473b563c3ed2762797b56570a93b71b0d6f496b7daedfb91bad6c4a2e",
+    "build/validation/media-packaged-smoke-ce9719dd.log": "d76ea5217a864c0a01471a6210bcdad4756173a3c9c3f7aafc49440738e297c8",
+    "build/validation/media-swift-repaired.log": "e0a0d53e18a4123f0236b465bc27230d619dd552032eb9e5ae7af31931c39500"
+  }
+}

@@ -94,6 +94,7 @@ final class ArtifactTrash: ObservableObject {
     }
 
     func delete(_ artifact: Artifact) throws {
+        guard artifact.serviceReference == nil else { throw RecoveryError.conflict }
         guard !FileManager.default.fileExists(atPath: recordURL(artifact.id).path) else { throw RecoveryError.saveFailed }
         guard !records.contains(where: { $0.id == artifact.id }),
               let asset = artifact.asset, let url = media.fileURL(for: asset) else { throw RecoveryError.missing }
@@ -118,6 +119,8 @@ final class ArtifactTrash: ObservableObject {
                     guard var session = chatSessions.first(where: { $0.id == id }) else { return false }
                     session.removeArtifact(artifact.id)
                     guard chats.saveSession(session) else { return false }
+                case .musicGeneration, .videoGeneration:
+                    return false
                 case .imageGeneration:
                     guard var session = imageSessions.first(where: { $0.id == id }) else { return false }
                     session.removeArtifact(artifact.id)

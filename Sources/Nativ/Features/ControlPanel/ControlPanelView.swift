@@ -16,6 +16,7 @@ struct ControlPanelView: View {
     let softwareUpdater: SoftwareUpdater
 
     let dependencies: ControlPanelDependencies
+    @ObservedObject var generationConnections = GenerationConnectionProfiles.shared
     @ObservedObject var projects: ChatProjectStore
     @StateObject var chromeState: ControlPanelChromeState
     @StateObject var sidebarState: ChatSidebarState
@@ -88,7 +89,9 @@ struct ControlPanelView: View {
             wrappedValue: ChatSidebarState(
                 chat: dependencies.chat,
                 imageGeneration: dependencies.imageGeneration,
-                projects: dependencies.projects
+                projects: dependencies.projects,
+                music: dependencies.musicLibrary,
+                video: dependencies.videoLibrary
             )
         )
         _contentState = StateObject(
@@ -158,6 +161,19 @@ struct ControlPanelView: View {
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         .toolbar(removing: .title)
         .frame(minWidth: 1040, minHeight: 600)
+        .task(id: generationConnections.connection(using: model)) {
+            dependencies.musicLibrary.connect(generationConnections.connection(using: model), profileID: generationConnections.selectedID)
+            dependencies.videoLibrary.connect(generationConnections.connection(using: model), profileID: generationConnections.selectedID)
+        }
+        .environmentObject(dependencies.generationHub)
+        .onReceive(NotificationCenter.default.publisher(for: .openGenerationSession)) { notification in
+            guard let reference = notification.object as? GenerationChatJobReference else { return }
+            let library = reference.modality == .music ? dependencies.musicLibrary : dependencies.videoLibrary
+            guard library.storeID == reference.storeID else { return }
+            if reference.modality == .music { dependencies.musicGeneration.selectedSessionID = reference.sessionID }
+            else { dependencies.videoGeneration.selectedSessionID = reference.sessionID }
+            selectChatWorkspaceMode(reference.modality == .music ? .music : .video)
+        }
         .environment(\.chatLibrarySearch, chatLibrarySearch)
         .sheet(isPresented: $chatLibrarySearch.isPresented) {
             ChatLibrarySearchPopup(search: chatLibrarySearch, chat: chat, artifacts: artifacts,

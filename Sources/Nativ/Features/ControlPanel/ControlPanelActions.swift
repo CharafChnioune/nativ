@@ -173,7 +173,7 @@ extension ControlPanelView {
             fileURL = chat.sessionDataFileURL(for: sessionID)
         case .imageGeneration(let sessionID):
             fileURL = imageGeneration.sessionDataFileURL(for: sessionID)
-        case .tab, .extensionPage:
+        case .tab, .extensionPage, .generation:
             fileURL = nil
         }
         guard let fileURL else {
@@ -192,6 +192,11 @@ extension ControlPanelView {
         switch recent.selection {
         case .chat(let sessionID):
             guard await deleteChatSession(sessionID) else { return }
+        case .generation(let storeID, let modality, let sessionID):
+            let library = modality == "music" ? dependencies.musicLibrary : dependencies.videoLibrary
+            guard library.storeID == storeID else { return }
+            do { try await library.updateSession(sessionID, hidden: true) }
+            catch { chatDeletionErrorMessage = error.localizedDescription; return }
         case .imageGeneration(let sessionID):
             imageGeneration.deleteSession(sessionID)
         case .tab, .extensionPage:
@@ -208,6 +213,9 @@ extension ControlPanelView {
             case .imageGeneration:
                 imageGeneration.beginNewDraft()
                 showImageWorkspace()
+            case .generation(_, let modality, _):
+                if modality == "music" { dependencies.musicGeneration.newDraft() } else { dependencies.videoGeneration.newDraft() }
+                selectChatWorkspaceMode(modality == "music" ? .music : .video)
             case .chat, .tab, .extensionPage:
                 createChatSession()
             }
@@ -271,6 +279,9 @@ extension ControlPanelView {
             return sessionID == sidebarState.currentChatSessionID
         case .imageGeneration(let sessionID):
             return sessionID == sidebarState.currentImageSessionID
+        case .generation(let storeID, let modality, let sessionID):
+            let workspace: GenerationWorkspaceModel = modality == "music" ? dependencies.musicGeneration : dependencies.videoGeneration
+            return workspace.library.storeID == storeID && workspace.selectedSessionID == sessionID
         case .tab, .extensionPage:
             return false
         }
@@ -285,7 +296,7 @@ extension ControlPanelView {
             return false
         case .imageGeneration:
             return sidebarState.isGeneratingImage
-        case .tab, .extensionPage:
+        case .tab, .extensionPage, .generation:
             return false
         }
     }
@@ -296,7 +307,7 @@ extension ControlPanelView {
             return false
         case .imageGeneration:
             return sidebarState.isGeneratingImage
-        case .tab, .extensionPage:
+        case .tab, .extensionPage, .generation:
             return false
         }
     }
@@ -395,6 +406,10 @@ extension ControlPanelView {
         switch mode {
         case .chat:
             showChatWorkspace()
+        case .music, .video:
+            chatWorkspaceMode = mode
+            selectedTab = .chat
+            sidebarSelection = .tab(.chat)
         case .images:
             imageGeneration.beginNewDraft(preservingUncommittedDraft: true)
             showImageWorkspace()

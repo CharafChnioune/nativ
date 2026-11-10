@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "id": "minimax-music3-mlx-0.6.4",
+  "profile_id": "minimax-music3-mxfp8-local",
+  "provider": "minimax_mlx",
+  "python_version": "3.12",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "source": null,
+  "lock": {
+    "path": "locks/minimax-base-macos-arm64.txt",
+    "sha256": "bc0567974fd29a75a64df379f72a82085dc5c5cd26b28617e93d27eed8f088db"
+  },
+  "worker": {
+    "module": "nativ_music.workers",
+    "args": [
+      "--runtime-id",
+      "minimax-music3-mlx-0.6.4"
+    ],
+    "protocol": 1
+  },
+  "models": {
+    "revision": "d00a12c3c7f80eb66379dd02dd0f30ed0ce2d96e",
+    "files": [
+      {
+        "path": "LICENSE",
+        "repo": "mlx-community/MiniMax-Music3-mxfp8",
+        "revision": "d00a12c3c7f80eb66379dd02dd0f30ed0ce2d96e",
+        "remote_path": "LICENSE",
+        "bytes": 7373,
+        "sha256": "b21d12df2adae59dad3fcf80c1d81492654c662342f497d9a9770198c9317e58"
+      },
+      {
+        "path": "config.json",
+        "repo": "mlx-community/MiniMax-Music3-mxfp8",
+        "revision": "d00a12c3c7f80eb66379dd02dd0f30ed0ce2d96e",
+        "remote_path": "config.json",
+        "bytes": 1607,
+        "sha256": "843a7e7affe6f348a7b087c39e7c26b4e0baced492d391dfc955760a1d9c91dc"
+      },
+      {
+        "path": "model-00001-of-00003.safetensors",
+        "repo": "mlx-community/MiniMax-Music3-mxfp8",
+        "revision": "d00a12c3c7f80eb66379dd02dd0f30ed0ce2d96e",
+        "remote_path": "model-00001-of-00003.safetensors",
+        "bytes": 5367222327,
+        "sha256": "bf401989345219258b1a9b3eb10e74faa619a626f92d089a9d6c1949d63a2817"
+      },
+      {
+        "path": "model-00002-of-00003.safetensors",
+        "repo": "mlx-community/MiniMax-Music3-mxfp8",
+        "revision": "d00a12c3c7f80eb66379dd02dd0f30ed0ce2d96e",
+        "remote_path": "model-00002-of-00003.safetensors",
+        "bytes": 5364501497,
+        "sha256": "54117b8658e1d1981b5fcd550992cd72e246bdd7433ec891bdda0033bf204a98"
+      },
+      {
+        "path": "model-00003-of-00003.safetensors",
+        "repo": "mlx-community/MiniMax-Music3-mxfp8",
+        "revision": "d00a12c3c7f80eb66379dd02dd0f30ed0ce2d96e",
+        "remote_path": "model-00003-of-00003.safetensors",
+        "bytes": 3125366332,
+        "sha256": "a71aa696d66edbe08972aece48d6304b6ae7a6ce3229dab1b496549c69ce816c"
+      },
+      {
+        "path": "model.safetensors.index.json",
+        "repo": "mlx-community/MiniMax-Music3-mxfp8",
+        "revision": "d00a12c3c7f80eb66379dd02dd0f30ed0ce2d96e",
+        "remote_path": "model.safetensors.index.json",
+        "bytes": 143381,
+        "sha256": "e093ccc6fe564d0613845368ee4e86fc13662b4474253ae8a0abb69d1976af2d"
+      },
+      {
+        "path": "scheduler/scheduler_config.json",
+        "repo": "mlx-community/MiniMax-Music3-mxfp8",
+        "revision": "d00a12c3c7f80eb66379dd02dd0f30ed0ce2d96e",
+        "remote_path": "scheduler/scheduler_config.json",
+        "bytes": 483,
+        "sha256": "b544466124aab333da4874417da0168610067e9c9ff95fcb63d749e4bf891d99"
+      },
+      {
+        "path": "tokenizer/chat_template.jinja",
+        "repo": "mlx-community/MiniMax-Music3-mxfp8",
+        "revision": "d00a12c3c7f80eb66379dd02dd0f30ed0ce2d96e",
+        "remote_path": "tokenizer/chat_template.jinja",
+        "bytes": 4168,
+        "sha256": "a55ee1b1660128b7098723e0abcd92caa0788061051c62d51cbe87d9cf1974d8"
+      },
+      {
+        "path": "tokenizer/tokenizer.json",
+        "repo": "mlx-community/MiniMax-Music3-mxfp8",
+        "revision": "d00a12c3c7f80eb66379dd02dd0f30ed0ce2d96e",
+        "remote_path": "tokenizer/tokenizer.json",
+        "bytes": 11423801,
+        "sha256": "b1537fa9e59a537276ecbc2e12d0438edff635a1f4a4948e679774b5feb3e610"
+      },
+      {
+        "path": "tokenizer/tokenizer_config.json",
+        "repo": "mlx-community/MiniMax-Music3-mxfp8",
+        "revision": "d00a12c3c7f80eb66379dd02dd0f30ed0ce2d96e",
+        "remote_path": "tokenizer/tokenizer_config.json",
+        "bytes": 377,
+        "sha256": "1689852cc9c45010de040c8302a8acdc0d2c4c6c740dd7e9dd0a8c704e16eada"
+      }
+    ],
+    "bytes": 13868671346
+  },
+  "licenses": [
+    "MIT",
+    "MiniMax-Music3-Community"
+  ],
+  "qualification": "experimental",
+  "qualified_hardware": [],
+  "minimum_memory_bytes": 34359738368,
+  "execution_ceiling_seconds": 7200,
+  "base_packages": {
+    "mlx_audio": "0.6.4",
+    "mlx": "0.32.4",
+    "transformers": "5.15.1"
+  },
+  "music_source_revision": "ecd43b9f5af55982f4e1bd810d7b60cbc3dfae23"
+}

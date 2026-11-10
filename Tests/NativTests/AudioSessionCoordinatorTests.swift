@@ -81,3 +81,34 @@ final class AudioSessionCoordinatorTests: XCTestCase {
         coordinator.release(first); coordinator.release(second)
     }
 }
+
+@MainActor
+final class GenerationAudioCoordinationTests: XCTestCase {
+    func testCaptureWaitsForInterruptibleMediaPause() async throws {
+        let coordinator = AudioSessionCoordinator()
+        var pause: CheckedContinuation<Void, Never>?
+        let media = try await coordinator.acquireInterruptiblePlayback(owner: .init(name: "Music")) {
+            await withCheckedContinuation { pause = $0 }
+        }
+        var granted = false
+        let capture = Task {
+            let lease = try await coordinator.acquire(owner: .init(name: "Translate"), resources: [.microphone, .playback])
+            granted = true
+            return lease
+        }
+        for _ in 0..<1_000 { if pause != nil { break }; await Task.yield() }
+        XCTAssertNotNil(pause)
+        XCTAssertFalse(granted)
+        XCTAssertFalse(coordinator.isActive(media))
+        pause?.resume()
+        let captureLease = try await capture.value
+        XCTAssertTrue(granted)
+        coordinator.release(media)
+        XCTAssertTrue(coordinator.isActive(captureLease))
+        do {
+            _ = try await coordinator.acquireInterruptiblePlayback(owner: .init(name: "Video"), pause: {})
+            XCTFail("Media cannot interrupt Translate")
+        } catch is AudioSessionConflict {}
+        coordinator.release(captureLease)
+    }
+}

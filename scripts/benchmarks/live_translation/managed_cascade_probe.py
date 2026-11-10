@@ -20,7 +20,7 @@ def pressure():
     if value not in (1,2,4):raise ValueError('unknown system memory pressure')
     return value
 def swap():
-    match=re.search(r'used = ([0-9.]+)M',subprocess.check_output(['sysctl','-n','vm.swapusage'],text=True))
+    match=re.search(r'used = ([0-9.]+)M',subprocess.check_output(['sysctl','-n','vm.swapusage'],text=True,env=dict(os.environ,LC_ALL='C')))  # no locale decimal comma
     if match is None:raise ValueError('unavailable system swap telemetry')
     return float(match.group(1))
 def final_telemetry(report):

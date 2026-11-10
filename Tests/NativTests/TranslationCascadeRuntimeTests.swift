@@ -4,6 +4,28 @@ import NativServerKit
 import XCTest
 
 final class TranslationCascadeRuntimeTests: XCTestCase, @unchecked Sendable {
+    func testExitedOwnedProcessCannotRetainParentComputeDescriptorAcrossRestart() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("compute.lock")
+        let lease = try GenerationComputeLease.acquire(at: url)
+        let child = Process()
+        child.executableURL = URL(fileURLWithPath: "/bin/sleep")
+        child.arguments = ["0.2"]
+        try lease.runOwnedProcess(child)
+        lease.close()
+        let outsider = Darwin.open(url.path, O_RDWR)
+        defer { Darwin.close(outsider) }
+        XCTAssertNotEqual(generationFlock(outsider, LOCK_EX | LOCK_NB), 0,
+                          "The child must keep admission until it actually exits")
+        child.waitUntilExit()
+        withExtendedLifetime(child) {
+            XCTAssertEqual(generationFlock(outsider, LOCK_EX | LOCK_NB), 0,
+                           "Retaining Process must not retain its parent-side stdin duplicate")
+            _ = generationFlock(outsider, LOCK_UN)
+        }
+    }
+
     func testOwnedRuntimeCannotInheritPreloadedModelsCloudCredentialsOrRemoteBind() {
         let environment = TranslationCascadeRuntime.sanitizedEnvironment([
             "PATH": "/usr/bin", "HOME": "/Users/example", "MLX_VLM_SERVER_API_KEY": "old",

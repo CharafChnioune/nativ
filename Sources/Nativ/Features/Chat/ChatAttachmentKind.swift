@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 enum ChatAttachmentKind: Equatable, Sendable {
     case image
+    case generatedMedia
     case document(ChatDocumentFormat)
     case unsupported
 
@@ -19,7 +20,7 @@ enum ChatWorkAttachments {
 
     static func available(in messages: [ChatTranscriptMessage]) -> [ChatImageAttachment] {
         var seen = Set<UUID>()
-        return messages.flatMap(\.imageAttachments).filter {
+        return messages.flatMap { $0.imageAttachments + $0.generationAssets.map(ChatImageAttachment.init(serviceReference:)) }.filter {
             $0.chatAttachmentKind != .unsupported && seen.insert($0.id).inserted
         }
     }
@@ -55,8 +56,18 @@ enum ChatWorkAttachments {
     @concurrent
     static func load(_ attachments: [ChatImageAttachment]) async throws -> [File] {
         var remaining = maximumBytes
-        return try attachments.map { attachment in
+        var files: [File] = []
+        for attachment in attachments {
             try Task.checkCancellation()
+            if let reference = attachment.serviceReference {
+                guard let count = reference.byteSize, count <= Int64(remaining) else { throw ChatWorkError.invalid("Generated media uploads require known size below the 64 MiB work-upload limit.") }
+                let url = try await GenerationMediaAccess.file(for: reference)
+                let data = try Data(contentsOf: url, options: .mappedIfSafe)
+                guard data.count <= Int64(remaining) else { throw ChatWorkError.invalid("Upload supports up to 64 MiB per action.") }
+                remaining -= data.count
+                files.append(File(id: attachment.id, filename: ChatAttachmentPreviewFile.safeFilename(attachment.filename), mimeType: attachment.mimeType, data: data))
+                continue
+            }
             // Bound disk reads before allocating the JavaScript bridge's base64 copy.
             let byteCount = try attachment.assetFileURL?.resourceValues(forKeys: [.fileSizeKey]).fileSize
                 ?? (attachment.base64Data.utf8.count / 4 * 3)
@@ -66,13 +77,14 @@ enum ChatWorkAttachments {
             guard let data = attachment.imageData else {
                 throw ChatWorkError.invalid("The original file “\(attachment.filename)” could not be read. Attach it again.")
             }
-            guard data.count <= remaining else {
+            guard data.count <= Int64(remaining) else {
                 throw ChatWorkError.invalid("Upload supports up to 64 MiB per action.")
             }
             remaining -= data.count
-            return File(id: attachment.id, filename: ChatAttachmentPreviewFile.safeFilename(attachment.filename),
-                        mimeType: attachment.mimeType, data: data)
+            files.append(File(id: attachment.id, filename: ChatAttachmentPreviewFile.safeFilename(attachment.filename),
+                        mimeType: attachment.mimeType, data: data))
         }
+        return files
     }
 }
 
@@ -85,6 +97,14 @@ struct ChatAttachmentPreviewFile: Sendable {
         for attachment: ChatImageAttachment,
         in temporaryDirectory: URL = .temporaryDirectory
     ) async throws -> Self {
+        if let reference = attachment.serviceReference {
+            let source = try await GenerationMediaAccess.file(for: reference)
+            let directory = temporaryDirectory.appendingPathComponent("Nativ Media Preview").appendingPathComponent(UUID().uuidString)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let copy = directory.appendingPathComponent(safeFilename(attachment.filename))
+            try FileManager.default.copyItem(at: source, to: copy)
+            return Self(url: copy, directoryURL: directory)
+        }
         guard let data = Data(base64Encoded: attachment.base64Data) else {
             throw CocoaError(.fileReadCorruptFile)
         }
@@ -132,6 +152,7 @@ extension ChatImageAttachment {
     }
 
     var chatAttachmentKind: ChatAttachmentKind {
+        if serviceReference != nil { return .generatedMedia }
         let normalizedMIMEType = mimeType
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()

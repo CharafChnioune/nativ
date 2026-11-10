@@ -1,9 +1,11 @@
 import Foundation
+import NativServerKit
 import UniformTypeIdentifiers
 
 enum ArtifactKind: String, CaseIterable, Codable, Identifiable {
     case image
     case video
+    case audio
     case document
 
     var id: String { rawValue }
@@ -12,6 +14,8 @@ enum ArtifactKind: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .image:
             "Image"
+        case .audio:
+            "Audio"
         case .video:
             "Video"
         case .document:
@@ -23,6 +27,8 @@ enum ArtifactKind: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .image:
             "Images"
+        case .audio:
+            "Audio"
         case .video:
             "Videos"
         case .document:
@@ -34,6 +40,8 @@ enum ArtifactKind: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .image:
             "photo"
+        case .audio:
+            "waveform"
         case .video:
             "film"
         case .document:
@@ -55,6 +63,7 @@ enum ArtifactKind: String, CaseIterable, Codable, Identifiable {
         if type.conforms(to: .movie) || type.conforms(to: .video) {
             return .video
         }
+        if type.conforms(to: .audio) { return .audio }
         return .document
     }
 }
@@ -101,6 +110,8 @@ struct ArtifactUsage: Codable, Equatable, Hashable, Sendable {
     enum Workspace: String, Codable, Sendable {
         case chat
         case imageGeneration
+        case musicGeneration
+        case videoGeneration
     }
 
     let workspace: Workspace
@@ -130,6 +141,9 @@ struct Artifact: Identifiable, Codable, Equatable {
     var generation: ArtifactGeneration? = nil
     var usages: [ArtifactUsage]? = nil
 
+    var serviceReference: GenerationServiceReference? = nil
+    var mediaText: String? = nil
+
     var locations: [ArtifactUsage] {
         usages ?? [ArtifactUsage(
             workspace: source == .generated ? .imageGeneration : .chat,
@@ -158,6 +172,6 @@ struct Artifact: Identifiable, Codable, Equatable {
     }
 
     var searchText: String {
-        [filename, prompt ?? "", typeLabel].joined(separator: " ").lowercased()
+        [filename, prompt ?? "", mediaText ?? "", generation?.modelID ?? "", typeLabel].joined(separator: " ").lowercased()
     }
 }

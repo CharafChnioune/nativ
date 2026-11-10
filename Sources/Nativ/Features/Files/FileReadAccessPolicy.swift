@@ -167,8 +167,10 @@ struct FileReadAccessPolicy: Sendable {
         }) {
             throw FileReadAccessError.blockedPath
         }
+        let forkData = "/library/application support/" + NativBuildIdentity.namespace
         if !permitsManagedWorktree && (lowercasePath.contains("/library/application support/nativ/")
-            || lowercasePath.hasSuffix("/library/application support/nativ"))
+            || lowercasePath.hasSuffix("/library/application support/nativ")
+            || lowercasePath.contains(forkData + "/") || lowercasePath.hasSuffix(forkData))
         {
             throw FileReadAccessError.blockedPath
         }

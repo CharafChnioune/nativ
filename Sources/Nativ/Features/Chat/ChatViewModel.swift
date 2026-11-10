@@ -305,6 +305,7 @@ final class ChatViewModel: ObservableObject {
     private var lastWorkReads: [UUID: ChatWorkItem] = [:]
     private let windowID: UUID
     private let persistedDataChanges: PersistedDataChangeHub
+    private var preparingGenerationAttachments = false
     private let inferenceActivity: InferenceActivityCoordinator
     private let documentContextBuilder: ChatDocumentContextBuilder
     private let attachmentValidator: ChatAttachmentValidator
@@ -2074,6 +2075,31 @@ final class ChatViewModel: ObservableObject {
             return
         }
 
+        if pendingImageAttachments.contains(where: { $0.serviceReference != nil && $0.serviceReference?.referenceID == nil }) {
+            guard !preparingGenerationAttachments else { return }
+            preparingGenerationAttachments = true
+            let attachments = pendingImageAttachments
+            let originalDraft = draft
+            Task { [weak self] in
+                guard let self else { return }
+                defer { preparingGenerationAttachments = false }
+                do {
+                    var prepared: [ChatImageAttachment] = []
+                    for attachment in attachments {
+                        prepared.append(attachment.serviceReference != nil && attachment.serviceReference?.referenceID == nil
+                            ? try await GenerationMediaAccess.reserve(attachment, chatID: currentSession.id) : attachment)
+                    }
+                    guard currentSessionID == currentSession.id, pendingImageAttachments == attachments, draft == originalDraft else {
+                        for attachment in prepared { if let id = attachment.serviceReference?.referenceID { try? await GenerationReferenceOutbox.shared.unlink(id: id) } }
+                        return
+                    }
+                    pendingImageAttachments = prepared
+                    preparingGenerationAttachments = false
+                    send(using: appModel, languageModelSupportsTools: languageModelSupportsTools, languageModelSupportsVision: languageModelSupportsVision)
+                } catch { attachmentImportError = error.localizedDescription }
+            }
+            return
+        }
         let untrimmedPrompt = draft
         let prompt = untrimmedPrompt.trimmingCharacters(in: .whitespacesAndNewlines)
         let pastedTexts = ChatPastedText.afterTrimming(pendingPastedTexts, draft: untrimmedPrompt)
@@ -2603,6 +2629,9 @@ final class ChatViewModel: ObservableObject {
     }
 
     func removePendingImageAttachment(_ id: UUID) {
+        if let referenceID = pendingImageAttachments.first(where: { $0.id == id })?.serviceReference?.referenceID {
+            Task { try? await GenerationReferenceOutbox.shared.unlink(id: referenceID) }
+        }
         pendingImageAttachments.removeAll { $0.id == id }
     }
 
@@ -3224,6 +3253,9 @@ final class ChatViewModel: ObservableObject {
                                 .compactMap { $0 }.filter { $0 > 0 }.min() ?? 8192
                         ),
                         huggingFaceToken: imageModelPreparationContext.huggingFaceToken,
+                        generationConnection: appModel.flatMap { GenerationConnectionProfiles.shared.connection(using: $0) },
+                        generationConnectionIdentity: appModel.flatMap { GenerationConnectionProfiles.shared.connection(using: $0) }.map { GenerationConnectionProfiles.shared.selectedID + ":" + $0.baseURL.absoluteString },
+                        generationIntentID: queuedRequest.sessionID.uuidString + ":" + (toolCall.id ?? toolMessageID.uuidString),
                         fileReadRootPath: queuedRequest.toolScope.isProject
                             ? queuedRequest.toolScope.fileReadRootPath
                             : queuedRequest.settings.fileReadRootPath,

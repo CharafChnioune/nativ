@@ -82,7 +82,7 @@ def pressure_level():
     return int(subprocess.check_output(['sysctl','-n','kern.memorystatus_vm_pressure_level'], text=True).strip())
 
 def swap_used_mib():
-    value = subprocess.check_output(['sysctl','-n','vm.swapusage'], text=True)
+    value = subprocess.check_output(['sysctl','-n','vm.swapusage'], text=True, env=dict(os.environ, LC_ALL='C'))  # no locale decimal comma
     return float(re.search(r'used = ([0-9.]+)M', value).group(1))
 
 def stop(process):

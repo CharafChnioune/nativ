@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import importlib.util
 import subprocess
 import sys
 from pathlib import Path
@@ -123,6 +124,16 @@ def sign_embedded_code(output: Path) -> None:
         subprocess.run(command, check=True)
 
 
+def refresh_codec_receipt(output: Path) -> None:
+    if not (output / "CodecRuntime" / "managed" / "receipt.json").is_file():
+        return
+    source = PYTHON_DISTRIBUTION_ROOT / "CodecRuntime" / "manage.py"
+    spec = importlib.util.spec_from_file_location("nativ_codec_receipt", source)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.refresh_signed_receipt(output)
+
+
 def main() -> None:
     output = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else default_output()
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -145,6 +156,7 @@ def main() -> None:
         command.extend(["--mlx-audio-source", str(mlx_audio_source)])
     subprocess.run(command, cwd=REPO_ROOT, check=True)
     sign_embedded_code(output)
+    refresh_codec_receipt(output)
 
 
 if __name__ == "__main__":

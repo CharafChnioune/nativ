@@ -7,6 +7,7 @@ import UserNotifications
 final class AppDelegate: NSObject, NSApplicationDelegate, @MainActor UNUserNotificationCenterDelegate {
     private let model = NativModel()
     let softwareUpdater = SoftwareUpdater()
+    private let generationShutdown = GenerationShutdownCoordinator()
     private let controlPanelDependencies = ControlPanelSharedDependencies()
     let windowRegistry = NativWindowRegistry()
     private let voiceDictationExtension = VoiceDictationExtension()
@@ -44,6 +45,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @MainActor UNUserNotif
     override init() {
         super.init()
         model.observeInferenceActivity(controlPanelDependencies.inferenceActivity)
+        model.generationStopPreflight = { [weak self] reason in
+            guard let self else { return true }
+            return await self.generationShutdown.confirmAndPrepareStop(connection: self.model.generationConnection(), reason: reason)
+        }
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -91,7 +96,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @MainActor UNUserNotif
                         languageModelID: settings.languageModelID,
                         maxTokens: settings.maxTokens,
                         serverBaseURL: self.model.activeServerBaseURL ?? settings.serverBaseURL,
-                        serverAPIKey: settings.serverAPIKey,
+                        serverAPIKey: self.model.generationConnection()?.apiKey ?? (self.model.isRunning ? nil : settings.serverAPIKey),
                         serverIsRunning: self.model.isRunning
                     )
                 },
@@ -123,9 +128,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @MainActor UNUserNotif
         guard !didFinishDownloadShutdown else { return .terminateNow }
         if downloadShutdownTask == nil {
             downloadShutdownTask = Task { [weak self, weak sender] in
-                await self?.liveTranslationExtension.coordinator.shutdownForTermination()
-                await HuggingFaceDownloadManager.shared.shutdownForTermination()
                 guard let self, let sender else { return }
+                guard await generationShutdown.confirmAndPrepareStop(connection: model.generationConnection(), reason: "Quit Nativ") else {
+                    downloadShutdownTask = nil
+                    sender.reply(toApplicationShouldTerminate: false)
+                    return
+                }
+                GenerationPlaybackCoordinator.shared.pause()
+                await self.liveTranslationExtension.coordinator.shutdownForTermination()
+                await HuggingFaceDownloadManager.shared.shutdownForTermination()
                 didFinishDownloadShutdown = true
                 downloadShutdownTask = nil
                 sender.reply(toApplicationShouldTerminate: true)
@@ -144,6 +155,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, @MainActor UNUserNotif
 
     func applicationWillTerminate(_ notification: Notification) {
         speechPreparationTask?.cancel()
+        GenerationPlaybackCoordinator.shared.clear()
         statusMenuController.stop()
         extensionManager.shutdown()
         runtime.onUpdate = nil

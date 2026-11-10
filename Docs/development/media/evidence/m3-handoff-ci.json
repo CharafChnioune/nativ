@@ -1,0 +1,74 @@
+{
+  "snapshot_date": "2026-11-09",
+  "source_head": "c24781b73e64aec7a853b8f44ea0fe2465f1b5e6",
+  "main_at_handoff": "e22f7b9333a4ff7437bd81879454f050cbb3c6b9",
+  "pull_request": 2,
+  "merged": false,
+  "push": {
+    "run_id": 42529891583,
+    "jobs": [
+      {
+        "name": "identity",
+        "conclusion": "success"
+      },
+      {
+        "name": "Native app and regressions",
+        "conclusion": "success"
+      },
+      {
+        "name": "Python regressions",
+        "conclusion": "success"
+      },
+      {
+        "name": "Translation contracts",
+        "conclusion": "success"
+      },
+      {
+        "name": "Required validation gate",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "pr": {
+    "run_id": 42529898161,
+    "native_job_id": 128881584720,
+    "artifact_id": 13637717303,
+    "jobs": [
+      {
+        "name": "identity",
+        "conclusion": "success"
+      },
+      {
+        "name": "Python regressions",
+        "conclusion": "success"
+      },
+      {
+        "name": "Translation contracts",
+        "conclusion": "success"
+      },
+      {
+        "name": "Native app and regressions",
+        "conclusion": "failure"
+      },
+      {
+        "name": "Required validation gate",
+        "conclusion": "failure"
+      }
+    ]
+  },
+  "failed_tests": [
+    {
+      "file": "Tests/NativTranslationKitTests/TranslationCoreTests.swift",
+      "line": 529,
+      "name": "stopCancelsOutstandingSendBeforeReleaseBarrier()",
+      "assertion": "await backend.didStop"
+    },
+    {
+      "file": "Tests/NativTranslationKitTests/TranslationCoreTests.swift",
+      "line": 639,
+      "name": "newSpeechDuringContextReleaseWaitsForFreshStart()",
+      "assertion": "await backend.frames.last?.turnID == next"
+    }
+  ],
+  "interpretation": "Both builds succeeded on Xcode 26.6. The PR native test run failed while the same source revision's push gate passed. Cause requires investigation; not automatically classified as test flakiness. No gate bypass or merge."
+}

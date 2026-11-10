@@ -210,6 +210,7 @@ decoded_profile_file=""
 decoded_profile_plist=""
 profile_certificate_file=""
 app_bundle_identifier=""
+codec_receipt_snapshot=""
 
 cleanup() {
     local temporary_file
@@ -217,7 +218,8 @@ cleanup() {
         "$resolved_entitlements_file" \
         "$decoded_profile_file" \
         "$decoded_profile_plist" \
-        "$profile_certificate_file"; do
+        "$profile_certificate_file" \
+        "$codec_receipt_snapshot"; do
         if [[ -n "$temporary_file" ]]; then
             rm -f "$temporary_file"
         fi
@@ -443,6 +445,8 @@ while IFS= read -r -d '' candidate; do
     fi
 done < <(find "$app_path" -type f -print0)
 
+codec_receipt_snapshot="$(mktemp "${TMPDIR:-/tmp}/nativ-codec-signing.XXXXXX.json")"
+python3 "$script_directory/sign_generation_resources.py" prepare "$app_path" "$codec_receipt_snapshot"
 echo "Signing ${#native_files[@]} Mach-O files with: $identity"
 for native_file in "${native_files[@]}"; do
     is_bundle_executable=false
@@ -456,6 +460,10 @@ for native_file in "${native_files[@]}"; do
     [[ "$is_bundle_executable" == false ]] || continue
     sign_target "$native_file"
 done
+
+# Re-signing changes codec hashes. Refresh using trusted checkout code, after
+# pre-sign integrity verification and before enclosing bundle resource seals.
+python3 "$script_directory/sign_generation_resources.py" refresh "$app_path" "$codec_receipt_snapshot"
 
 # Sign nested bundles only after their contents, leaving the outer app last.
 for code_bundle in "${code_bundles[@]}"; do

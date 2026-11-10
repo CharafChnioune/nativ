@@ -1,0 +1,729 @@
+# Nativ Music Generation: Implementation Plan and Codex Execution Prompt
+
+For agentic workers: use superpowers:subagent-driven-development or superpowers:executing-plans when available; otherwise follow the same staged implementation and independent review. Track the tasks below with checkboxes. This is a request to implement and verify the feature, not to return another proposal.
+
+Goal: Add professional native music generation to my Nativ fork, including ACE-Step and MiniMax, accessible through both the Music workspace and Nativ's API, while retaining upstream updates and any existing Live Translate work.
+
+Architecture: Add Music beside Chat and Images. A single durable Python music job service, mounted in Nativ's existing server, owns generation, provider adapters, cancellation, and output storage. Native Swift views and external API clients use that same service. Isolate heavyweight music runtimes from the existing MLX environment. Keep upstream integration and fork binary updates controlled and independently verifiable.
+
+Tech stack: Preserve Nativ's Swift 6.3, SwiftUI, AppKit, AVFoundation, XcodeGen, Apple silicon/macOS 26+ stack, NativServerKit, and bundled Python server. Use small feature modules and typed contracts; no embedded Gradio page, Electron frontend, or rewrite of Nativ.
+
+Spec: Sections 1-10 are the product and architecture specification. Sections 11-14 contain the implementation tasks, acceptance criteria, reporting requirements, and research references. This file is self-contained.
+
+Global constraints: origin is CharafChnioune/nativ; canonical upstream is Neywa-Labs/nativ; preserve history and user changes; local ACE-Step is the initial default after hardware qualification; remote execution is always explicit; credentials stay out of source, logs, and artifacts; no unverified model/runtime claims; no emojis. Keep product copy consistent with the existing English UI and communicate with me in Dutch.
+
+Review focus:
+- Retries within the documented idempotency retention contract or a lost connection must not create a duplicate paid generation. Tasks 2, 4 and 5 own durable dispatch-intent, idempotency and uncertain-submission tests.
+- An API-created job must remain the same job when observed in two app windows, after switching workspace, or after relaunch. Tasks 2, 3 and 6 own ownership and persistence tests.
+- A model capability must not be inferred from its name, an audio flag, or the existence of a checkpoint. Tasks 1, 4, 5 and 9 own capability and real-audio qualification.
+- Music must not break the existing inference environment, starve Live Translate, or leave workers running after cancellation. Tasks 4 and 8 own dependency and process/resource tests.
+- An upstream update must not skip new tests, omit new Python package files, or restore upstream update feeds. Tasks 3, 9 and 10 own integration and release gates.
+
+## 1. Ownership, scope, and execution rules
+
+My existing fork: https://github.com/CharafChnioune/nativ
+Canonical upstream: https://github.com/Neywa-Labs/nativ
+Old migration URL: https://github.com/Blaizzy/nativ
+
+Research date: 2026-11-08. The inspected fork and upstream main were identical at:
+5cb79ed65659414774745c1331cce08397d16055
+The latest inspected upstream release was v0.4.5, published 2026-11-04. Recheck the current heads, releases, and runtime documentation before editing. Do not reset newer work to this snapshot.
+
+Work in a clean feature branch/worktree of my fork. Preserve uncommitted changes and any existing translation implementation. Do not create another fork, force-push main, rewrite inherited history, or replace my branch with upstream. Do not submit a PR to upstream. Local implementation and validation are authorized; prepare a reviewable fork change. Merging main, publishing releases, enrolling accounts, buying API credit, and configuring production credentials are separate final actions, not prerequisites for doing the implementation work.
+
+Read the actual applicable AGENTS.md and project rules at execution time. At the inspected 772-entry tree there was no AGENTS.md, CLAUDE.md, CONTRIBUTING.md, or .cursorrules. Read README.md, Docs/, project.yml, Makefile, the contributor reminder workflow, and existing tests. Respect current signing expectations without inventing a signing key or rewriting existing commits.
+
+The earlier Live Translate plan may or may not have been implemented. Inspect reality. Reuse an existing fork updater, sync workflow, audio coordinator, or resource coordinator when compatible; extend it rather than creating competing versions. Music must also work if translation has not yet been added.
+
+Deliver an end-to-end feature with real provider implementations. A model-picker entry, a mock output, or an unavailable placeholder is not a working adapter. When real hardware, a remote GPU server, or an eligible paid account is unavailable, complete the adapter, fixtures, setup flow, and all possible checks; state exactly which live acceptance test remains unverified. Do not label that route production-ready.
+
+## 2. Mandatory repository reconnaissance and integration seams
+
+Read the current equivalents of these files and follow their callers:
+
+- Sources/Nativ/Features/Chat/ChatWorkspacePicker.swift.
+- Sources/Nativ/Features/ControlPanel/ControlPanelDetail.swift, ControlPanelDependencies.swift, ControlPanelActions.swift, ControlPanelNavigation.swift, and sidebar selection/session files.
+- Sources/Nativ/Features/ImageGeneration/ImageGenerationView.swift and ImageGenerationViewModel.swift.
+- Sources/NativServerKit/NativImageClient.swift, NativServerKit.swift, NativModelTypeRegistry.swift, ServerProcessEnvironment.swift.
+- Sources/Nativ/Features/Chat/Tools/ChatImageTool.swift and ChatImageModelSelection.swift; tool dispatch, approval/access levels, message attachments, and media rendering.
+- Sources/Nativ/Features/Artifacts/Artifact.swift, ArtifactCatalog.swift, ArtifactStore.swift, ArtifactTrash.swift, ArtifactPreview.swift, file-index/search/recovery code, and their tests.
+- Sources/Nativ/Features/Shared/InferenceActivityCoordinator.swift, PersistedDataChangeHub.swift, and NativComponents.swift.
+- Sources/Nativ/NativSettings.swift, NativModel.swift, and existing Keychain/environment handling.
+- Sources/Nativ/Features/Models/LocalModelProvider.swift, LocalModelDiscovery.swift, ModelPrimaryTaskResolver.swift, HuggingFaceModelSupport.swift, and downloader/resolver code.
+- Sources/Nativ/Features/Developer/DeveloperView.swift and DevHubView.swift; Docs/features/developer.md.
+- PythonDistribution/Overlay/nativ_server.py.
+- PythonDistribution/Scripts/build_mlx_vlm_server.py, build_xcode_framework_resource.py, generate_model_capabilities_manifest.py.
+- PythonDistribution/Requirements/mlx-vlm-server-macos-arm64.txt.
+- project.yml, Makefile, .github/workflows/dev-build.yml, release.yml, pages.yml.
+- Configuration/Nativ-Info.plist, Signing.xcconfig, Sources/Nativ/SoftwareUpdater.swift, ReleaseVersion.swift, and scripts/macos_release.py plus release/signing/appcast scripts.
+
+Verified facts at the research snapshot:
+
+1. ChatWorkspaceMode currently has Chat and Images. ChatWorkspaceView switches native views and uses a short opacity transition. Add Music through that same workspace concept; do not hide the entire feature behind a web browser or an unrelated new application.
+2. Images uses ImageGenerationViewModel, session history, model selection, native cards, and NativImageClient. NativImageClient POSTs to image routes and waits for a complete response. Music should reuse visual conventions while using an asynchronous job contract appropriate to long generations.
+3. The default server address is http://127.0.0.1:8080, configurable in Developer settings. Nativ has bearer authorization and Keychain abstractions. Reuse the current server connection and credential infrastructure.
+4. nativ_server.py is an overlay around the bundled mlx-vlm server. Add an independently testable nativ_music package and a narrow router/lifecycle installation hook. Do not maintain an unbounded fork of the dependency's server.py.
+5. The runtime builder currently copies a single overlay file and fingerprints that file. Adding a Python package also requires recursive copying, deterministic content hashing, cache invalidation, packaged import verification, and cleanup of removed package files. A development import from the source checkout does not prove the release bundle works.
+6. Nativ requires transformers>=5.14.0. ACE-Step's inspected v0.1.8 package requires >=4.51.0,<4.58.0 and Python >=3.11,<3.13. They cannot share one resolved environment. Do not downgrade Nativ or pip-install ACE-Step into its server environment.
+7. ArtifactKind currently has image, video, and document; ArtifactUsage.Workspace has chat and imageGeneration. Add explicit audio/music support with backward-compatible decoding and complete catalog/preview/trash/search handling. Generated music must not become an uploaded microphone recording that is automatically transcribed.
+8. ControlPanelSharedDependencies is app-scoped, while individual control panels own per-window view models. Keep shared job observation and playback app-scoped, and drafts/selection per window. The server is the authoritative job owner.
+9. InferenceActivityCoordinator is a per-resource activity tracker, not a process-wide GPU scheduler. A disabled Generate button alone cannot protect against API-created workloads.
+10. project.yml is authoritative, NativTests has explicit source membership, and current CI selects test classes with -only-testing. New files and tests must actually reach the built app and executed suite.
+11. NativModelTypeRegistry currently has a strict version-1 schema and fixed capability set. Add a separately versioned Music catalogue first; do not append a Swift music capability without migrating the generator, manifest validation and fixtures together.
+12. Use NativModel.activeServerBaseURL and the active server credentials, not edited settings that have not been applied to the running server. New routes added directly to base.app do not automatically inherit the dependency's inference-router authentication.
+13. In the separately inspected mlx-vlm a54f1a0d86fa45c466c00d819ac6ac5ba9d61ac4, both async image generation/edit handlers synchronously load/generate on the ASGI loop. A separate music worker alone does not keep music status/cancel responsive during those image calls. Verify the actual bundled revision and apply the narrow remedy in section 8.3 if needed.
+
+Produce a short implementation audit recording the actual baseline, routes, authentication, server package version, dependency constraints, and changed integration points. Fix the minimum shared seams necessary for the feature.
+
+## 3. Product scope and native experience
+
+### 3.1 Required first release
+
+Add Music beside Chat and Images, using the existing workspace picker and layout. The user can enter a music description, optionally provide lyrics, choose vocals or instrumental, select a configured model, generate, see honest progress, listen, seek, save/export, and revisit earlier results.
+
+Default flow:
+- Select a local ACE-Step 1.5 Turbo profile, after installation and hardware qualification.
+- Start with one 30-second draft and one output per request. Longer durations are available only within the selected provider's tested limits.
+- Do not download weights or load a large model just because Music became visible. Present an integrated setup/download flow with real sizes, free-space checks, cancellation, and retry.
+- An instrumental toggle removes irrelevant lyric controls. Manual lyrics are preserved exactly unless the user explicitly requests a rewrite.
+- When a selected vocal provider requires lyrics, mark that field required and validate it before submission. Do not silently invent/rewrite lyrics or make a separate paid language-model call; any lyric-writing aid is an explicit action using a deliberately selected supported text model.
+- Keep advanced controls collapsed: duration where supported, seed, BPM/key/time signature where supported, sampling profile, and model-specific options. Label generative hints as hints rather than exact guarantees.
+- Defaults are per provider/profile. Switching from ACE-Step to a provider without seed or exact-duration support must update the controls and request accordingly; do not carry hidden unsupported parameters into the next submission.
+- Persist successful songs and their generation metadata locally, as Images persists outputs. Default to retaining originals until the user deletes them. Do not silently auto-upload, auto-publish, or add files to external music services.
+- No autoplay on job completion, reopening a session, or receiving an API-created song. Playback is a deliberate user action.
+
+A result card contains a useful title, provider/model and Local/Remote label, actual audio duration, waveform, play/pause, scrubber, elapsed/remaining time, volume, lyrics if available, generation details, Regenerate as a new job, and Export. Keep a compact shared player while navigating within Nativ. One app-scoped playback coordinator prevents overlapping songs across windows.
+
+Generate new music through a native generate_music chat tool as well. Follow the existing image-tool model-picker and approval/access-level flow. The chat tool submits the same public job schema and returns a stable job reference immediately; its result card observes completion. Do not hold the chat inference lease while waiting for a music worker that needs that lease. Do not let the model choose arbitrary endpoints, credentials, output paths, or a paid fallback. Expose the tool only when the feature and a compatible configured provider are available. Keep live-translation interpreter sessions tool-free.
+
+### 3.2 Visual and interaction quality
+
+Use Nativ's actual fonts, colors, separators, spacing, composer shape, popovers, model menu, empty states, and native sheets. The inspected Images view uses an 860-point transcript maximum, 680-point composer maximum, and 32-point horizontal padding; treat these as existing design references, not constants to duplicate if upstream has changed.
+
+Show distinct states: model setup required, downloading, queued, waiting for Resume after restart, preparing model, generating, writing audio, completed, cancellation requested, cancelled, interrupted, uncertain remote outcome, and actionable failure. Display a percentage only when the adapter provides a meaningful bounded measure. Otherwise show stage, elapsed time, queue position, and an indeterminate animation. An invented percentage must never imply a completion guarantee.
+
+Use a quiet animated generation indicator and a waveform derived from real decoded audio once available. Do not animate a fictional signal as if audio were already playing. When the provider genuinely supports usable preview audio, label it Preview and commit the final asset separately. Cache downsampled waveform peaks off the main thread; animate only visible active components. Respect Reduce Motion, Reduce Transparency, VoiceOver, keyboard navigation, sufficient contrast, and narrow window layouts. Avoid a mandatory notch overlay; this is a workspace feature.
+
+Switching workspace, minimizing, or closing one window must not cancel a submitted server job. Reopening attaches to the same job. Explain that generation continues while the local server/app remains running; do not imply an independent operating-system daemon exists. Quitting or stopping the server follows the explicit shutdown/recovery policy below.
+
+### 3.3 Model selection must tell the truth
+
+Separate these concepts in the interface and API:
+- Model family/checkpoint.
+- Runtime and exact revision.
+- Deployment: on this Mac, my configured GPU server, or a hosted paid provider.
+- Availability: ready, download required, configuration required, unsupported hardware, experimental, or disabled.
+- Supported operations and actual constraints.
+
+Never label a remote MiniMax server as local Mac inference. Never infer music capability from a MiniMax logo, a TTS/STT capability, or a generic audio tag. A provider unavailable to the account must not be silently replaced by another provider.
+
+### 3.4 Deliberate second-stage scope
+
+Keep seams for reference-audio generation, covers, repaint/inpaint, variations, continuation, stems, and LoRA. Only expose an operation after the exact checkpoint/runtime supports it and it has an end-to-end implementation and test. ACE-Step Turbo does not inherit all Base-model editing capabilities. Do not ship inactive editing controls as completed functionality.
+
+The required initial feature is text/lyrics-to-music plus the common library/API experience. Cover/edit workflows can follow as separate, working increments. MIDI generation, a full DAW, voice cloning, dataset training, and realtime DJ performance are outside this initial build.
+
+## 4. Provider policy and feasibility gates
+
+### 4.1 ACE-Step: default local path
+
+Primary project: https://github.com/ace-step/ACE-Step-1.5
+Inspected latest published release: v0.1.8, 2026-05-18. Inspected later main commit: ca1e85fe9430179831e6bc6be790c332190a3866, 2026-08-29. The package/model family is still called ACE-Step 1.5; do not confuse runtime release numbers, package version 1.5.0 and documentation labels with one uniform release. Prefer a qualified immutable runtime commit, including needed later Mac fixes, rather than choosing a tag by its name alone.
+
+Initial checkpoint profile: acestep-v15-turbo with the required text encoder, VAE, and, when enabled, acestep-5Hz-lm-0.6B. Record exact Hugging Face repository IDs/revisions for every component from the chosen runtime's official manifest. The broad collection ACE-Step/Ace-Step1.5 is not a substitute for a complete component inventory. Offer larger LM/XL profiles only after measuring their actual memory and quality on the target Mac.
+
+The official repository has Apple Silicon MLX/MPS paths and macOS launch scripts. This does not make its dependency tree pure MLX: PyTorch remains involved in initialization and conversion. Package a dedicated arm64 Python 3.12 environment with a tested lock and no runtime dependency on a user-installed uv/Homebrew/terminal workflow.
+
+Prefer adapting the documented asynchronous ACE API behind a managed private helper:
+- POST /release_task submits; POST /query_result polls.
+- The envelope and numeric statuses differ from Nativ's public job schema; normalize them in the adapter.
+- The result can contain a JSON string inside the result field and provider-specific file download references. Parse and validate, then import files into Nativ-owned asset storage.
+- Do not expose ACE's filesystem-path-based audio endpoint or raw parameters directly through Nativ.
+- Generate with an explicit known format and explicit request values; do not accidentally inherit upstream random-sample or lyric-rewriting behavior.
+
+The helper binds to loopback only, uses a generated private credential, and is not the public API. Choose a free port safely, verify the handshake/worker identity, and never terminate an unrelated process merely because the preferred port is occupied. The first implementation may use a small worker wrapper around the native inference API if that materially improves cancellation/progress, but must retain the same Nativ provider contract and its own isolated process/environment. Record which approach was selected and test it.
+
+Validate fixed-seed mode as well as the seed value. Turbo does not use the ordinary CFG controls of Base; do not expose a guidance slider with no effect. Verify the qualified sampling profile, including the documented Turbo step/shift defaults. Keep the LM negative-prompt control distinct from generic diffusion controls. Import the actual output rate, commonly 48 kHz for this path, rather than forcing speech-model audio defaults.
+
+Published A100/RTX speed and VRAM claims are not Mac measurements. Qualify cold start, warm generation, peak unified memory, swap, thermal behavior, and time to a playable 30/60-second track on actual Apple silicon. Do not promise ten-minute output or a four-gigabyte Mac requirement from a GPU marketing claim.
+
+### 4.2 MiniMax Music 3: local MLX first, with distinct remote options
+
+Official weights: https://huggingface.co/MiniMaxAI/MiniMax-Music3
+Official repository: https://github.com/MiniMax-AI/MiniMax-Music3
+
+The official model card documents an 8B global LM, 0.6B local LM, additional synthesis models, and 32 kHz stereo output. Its documented runtime requires CUDA and currently supports non-streaming generation. Ignore Hugging Face's autogenerated generic image/MPS snippet and misleading aggregate parameter badge. Read the actual model card and implementation.
+
+The preferred Mac integration is now the real music implementation in Neywa-Labs/mlx-audio, inspected at ecd43b9f5af55982f4e1bd810d7b60cbc3dfae23. Read mlx_audio/music/models/minimax_music3/README.md and minimax_music3.py, not only the older CUDA reference. Use mlx-community/MiniMax-Music3-mxfp8 as the first quantized profile and BF16 as a quality reference. These are community conversions, not official MiniMax MLX releases.
+
+Implement MiniMaxMusic3MLXProvider in a separate owned worker. The actual generate contract accepts text, required lyrics, duration/gen_duration, steps and seed. Map instrumental=true to the explicit [instrumental] lyric instruction. The inspected path returns 44.1 kHz stereo and one completed GenerationResult after autoregressive generation and synthesis; it does not stream playable audio. Duration is an upper bound, and the model may finish early. Reject unsupported reference/edit/stem/CFG controls before the call: the implementation accepts and ignores extra **kwargs, so successful argument passing is not evidence of support.
+
+The runtime requires mlx>=0.32.4 and transformers[chat-template]>=5.14.0 at the inspected commit. That is compatible in principle with Nativ's current direction, but a lower-bound requirements file does not prove the shipped build includes music. Pin and verify a music-capable wheel/source revision. Use the existing bundled environment in a separate worker only if its complete locked contents satisfy the contract without altering other features; otherwise ship an isolated pinned MLX music environment. Do not run the music model inside the server request event loop or share mutable inference state with TTS.
+
+Qualify the MiniMax MLX route on the actual Mac before promoting it to supported/default selection. Check complete audio, finite samples, pitch, timing, duration, lyric adherence, memory and repeated generation. MXFP4 is an optional lower-memory experiment and may omit/change more lyric words. The roughly 13-14 GB MXFP8 download is not a peak-RAM estimate. Preserve actual 44.1 kHz output and distinguish it from the official CUDA service's 32 kHz contract; do not relabel/resample to hide a timing error. Dense and quantized profiles require separate quality evidence.
+
+Also implement MiniMaxMusic3RemoteProvider for an optionally configured compatible GPU server. For the documented SGLang-Omni deployment, adapt /v1/audio/speech: lyrics in input, caption in instructions, model MiniMaxAI/MiniMax-Music3, verified seed/output options. max_new_tokens limits acoustic frames rather than guaranteeing exact duration. This backend endpoint must not replace Nativ's TTS endpoint. Label it Remote GPU and preserve its documented output format.
+
+The independent appautomaton/mlx-minimax-music3 project at 3afd8d8bb1b78d73541bea261f0b7953e0d6aa53 is a secondary research reference, not the initial adapter. It has a different environment/checkpoint conversion and explicitly incomplete long-form/quality parity. Do not combine its assumptions with the mlx-audio implementation.
+
+The hosted MiniMax API is a third adapter, not the same deployment. Official documentation on the research date states that new access to paid Music/Lyrics APIs ended on 2026-08-20; existing paying users may continue, and free music APIs are discontinued. Do not base onboarding on new users obtaining this API. Implement it for eligible configured accounts, with a clear access-unavailable state.
+
+Use POST https://api.minimax.io/v1/music_generation, Bearer authentication, and the documented music-3.0 model; music-2.6 is an optional legacy account-compatible selection. The current China endpoint is api.minimax.cn; keep region and credentials paired rather than substituting older domain names. Validate prompt/lyrics/instrumental rules against the current schema. Prefer non-streaming hex output for the first implementation, decode/validate it once and import the media. URL results expire after 24 hours. Streaming hex is not necessarily raw PCM or independently playable chunks. Check base_resp.status_code as well as HTTP status. The cloud API does not establish the local runtime's seed/duration controls or a cancel/poll/idempotency contract; do not transfer those controls across adapters. Do not expose discontinued free variants.
+
+MiniMax model weights use their own Community License, not Nativ's MIT license. Preserve the exact license/attribution at the pinned revision, including product-label and distribution obligations where applicable. Do not represent the code license of a community port as the license of the weights or outputs.
+
+### 4.3 Stable Audio 3 Small Music: third local provider
+
+Implement a local instrumental provider using the official Stability-AI/stable-audio-3 optimized/mlx route, inspected at 790793b89ddceea612be9ce42ff6830d18f6fa57. Start with stabilityai/stable-audio-3-small-music and the matching files in stabilityai/stable-audio-3-optimized. Inventory the T5Gemma text encoder, DiT and SAME-S decoder explicitly. This route is pure MLX at inference and does not require importing the project's CUDA/PyTorch runtime.
+
+The official model table limits Small Music to 120 seconds; Medium is a separate 380-second profile. A benchmark running Small for 380 seconds does not qualify it for that duration. Use 44.1 kHz stereo output, pin the tested sampling/decoder profile, and do not expose lyric-conditioned singing as a verified capability. CFG/negative controls depend on the actual base versus post-trained checkpoint; a CLI flag alone does not prove an effect.
+
+Do not execute its bootstrap shell scripts or launch its publicly shareable Gradio UI inside Nativ. Package the Python/MLX inference code and required files through the same managed worker contract. Keep models released between phases where the qualified profile requires this. Verify reported vendor Mac benchmarks independently before using them in UI claims. Respect the Stable Audio Community and T5Gemma terms; honor gated-download acceptance and preserve notices without silently accepting terms for the user.
+
+### 4.4 Official hosted alternatives and future providers
+
+Implement Google Lyria 3.5 as the optional hosted full-song provider. Its current documented REST interface is POST https://generativelanguage.googleapis.com/v1beta/interactions with x-goog-api-key, model lyria-3.5 and an input description containing any user-supplied lyrics. Parse model_output entries in steps and their content audio/text blocks; do not assume an older outputs schema. The current audio result is MP3. Duration/instrumentation requests are prompt-based unless the current verified schema says otherwise. Pin the adapter's actual tested API/SDK contract.
+
+Stable Audio 3.0 cloud is an optional separate adapter from the local Small Music model: POST https://api.stability.ai/v2beta/audio/stable-audio/text-to-audio with multipart form fields and model stable-audio-3 returns HTTP 202/id. Poll /v2beta/audio/results/{id}; 202 means pending, 200 returns the result, and results expire after 24 hours. The current formal duration field spans 1-380 seconds. Do not invent a dedicated lyrics field or guaranteed instrumental boolean. Reverify account eligibility, pricing, rate limits and terms before enabling a hosted provider.
+
+Lyria 3.5 and Lyria RealTime are different products. A streamed HTTP response or progress stream is also different from realtime, interactively controlled music. Do not turn this request into a realtime DJ feature.
+
+Evaluate heartMuLa, YuE2, MusicGen and older Stable Audio Open as future providers rather than adding untested menu entries. heartlib's current primary runtime is CUDA-oriented; YuE2 exposes MPS but its native Mac generation acceptance is still pending in the inspected hardware guide. YuE2 and MusicGen weight conditions must be checked separately from their permissive runtime code. Record actual capabilities, resources, license and maintenance for each deferred option.
+
+Suno now advertises an official REST API and an official OAuth MCP integration, so do not repeat the outdated claim that it has no official API. Public REST schemas/account eligibility were not verified in this research; defer a direct adapter until the official contract is accessible. Udio's official help page still states no public API. Do not integrate either service by scraping or through an unofficial compatibility endpoint presented as official.
+
+## 5. Canonical music service and provider contracts
+
+### 5.1 Single source of truth
+
+Implement PythonDistribution/Overlay/nativ_music/ with focused modules:
+- contracts.py: validated wire models, enums, capabilities, errors.
+- routes.py: FastAPI routes and auth/validation dependencies.
+- service.py: durable job state machine and scheduling.
+- repository.py: transactional job/event/idempotency storage and migrations.
+- assets.py: validated output import, metadata, waveform peaks, streaming downloads, retention.
+- runtime.py: managed process identity, startup, health, shutdown, and worker protocol.
+- resources.py: shared compute admission adapter, not another UI-only busy flag.
+- providers/base.py and one provider file per deployment.
+- catalog.py: curated deployment/model capability records and readiness.
+
+Names may be adjusted once to the actual tree, then kept consistent. Keep modules small and do not copy all logic into nativ_server.py. Mount one router, initialize one service, and shut it down using the current supported server lifecycle without replacing unrelated startup/shutdown hooks.
+
+No music model should be imported or loaded just to import the router, request /health, or list models. In the Nativ server environment, adapters talk to isolated workers or remote APIs. Missing optional music dependencies must not prevent chat/images/TTS from starting.
+
+The inspected mlx-vlm server at a54f1a0d86fa45c466c00d819ac6ac5ba9d61ac4 and mlx-audio at ecd43b9f5af55982f4e1bd810d7b60cbc3dfae23 do not register /v1/music/* HTTP routes. The mlx-audio music API page documents Python functions. Existing TTS loaders/routes do not supply MiniMax Music3's required lyrics and are not a substitute. Recheck this at execution time and avoid conflicting route registration if upstream later adds a music HTTP API.
+
+Swift additions live under Sources/Nativ/Features/MusicGeneration/. Put transport DTOs and NativMusicClient in NativServerKit, following the existing client's authorization and error style. Do not add a second Swift implementation of provider calls. View models select drafts and observe service-owned jobs; they do not own model execution.
+
+Support the app's selected local or remote Nativ server as the canonical service. This is independent of that server's choice of a local worker or remote music provider. Each canonical store has a persistent random store_id returned by GET /v1/music/info. Namespace native cache entries, selected sessions and asset references by store_id plus entity ID; switching servers must not display or mutate another store's data. Never interpret a server filesystem path on the client. For remote servers, use authenticated media downloads into a validated, disposable client cache for AVFoundation playback; it is not another original or authoritative library. A local optimization is permitted only when store and file identity are verified, never from an arbitrary path returned by a server.
+
+Enforce one scheduler owner per canonical storage root using a startup lock with a clear second-process diagnostic. SQLite transactions alone do not prevent two schedulers from dispatching the same job. Test opening the same root from two processes, switching between two servers, and reading cached media after server disconnection.
+
+### 5.2 Stable provider contract
+
+Use a typed internal protocol equivalent to:
+
+MusicProvider.capabilities() -> ProviderCapabilities
+MusicProvider.prepare(deployment, cancellation) -> PreparedProvider
+MusicProvider.run(job, emit_event, cancellation) -> ProviderResult
+MusicProvider.cancel(handle) -> CancellationResult
+MusicProvider.shutdown() -> None
+
+PreparedProvider includes runtime/checkpoint identity and actual device/output formats. ProviderResult contains validated candidate media files or bounded download handles, measured metadata, effective parameters, and provider request identifiers; it does not publish a job as successful itself.
+
+The service assigns a unique job_id and attempt_id. Events and results include both. Only the active attempt may change a job. A late event after cancellation/restart must not update the UI or overwrite a newer asset. Persist provider request identifiers as soon as they exist so restart recovery can query known operations safely.
+
+Before any provider submission, durably record the attempt's dispatch intent; reserve the idempotency key and job atomically before that. A remote dispatch intent left unresolved after a crash becomes submission_unknown, even if the crash may have occurred before the network send. Never replay that POST unless the provider documents idempotency and the tested adapter safely reuses that same provider identity. Query a known operation when possible. Test crashes immediately before send, after provider acceptance and before response persistence. Exactly-once remote execution cannot be invented around a provider that has no such contract.
+
+Snapshot the accepted deployment/profile revision and normalized requested configuration. Revalidate enablement, credentials and compatible profile identity immediately before dispatch or Resume. Disabling a provider or editing its URL/model must not silently retarget an accepted job. Surface an actionable configuration mismatch; a changed request is a deliberately new job.
+
+Capabilities must include deployment type, vocals/instrumental/lyrics, supported operations, duration control semantics and bounds, seed support, formats/rates/channels, reference input support, progress granularity, preview audio support, cancellation semantics, and qualification status. Use explicit unsupported/unknown values. Server validation and UI controls use the same capabilities.
+
+Distinguish hard duration bounds, an output ceiling, and a prompt-only duration hint. Unsupported controls produce a field-specific validation error. Do not silently ignore seed, duration, instrumental, or reference inputs. Preserve requested and effective parameters separately; return actual duration measured from the result.
+
+### 5.3 Job lifecycle and limits
+
+Use explicit states: queued, recovery_hold, preparing, running, finalizing, succeeded, cancel_requested, cancelled, interrupted, failed, submission_unknown. Define legal transitions and test them. Progress is optional and stage-scoped. Do not average unrelated provider progress into fabricated global accuracy.
+
+Initial bounded defaults, configurable through documented application settings:
+- One active local heavyweight music generation.
+- One active hosted/remote generation and at most eight queued music jobs in total.
+- One output per request; Regenerate creates a new job with its own key/seed policy.
+- Music submission JSON at most 128 KiB; validate provider-specific text limits before queueing.
+- At most 1 GiB per imported output, with both header checks and streaming byte limits.
+- Keep only bounded event history per job, for example the latest 1,000 progress/state events. Coalesce high-frequency progress; never let logs or SSE queues grow with every model step forever.
+
+Reject overload with a structured retryable error and Retry-After where meaningful. Queued jobs must not pin large model memory. Use stage-aware watchdogs and a documented execution ceiling from the qualified profile; a valid long generation must not inherit a short generic HTTP timeout.
+
+Cancelling a queued job prevents provider submission. Cancelling a local job first requests cooperative cancellation; after a short bounded grace period terminate only Nativ's owned dedicated worker/process group and restart it cleanly for the next job. A shared provider process handling other owners' work must never be killed. Do not claim cooperative mid-step pause if the runtime cannot do it.
+
+For a remote service without a documented cancel operation, cancellation stops local observation/import and marks remote cancellation as unconfirmed; the provider may continue and bill. Expose that fact in the API result and UI. A network failure after submission is not proof of failure. Persist submission_unknown and do not blindly submit again. A confirmed completed job remains completed when Cancel arrives too late.
+
+Track local observation state, provider execution outcome and remote capacity reservation separately. submission_unknown and cancellation-unconfirmed attempts retain their remote reservation until the provider is known terminal or the user deliberately releases it after acknowledging possible ongoing execution/billing. Background reconciliation may query an existing operation but must never create another generation. An explicit release operation affects capacity only: it does not prove cancellation, change the original request identity or make replay safe. Document that the default limit covers Nativ-reserved operations; a user override may allow overlap with an unresolved provider job.
+
+On clean server shutdown, stop admission, persist queue/state, cancel owned workers, and close streams. On restart, preserve existing terminal states and honor persisted cancellation requests first. Only eligible nonterminal local or remote jobs with no durable dispatch intent enter recovery_hold and require explicit Resume using the same job and idempotency identity. An unresolved remote dispatch intent becomes submission_unknown rather than recovery_hold. Mark interrupted in-flight local work interrupted; Regenerate creates a new job and never pretends to resume model state. Reconcile known remote operations without another paid POST. Unknown remote outcomes require a deliberate new request to try again, with the reservation and possible-charge explanation. Files remain intact. Quitting must disclose pending work and offer the existing stop/quit choices without creating an unrequested system daemon.
+
+## 6. Public Nativ Music API
+
+This is a documented Nativ extension to its API, not an assertion that OpenAI has a standard music-generation API. Do not overload /v1/audio/speech, /v1/images/generations, or chat completion semantics.
+
+Required routes:
+
+GET    /v1/music/info
+GET    /v1/music/models
+GET    /v1/music/sessions
+POST   /v1/music/sessions
+PATCH  /v1/music/sessions/{session_id}
+POST   /v1/music/generations
+GET    /v1/music/generations
+GET    /v1/music/generations/{job_id}
+GET    /v1/music/generations/{job_id}/events
+POST   /v1/music/generations/{job_id}/cancel
+POST   /v1/music/generations/{job_id}/resume
+POST   /v1/music/generations/{job_id}/release-remote-reservation
+GET    /v1/music/assets/{asset_id}
+GET    /v1/music/assets/{asset_id}/content
+GET    /v1/music/assets/{asset_id}/usages
+PUT    /v1/music/assets/{asset_id}/references/{reference_id}
+DELETE /v1/music/assets/{asset_id}/references/{reference_id}
+DELETE /v1/music/assets/{asset_id}
+POST   /v1/music/assets/{asset_id}/restore
+
+Paginate lists with stable cursors. Include API version/capability information and readiness. Add canonical examples and schemas in Docs/features/music.md and Docs/api/music.md, the Developer endpoint list, and generated OpenAPI. Add music entries to /v1/models only if the current model schema can represent them compatibly; /v1/music/models is authoritative and must not break existing text-model clients.
+
+Example submission, after the model catalog confirms this configured ID:
+
+POST /v1/music/generations
+Authorization: Bearer <existing Nativ server key>
+Idempotency-Key: <a fresh UUID for this intended generation>
+Content-Type: application/json
+
+{
+  "model": "acestep-v15-turbo-local",
+  "prompt": "Warm instrumental soul with Rhodes piano, soft bass and restrained drums",
+  "instrumental": true,
+  "duration_seconds": 30,
+  "seed": 42,
+  "output_format": "wav",
+  "allow_remote": false
+}
+
+Require Idempotency-Key for all generation submissions, including native and chat clients; a missing key is HTTP 400 with a field-specific error. Return HTTP 202 quickly with store_id, job_id, state, created_at, status_url, events_url, and normalized accepted parameters. A duplicate request returns the original job, including submission_unknown, without another provider call. Store idempotency records for the entire job lifetime and retain tombstones for at least seven days after any future job-record purge. Publish the actual retention window; do not promise duplicate suppression after its expiry. The same key with a different canonical request is HTTP 409. Normalize JSON key ordering and omitted/default fields consistently before computing the request identity.
+
+Remote examples must explicitly name a configured remote model and set allow_remote=true. Configuration must separately enable that provider and store its credential. No automatic local-to-cloud or one-provider-to-another fallback. A client with the Nativ server key can use enabled capabilities; explain this when enabling paid providers. Do not accept a new endpoint URL or credential inside an ordinary generation request.
+
+Status responses contain store_id, requested/effective configuration, accepted profile revision, stage/progress, timestamps, cancellation capability, provider identity, local observation state, provider outcome, remote reservation state, safe error fields, and asset references only when available. Errors use a stable structure such as error.code, message, field, retryable, and job_id where applicable. Never leak secrets, raw upstream traces, filesystem paths, or temporary signed URLs.
+
+Resume is legal only for a never-dispatched recovery_hold job and retains its identity after revalidation. Repeated Resume/Cancel operations are idempotent. release-remote-reservation requires an explicit acknowledge_possible_execution_and_charges=true body and is only applicable to unresolved remote work. It must never submit a new attempt. Explain these semantics in Developer examples and the native recovery UI.
+
+SSE is a job event stream, not automatically an audio stream. Support event IDs and Last-Event-ID, heartbeat, bounded buffering, reconnect, and a current snapshot when a requested cursor is older than retained events. Disconnecting an SSE/GET client does not cancel the job. Provide polling as a fully supported fallback. A terminal event is emitted only after the durable state/asset commit.
+
+All music routes, including content downloads and event streams, use the server's actual bearer authorization. Do not copy a fail-open optional call to a private auth helper. If the running server cannot enforce the required dependency, fail music startup closed with a useful diagnostic, while preserving unrelated services. Keep loopback as default, reject unauthorized cross-origin browser requests, and do not enable wildcard credentialed CORS. Preserve existing server authentication configuration and do not silently rotate a user key.
+
+Content downloads provide correct Content-Type, Content-Length, ETag and byte-range behavior (206/416), with a safe Content-Disposition filename. Authentication is in headers, never query strings. Resolve opaque asset IDs into managed paths; reject traversal, symlinks escaping the store, and requests to arbitrary provider paths. Export/download failures must be retryable without regenerating music.
+
+Delete moves an unused managed asset to recoverable trash under the same lifecycle as the UI. Return HTTP 409 with usages if live chat/session/reference reservations remain. Explicit reference deletion unlinks only the named usage; it does not delete another client's chat or silently cascade through every usage. A generation's historical provenance record is not itself a perpetual live usage, and it remains meaningful when an asset is trashed. Restore retains the same asset ID. A cancelled job is not a request to delete earlier completed songs. Keep reads/listing available for old results when a provider is disabled or its key expires.
+
+## 7. Persistence, artifacts, playback, and credentials
+
+### 7.1 Canonical library
+
+Use the fork's configured application-support root, never a new hardcoded upstream Nativ directory. A suitable layout is Music/jobs.sqlite, Music/assets/<asset_id>/original.<extension>, Music/assets/<asset_id>/manifest.json, Music/assets/<asset_id>/waveform.json, and Music/Trash/. Keep runtime caches and temporary partial files separate from the user's completed songs.
+
+The service owns durable sessions, jobs, events, idempotency, and asset metadata. Swift may keep a rebuildable presentation cache but must not independently rewrite authoritative job state. Each job belongs to a stable music session. If an API submit omits session_id, create one atomically. Expose GET/POST /v1/music/sessions and PATCH /v1/music/sessions/{session_id} for paginated listing, creation, renaming and hiding sessions. Do not delete output files just because a session is hidden from the sidebar. Session deletion/unlink semantics must use the same asset-reference rules as the app's Trash flow.
+
+Python is the only writer of canonical music files, active asset references and trash state. Swift Artifacts is a rebuildable projection keyed by store_id and asset_id; it never independently moves or deletes a music original. Implement the authenticated reference/usage/trash/restore routes listed above for both UI and API. Create a session usage transactionally with the successful output. A user deleting a result deliberately unlinks that usage first; other chat/API usages remain protected. Never treat merely reading/downloading a file as a durable reference.
+
+Use stable reference_id values and idempotent attach/detach operations. For Swift-owned chat attachments, persist a durable local outbox and reserve the reference in the music service before committing a new chat attachment; finalize the reservation after the chat write. If disconnected, retain a pending action instead of claiming that the canonical mutation succeeded. Reconcile pending operations on reconnect/restart; an uncertain reference or orphan reservation blocks destructive deletion until reconciled. Test crashes before/after reference reservation, chat save and completion acknowledgment. A missing client must not cause an unverified cascade delete. Keep reference ownership and repair rules explicit rather than assuming a distributed transaction.
+
+Nativ's existing MediaAssetStore is defined in ChatSessionStore.swift and has an independent owners.json garbage-collection mechanism. Do not let it independently own/delete the same canonical Music file. Music-backed chat/artifact entries must store stable service asset references and use a clear bridge; any downloaded display/export cache is a disposable cache, not a second original. Document the ownership boundary and test that unrelated MediaAssetStore cleanup cannot remove a song still referenced by a job or API client.
+
+Write provider output to a private .partial file, validate it, compute its digest and decoded metadata, then atomically publish it. Commit the database asset reference and terminal job state in a recoverable order. Add startup reconciliation for a crash between file rename and database commit. Disk-full, corrupt audio, or a failed thumbnail/waveform must not leave a job claiming a playable asset that does not exist. A waveform-cache failure should not destroy a valid original.
+
+Retain original audio bytes and format. An exported WAV transcoded from MP3 is not a lossless original. Report that provenance honestly; do not upsample and call it improved quality. Record sample rate, channels, codec, duration, byte size, SHA-256, model/checkpoint/runtime revision, effective seed if returned, prompt/lyrics, created time, and optional provider request ID. Do not save a secret, signed download URL, or absolute provider path in a manifest.
+
+Support WAV and MP3 playback/export first; add FLAC only where the actual codec/export pipeline supports it. Distinguish provider-native output formats from Nativ's explicit export conversion. Decode file metadata from bytes rather than trusting a JSON extension. Avoid reading a large complete file into multiple copies of Data just to play it or draw a waveform. Use AVFoundation's file-based playback and background peak extraction. Use the existing audio playback/resource coordinator when appropriate, without mixing music into the voice-note history.
+
+Add ArtifactKind.audio and ArtifactUsage.Workspace.musicGeneration, or the precise compatible equivalents found during reconnaissance. Update every affected exhaustive switch, filter, icon, search/index schema, recovery/trash operation, and deep link. Old JSON, chat sessions, image history, and indexes must still decode. New optional metadata must not become required for old artifacts. Music assets created through the API must appear in the same Music session/library and in Artifacts without duplicate copies. A chat card points to the same asset and can open its Music session.
+
+Do not parse generated lyrics as executable commands, write paths from a model output, send generated music through automatic ASR, or auto-read a lyrics block using the chat TTS feature. All use/export/copy actions are explicit.
+
+### 7.2 Settings and credentials
+
+Keep configuration additive and feature-scoped: selected deployment/model, default duration where applicable, instrumental preference, runtime paths, provider enablement, and safe resource/queue limits. Provider secrets use fork-scoped Keychain items through an injectable credential-store protocol, following NativSettings' existing server/Hugging Face pattern. Never encode them into the settings JSON.
+
+For app-launched server operation, pass only the configured credentials the music service needs through the established private process configuration/environment path. Redact them from all startup diagnostics. Filter the environment again when launching a local ACE/MiniMax worker so it does not inherit unrelated cloud keys. Prefer a documented server restart on credential change over a new unauthenticated secret-management endpoint. Do not expose provider-key setters through ordinary generation requests.
+
+For deliberate headless/server use, document the supported environment-based configuration and named provider profiles. The public Nativ API accepts Nativ's key, not the vendor key. An unauthenticated caller must not be able to generate, inspect lyrics, or download songs. If music requires a key while the existing server has none, use the existing key setup flow and show that requirement rather than silently weakening protection or rotating a configured key.
+
+Keep cloud and local labels visible. Show verified pricing basis before paid generation when available; otherwise say pricing comes from the configured account and link to the provider's official pricing. Do not hardcode a temporary free promotion or claim zero retention. An optional per-session request budget is helpful; routine model discovery and connection tests must not incur paid generations.
+
+Use validated configured remote endpoints. Require HTTPS except an explicitly configured local/private development server. Do not let external request bodies turn the server into an arbitrary URL/file fetcher. For provider-returned downloads, validate schemes, destinations, redirects and byte limits; do not forward authorization to another host. Reference audio upload, if added later, uses bounded authenticated asset upload and opaque IDs, not arbitrary local paths or unvalidated URLs.
+
+## 8. Runtime packaging, compute coordination, and coexistence
+
+### 8.1 Managed runtime isolation
+
+Create an explicit runtime manifest for each local provider, containing immutable source/model revisions, Python version, platform/architecture, dependency lock hashes, required files and checksums, license identifiers, worker protocol version, and qualified hardware profiles. Keep model download/update separate from app source synchronization.
+
+Build ACE-Step in its own arm64 environment. Do not run its interactive launch scripts at app startup: those scripts may install/update dependencies and are not a reproducible application runtime. The user should be able to install/repair the feature inside Nativ. A release may bundle the runtime or install a versioned prebuilt runtime archive on demand, but the latter needs an authenticated, integrity-checked manifest/archive and a tested download/extract/rollback path. No curl-pipe-shell, mutable main branch checkout, or runtime pip upgrade.
+
+Preserve the base server runtime and its image/chat/STT/TTS behavior. Include all native libraries and codec requirements, ensure relative load paths work from a signed app, and verify packaging without relying on a developer's Homebrew PATH. If an export codec is missing, show an actionable unsupported format; never save a WAV with an .mp3 extension. Account for FFmpeg and library licensing when shipping binaries.
+
+Mac signing/notarization tests must cover nested interpreters, workers, dylibs and runtime archives. Do not disable release security settings just to make an unsigned helper load. Use Nativ's current release conventions and report any owner certificates/keys still required. Downloads must check available disk space for both compressed and expanded runtime/model files, support cancellation/resume, and never delete an unrelated model directory.
+
+### 8.2 Compute admission applies to API requests too
+
+Use one shared compute-admission boundary for local heavyweight music and Nativ's other local inference. Do not claim that InferenceActivityCoordinator alone supplies this boundary. Reuse a compatible coordinator from the translation feature if present; otherwise add a small shared lease mechanism with host/server/worker adapters.
+
+Required policy:
+- Active local Chat, Images, STT/TTS or Live Translate prevents starting a new exclusive local music job.
+- Queued music does not load weights while waiting. Existing in-flight work is not killed to make room.
+- While local music owns its exclusive lease, a conflicting new inference request receives a clear busy response or joins an explicitly supported queue; it never runs concurrently through an unguarded API path.
+- A live translation session has priority over starting queued music. If translation is requested while a non-pausable music job runs, offer explicit cancel-and-start or wait; never simulate pause or silently restart a song.
+- Hosted/remote generation does not claim the Mac's inference lease, although local playback still participates in audio coordination.
+- All terminal paths, exceptions, cancellation, process death and shutdown release the lease only after the actual owned inference and child processes have stopped.
+
+A cross-process advisory shared/exclusive lock with process-owned descriptors is one suitable implementation when no coordinator exists: ordinary active inference holds a shared lease, music generation holds an exclusive lease. Lock ownership must cover the actual inference/stream lifetime, not merely HTTP submission. Combine cross-process locks with correct in-process request coordination; one shared global descriptor is not proof that two requests exclude each other. If using this approach, test process-exit release, two concurrent requests in the same process, two processes, and music waiting while a streamed chat response is still active. Avoid adding a broad new scheduling framework when a narrow adapter suffices.
+
+Server death must not leave an orphan worker generating after its lease disappeared. Keep admission ownership effective for the worker's entire lifetime: use a tested parent-death watchdog/owned process strategy that terminates children, or retain blocking admission until restart recovery proves the old worker has exited. Do not release a lease just because Cancel was requested. Test SIGKILL of the server with a live worker, immediate restart and a competing inference request. Check worker identity rather than killing a reused PID or every Python process.
+
+Admission is also memory-aware. A supposedly idle but resident large model can still prevent music from fitting. Use the existing supported unload/cache mechanism under the appropriate lease and do not discard another feature's active context. Display Waiting for memory or offer a smaller profile; never silently move the request to a paid provider. Check available unified memory, memory pressure and thermal signals, and leave enough for macOS/UI. Do not equate checkpoint download size with peak runtime memory.
+
+Pause music playback when an active microphone/translation workflow would otherwise capture it, using the shared audio coordinator. Resume only according to the user's explicit playback preference. Stop playback cleanly on output-device changes or route loss; a voice feature should not leave a song playing unexpectedly through speakers.
+
+### 8.3 Keep the shared HTTP event loop responsive
+
+Inspect the selected packaged mlx-vlm image generation and edit handlers. At the research pin they call get_cached_model and _generate_all synchronously inside async handlers, blocking the ASGI loop. Prefer a pinned upstream version with a verified fix. If still present, carry a small version/hash-guarded packaging patch confined to these handlers and a dedicated execution helper; include it in the runtime fingerprint and fail clearly on an unexpected source layout.
+
+Keep request reading, authentication and async admission on the ASGI loop. Submit the full blocking image load/generate-or-edit/encode operation to one dedicated serial MLX execution worker and await it asynchronously. Give that worker explicit MLX stream ownership and coordinate cache unload/replacement under the same lifetime lease. The current mlx-audio InferenceBroker is a useful implementation precedent, not proof that this refactor is automatically safe. Preserve image routes, payloads, responses and authorization.
+
+Do not call asyncio.to_thread on an async handler, forward a live ASGI request across event loops, scatter MLX operations across arbitrary pool threads, or increase Uvicorn worker count as a shortcut. Persist/acknowledge music jobs before waiting for compute; status/events/cancel must never wait for an inference lock. Test both Images generation and edits concurrently with Music info/status/events/cancel and health, using a slow deterministic worker and real Apple Silicon inference. Verify cache lifecycle, serial image execution and shutdown. If the dedicated worker fails qualification, a separate inference process behind the control service is an explicit fallback requiring a bounded design update, not a hidden broad rewrite.
+
+## 9. Upstream synchronization that preserves custom features
+
+There is no honest guarantee that arbitrary future upstream changes merge and behave correctly without maintenance. Build a system that automates discovery, preparation and verification, and prevents an uncertain integration from replacing a working fork.
+
+Keep origin pointing at my fork and upstream read-only at Neywa-Labs/nativ. main is the customized product. If the earlier translation work already added synchronization, extend that workflow and its test matrix to include Music. Do not create two bots that merge upstream independently.
+
+Default policy: check daily for new stable upstream releases; offer workflow_dispatch for a selected upstream main commit. Record the current integrated baseline and do not downgrade a newer main to an older release. Fetch upstream tags into a separate local namespace so fork release tags cannot collide. Resolve all candidates to immutable SHAs.
+
+For each unintegrated source SHA:
+1. Start from the current fork main SHA and create an immutable integration candidate named using both upstream and fork-base short SHAs.
+2. Attempt a normal merge preserving upstream ancestry. Do not squash or rebase sync merges; later merges need a correct ancestry graph.
+3. On conflict, abort, preserve main, and produce a precise report. Do not use blanket ours/theirs, reset --hard, or force synchronization.
+4. Inspect imported workflows, local Actions, and scripts run by privileged jobs before publishing an executable same-repository candidate branch. Changed privileged automation requires review before a push could execute it.
+5. Run the real combined candidate through existing regression tests, music contracts, UI/build checks, runtime packaging tests, and translation regressions when present.
+6. Open one reviewable sync PR showing source SHA, base SHA, runtime/interface changes, and actual test evidence. If main advances, build a new candidate or safely revalidate the exact updated merge; old green checks do not apply.
+7. Merge only under the configured branch/review policy. Start with reviewed merges; optional automatic merge later is restricted to qualified low-risk changes and never bypasses protected paths.
+8. Advance the integrated baseline only after successful integration. A no-op poll creates no commit, PR, tag, or release.
+
+Protect workflow/signing/updater changes, Python/runtime locks, model manifests/licenses, API/auth contracts, persistence migrations, music adapters, and shared audio/compute integration from unattended merging. A clean textual merge does not prove compatibility.
+
+Use read-only validation jobs without signing/provider secrets and a separate write-capable orchestration job. Never execute fetched code or install its dependencies in a process holding write/signing credentials. Use protected environments, least-privilege permissions, pinned Actions, concurrency controls, and persist-credentials:false where appropriate. Do not build arbitrary PR code under pull_request_target.
+
+Account for actual GitHub event behavior. At research time, GITHUB_TOKEN-created PR opened/synchronize/reopened events could create approval-required runs, and its ordinary pushes did not recursively trigger push workflows. A short-lived, fork-scoped GitHub App token or explicit workflow_dispatch can support real validation. Do not wait for checks that cannot start. Keep a required aggregate check that fails if mandatory jobs were skipped, cancelled, stale, or absent.
+
+Daily Actions schedules are best effort and can stop after public-repository inactivity. Show the last successful synchronization check and retain manual dispatch. A release event in my fork does not subscribe to releases in the upstream repository.
+
+Inspect inherited workflows before enabling them. pages.yml currently runs on a schedule, writes statistics and deploys Pages; guard/disable upstream-only website publishing unless I explicitly want that deployment. Keep exactly one authoritative release publisher. Settings/secrets that require repository-owner access should be listed concretely after local implementation, not invented or treated as a reason to stop writing the feature.
+
+## 10. Fork identity and installed-app updates
+
+Source synchronization and updating the installed app are separate operations. After integrating upstream, build my fork including Music and any translation feature, then deliver my fork's binary through its own channel.
+
+At the inspected snapshot:
+- Configuration/Nativ-Info.plist sets stable SUFeedURL to Neywa-Labs releases.
+- SoftwareUpdater.swift separately hardcodes the upstream preview appcast.
+- Signing.xcconfig contains upstream signing/update defaults; release scripts have upstream profile/repository assumptions.
+
+If the earlier plan already isolated these, preserve and test that work. Otherwise:
+- Configure fork-owned stable and preview feeds, own Sparkle signing key, bundle identity and release metadata.
+- Disable automatic update startup until a valid fork feed and public key are configured. Do not fall back to the upstream binary.
+- Keep private keys out of git and require protected signing jobs.
+- Inspect archive generation, the built Info.plist, embedded key, downloaded archive URLs and signatures. Testing only source strings is insufficient.
+- Use a fork-specific application-support/settings/Keychain identity, while keeping previously adopted fork data paths stable. Data migration must be explicit, backed up and tested; no silent deletion or import from the original app.
+- Preserve internal scheme/product naming initially where release scripts assume Nativ.app and Nativ-<version>.dmg. Change display/bundle identity deliberately; fully parameterize and test any deeper rename.
+- Use versions accepted by the existing numeric/rc parser. Do not introduce +fork or -music suffixes without changing/testing all parsers. Store upstream tag/SHA and feature/runtime revisions in separate metadata.
+- Supply my own valid provisioning/signing/OAuth configuration where required, or make truly optional integrations explicitly configurable. Do not reuse upstream credentials/profiles or invent placeholders that pass a superficial check.
+- Make runtime/model pins independently reviewable. An app update must not silently upgrade music dependencies or reconvert a large model during launch.
+
+Run an upgrade preservation check using an existing fork fixture: install/update to the candidate, verify Music jobs/songs/lyrics/settings and translation settings still work, and verify the updater cannot select an official upstream binary. If publishing with GITHUB_TOKEN, explicitly chain/dispatch the release build rather than assuming another release event starts it.
+
+## 11. Implementation tasks
+
+Use small, reviewable commits. Add meaningful behavior/contract tests for the risks below; do not produce dozens of tests that merely repeat constants. Each task should end in an independently inspectable result. Use existing test conventions and accurate commands from the current checkout.
+
+### Task 1: Baseline audit, model matrix, and real feasibility spike
+
+Files: create Docs/features/music.md and Docs/development/music-runtime-qualification.md; inspect files in section 2 and provider sources in section 14.
+
+Consumes: current fork/upstream and actual Mac hardware or explicitly documented lack thereof.
+Produces: a selected ACE runtime/checkpoint lock, provider capability matrix, hardware profile, and precise qualification outcomes.
+
+- [ ] Record current commit, applicable rules, existing translation/update work, supported macOS/Xcode, and actual server package versions.
+- [ ] Verify one complete ACE 30-second instrumental and one short vocal generation using the intended Mac runtime; measure stages and memory without modifying Nativ's environment.
+- [ ] Inspect MiniMax's official remote protocol separately from the current mlx-audio Mac implementation. Verify library music support versus HTTP routes; otherwise document exactly which runtime/account validation is missing.
+- [ ] Inspect the current mlx-audio MiniMax implementation and official Stable Audio 3 MLX implementation. Qualify MXFP8 lyric/audio behavior and a Small Music instrumental; check runtime pins, true output rates, duration semantics and actual memory limits.
+- [ ] Pin the current official MiniMax, Lyria and Stable Audio request/response fixtures and identify account restrictions. Do not make paid calls for discovery.
+- [ ] Record which controls are native, prompt hints, unsupported, or unknown. Resolve misleading sample-rate/parameter/model-name examples explicitly.
+
+Deliverable: a feasible default and accurate adapter contracts before polishing UI around an unsupported model.
+
+### Task 2: Durable music domain and job lifecycle
+
+Create: PythonDistribution/Overlay/nativ_music/contracts.py, service.py, repository.py, catalog.py, assets.py, and providers/base.py.
+Tests: scripts/tests/test_music_jobs.py, test_music_assets.py, test_music_capabilities.py.
+
+Interfaces: validated GenerationRequest -> MusicJob; service.submit(request, idempotency_key), get_job(job_id), list_jobs(cursor), events(job_id, cursor), cancel(job_id), resume(job_id), release_remote_reservation(job_id, acknowledgment); repository transaction methods; asset import and reference/trash/restore operations; store identity and scheduler ownership.
+
+- [ ] Test concurrent duplicate submissions produce one job/provider attempt; a conflicting body with the same key is rejected.
+- [ ] Test terminal-state races, stale attempt events, queue overflow, pre-send durable dispatch intent, crashes around remote acceptance, retained uncertain reservations, and explicit Resume after restart.
+- [ ] Test that restart preserves never-dispatched cancelled/failed jobs and does not offer Resume for them; a persisted cancellation request cannot become resumable work.
+- [ ] Test atomic file import, disk-full/corrupt audio, interrupted finalization, retained original bytes, reference reservation/reconciliation, and referenced-asset deletion/restore.
+- [ ] Test one scheduler per store, stable store_id, profile revisions, provider disablement before dispatch, and no silent retargeting of accepted jobs.
+- [ ] Implement the state machine and bounded queues/event storage with transactional persistence and migrations.
+- [ ] Verify schema upgrades preserve earlier fixtures and fail clearly on an unsupported newer schema.
+
+Deliverable: a deterministic, durable job service using a fake provider only as a test dependency.
+
+### Task 3: Nativ API, Swift client, and bundled package
+
+Create: nativ_music/routes.py; Sources/NativServerKit/NativMusicClient.swift and NativMusicTypes.swift; Docs/api/music.md.
+Modify: nativ_server.py, Python runtime build/resource fingerprint scripts, Developer endpoint listing, project.yml.
+Tests: test_music_api.py, test_music_packaging.py, Tests/NativTests/NativMusicClientTests.swift or an appropriate framework test target.
+
+Swift interfaces: submit(_:idempotencyKey:) async throws -> MusicJob; job(id:) async throws -> MusicJob; jobs(cursor:) async throws -> MusicJobPage; events(jobID:lastEventID:) -> AsyncThrowingStream<MusicEvent, Error>; cancel(jobID:) async throws -> MusicJob; resume(jobID:) async throws -> MusicJob; download(assetID:to:) async throws -> URL. Define info/session/catalog/reference/restore/reservation methods consistently with the wire schema.
+
+- [ ] Test create/status/pagination/events/cancel/resume/reference/restore/content routes with auth on every route, including ranges and reconnect after event pruning.
+- [ ] Test unsupported controls, unready model, unknown IDs, duplicate key conflict, overload, and safe error responses.
+- [ ] Implement the thin router, real startup/shutdown integration, and client transport using existing authorization.
+- [ ] Recursively package/fingerprint nativ_music; prove changing or deleting a package file invalidates the cached distribution and changes the actual bundled files.
+- [ ] Run a packaged-server smoke test from outside the source checkout, with no music weights installed. Health/chat/image routes must retain their behavior.
+- [ ] Enumerate the actual packaged app.routes; require each Music method/path exactly once and fail a future upstream route collision clearly.
+- [ ] Verify app and external curl/Python clients see the same test job and asset.
+
+Deliverable: a stable public API and production client, independent of native workspace visibility.
+
+### Task 4: Managed local ACE-Step provider
+
+Create: nativ_music/providers/acestep.py, runtime.py, a small worker/adapter package, a separate runtime lock/manifest and build/install scripts under PythonDistribution/MusicRuntimes/; native setup view support under Features/MusicGeneration/.
+Tests: test_music_acestep.py, test_music_runtime.py, runtime packaging checks.
+
+Consumes: Task 1's exact runtime/checkpoint profile and Task 2's provider contract.
+Produces: a real local provider whose successful result reaches the canonical asset store.
+
+- [ ] Add fixtures for envelope/result-string parsing, status transitions, errors, actual output metadata and private file import.
+- [ ] Test missing/partial models, a port occupied by an unrelated process, helper crash, cancellation, and environment-key filtering.
+- [ ] Implement isolated installation/download with checksums, identity handshake, real readiness and repair flow.
+- [ ] Implement real generation/progress and bounded cancellation; make sure worker termination never targets an unrelated process.
+- [ ] Verify that Nativ's existing Transformers/MLX stack has not changed and that chat/images/STT/TTS still import and run their normal smoke paths.
+- [ ] Generate real instrumental/vocal fixtures on a supported Mac and test replay/export from the signed/bundled runtime path.
+
+Deliverable: a usable local ACE-Step feature without a manual terminal server requirement.
+
+### Task 5: Local MiniMax and Stable Audio, plus hosted adapters
+
+Create: providers/minimax_mlx.py, stable_audio_mlx.py, minimax_remote.py, minimax_cloud.py and lyria.py; optional stable_audio_cloud.py; managed worker manifests, provider configuration/credential UI and fixture-based adapter tests.
+
+Consumes: provider contracts, safe credential configuration, official schemas.
+Produces: separately labelled, real adapters with capability-driven controls.
+
+- [ ] Implement and test official remote MiniMax Music3 request mapping, binary output, authentication, health, unsupported runtime and uncertain connection outcomes.
+- [ ] Implement MiniMax cloud for eligible accounts. Test HTTP-200 application errors, hex decode, unavailable account, no undocumented seed/duration fields, and unconfirmed remote cancellation.
+- [ ] Implement MiniMaxMusic3MLXProvider using the verified mlx_audio.music loading/generation API and pinned MXFP8 profile in an owned worker. Test the [instrumental] mapping, required lyrics, single completed result, requested duration ceiling, rejected ignored kwargs and finite 44.1 kHz output. Keep unqualified hardware/profiles experimental; do not silently switch them to CUDA/cloud.
+- [ ] Implement StableAudio3MLXProvider using the official optimized/mlx code with Small Music and its matched encoder/decoder. Test 120-second profile limits, 44.1 kHz output, absence of a lyric-singing contract, effective-control gating and progressive memory release.
+- [ ] Implement Lyria 3.5's actual Interactions request and steps/content audio+lyrics response, using the current verified model ID. Reject unsupported hard duration/seed claims.
+- [ ] Implement Stable Audio 3.0 as the additional instrumental provider when included in the selected scope: submit 202/id, persist its ID, poll with bounded backoff, import result, retain actual seed/format. Do not send invented lyrics fields.
+- [ ] Exercise all adapters against realistic fixtures; run small real paid tests only with eligible credentials and explicit authorization/budget. Store no keys or private user audio in fixtures.
+
+Deliverable: multiple real deployment choices, without requiring MiniMax's now-closed new-customer cloud onboarding.
+
+### Task 6: Native Music workspace, sessions, and player
+
+Create: Features/MusicGeneration/MusicGenerationView.swift, MusicGenerationViewModel.swift, MusicComposer.swift, MusicResultCard.swift, MusicPlaybackCoordinator.swift, MusicLibraryObserver.swift and focused settings/setup views as needed.
+Modify: ChatWorkspacePicker.swift, ChatWorkspaceView and minimal control-panel dependency/session/sidebar integration.
+Tests: MusicSessionSynchronizationTests, MusicPlaybackTests, MusicPresentationStateTests.
+
+Consumes: NativMusicClient; server job/session/asset IDs; Nativ design components.
+Produces: a complete Music workspace with one shared observer/player and per-window drafts.
+
+- [ ] Test two-window selection versus shared generation state, workspace/server switching, store-namespaced media caching, reconnect, relaunch/Resume, and API-created jobs.
+- [ ] Implement prompt/lyrics/instrumental composition and a capability-driven model menu with accurate deployment/readiness labels.
+- [ ] Implement all result/error/setup states and real waveform playback/seek/volume/export.
+- [ ] Verify no accidental autoplay, no duplicate model loads in view lifecycle, no main-thread audio decode, and no cancellation caused by .onDisappear.
+- [ ] Inspect screenshots and interaction on actual macOS in light/dark, narrow/normal windows, keyboard/VoiceOver and reduced-motion settings. Match existing Images chrome rather than adding a separate visual theme.
+
+Deliverable: a native feature that looks and behaves like part of Nativ.
+
+### Task 7: Chat tool and Artifacts integration
+
+Create: ChatMusicTool.swift and music result rendering/attachment support using the current media conventions.
+Modify: tool registry/dispatch/access-level flow; ArtifactKind/Usage/catalog/index/preview/trash; shared data-change integration.
+Tests: ChatMusicToolTests, MusicArtifactTests, old-session migration/deletion regressions.
+
+- [ ] Test explicit generate_music submission yields a stable job reference and renders completion without duplicate submission or holding the chat compute lease.
+- [ ] Honor the current tool approval/access-level policy; require explicit remote selection and never infer paid-provider authority from model-generated text.
+- [ ] Store references to existing music assets and preserve prompt/lyrics provenance; never send generated output through microphone ASR.
+- [ ] Implement a durable reference outbox with reserve/commit/reconcile behavior; test a crash between registering a music reference and saving its chat attachment. Artifacts must never move a canonical original independently.
+- [ ] Add first-class audio filtering, preview, open-in-Music, search and recoverable deletion with reference checks.
+- [ ] Load old chat/image fixtures and verify decoding, sidebar navigation, trash/recovery and search still work.
+
+Deliverable: music is usable from Chat and discoverable through the app's existing artifact system.
+
+### Task 8: Resource coordination and failure recovery
+
+Create/extend: nativ_music/resources.py and the smallest host/server lease adapter; existing audio coordinator where present.
+Tests: test_music_resource_admission.py, MusicAudioCoordinationTests, process lifecycle regressions.
+
+- [ ] Test a direct API request competes with existing chat/image/audio inference just as a UI request does.
+- [ ] Test a streamed chat holds its active lease through completion/cancel, music waits without weights loaded, and admission remains safe after server SIGKILL with a still-running worker and immediate restart.
+- [ ] Qualify the image-handler responsiveness fix when the selected runtime needs it: both generation/edit must leave Music status/events/cancel and health responsive, with correct MLX streams/cache ownership and unchanged image responses/authentication.
+- [ ] Wire Live Translate's active session when implemented; verify it prevents new local music and that music playback does not feed its microphone.
+- [ ] Test memory pressure, unsupported duration, GPU failure, sleep/wake, app quit/server stop, and output-device loss.
+- [ ] Verify remote generation does not unnecessarily block local inference and that cancellation semantics match the actual backend.
+
+Deliverable: bounded coexistence without silent data loss, runaway work or false pause/cancel guarantees.
+
+### Task 9: End-to-end qualification, performance, and regressions
+
+Files: Docs/development/music-runtime-qualification.md, relevant Swift/Python test suites, hardware/manual test scripts and screenshots in the normal PR artifact channel.
+
+- [ ] Run unit/contract/API tests without network, paid keys or large weights. Run real runtime checks separately and clearly label their environment.
+- [ ] Verify an API-created ACE job appears in Music and Artifacts, survives closing/reopening the UI, plays/seeks, exports, and deletes/restores correctly.
+- [ ] Run at least 20 local generations across the qualified profiles, instrumental/vocal prompts, multiple styles, selected durations and seeds, with at least five per released local provider. Include English and Dutch lyrics if those are advertised. Record quality issues, not just file existence.
+- [ ] Test cancellation at queue, preparation, inference and finalization; disk-full, truncated downloads, expired remote URLs, duplicate submissions and app restart around a completed provider response.
+- [ ] Measure cold setup/start separately from warm generation, real-time factor, peak memory/swap, time to first playable audio, UI frame responsiveness, and cleanup after repeated jobs.
+- [ ] Keep experimental MiniMax separate from release-qualified profiles. A passing mock adapter test does not qualify audio quality or Mac compatibility.
+- [ ] Run existing chat/image/voice/artifact/auth/updater regressions and the translation suite if present.
+
+Deliverable: evidence of usable audio and a responsive native app, with measured limits attached to the exact configuration.
+
+### Task 10: Upstream automation and fork release preservation
+
+Files: existing or new upstream-sync workflow/script/tests; one authoritative fork release workflow; updater/signing configuration; music-ci checks; runtime packaging and upgrade fixtures.
+
+- [ ] Implement/extend the daily stable-upstream candidate flow and manual SHA dispatch without changing main during preparation.
+- [ ] Test no-op sync, conflict, stale base, imported privileged workflow changes, failed/skipped tests, and preservation of music/translation code.
+- [ ] Add all new test classes/targets to project.yml and executed CI selectors; add package fingerprint/import gates and schema compatibility checks.
+- [ ] Verify stable and preview appcasts cannot fall back to upstream and that the built app carries the correct fork identity/key.
+- [ ] Validate one controlled upgrade preserves existing songs/jobs/settings, model caches and translation settings.
+- [ ] Document exact owner-only branch protections, required check names, secret names and signing setup still needed. Do not fabricate credentials or publish an unreviewed release.
+
+Deliverable: a fork that can continue receiving tested upstream improvements while preserving its custom product.
+
+## 12. Acceptance criteria and concrete performance targets
+
+Release acceptance:
+- Music exists beside Chat and Images and follows the current native design.
+- A real local ACE-Step generation works on the qualified Apple Silicon profile without altering the base MLX runtime.
+- MiniMax Music3 through the current mlx-audio MXFP8 route and Stable Audio 3 Small Music through its official MLX route are implemented as real local providers, with qualification status and measured limits.
+- MiniMax local/remote/cloud routes are clearly distinguished and never advertised beyond their actual verified availability.
+- At least one accessible official hosted alternative has a real implemented adapter; every enabled adapter has current contract tests.
+- UI and API operate on the same durable job, session and asset identities.
+- Canonical stores have persistent identities and one scheduler; remote-server playback uses an authenticated disposable client cache.
+- External clients can discover, submit, observe, cancel, resume, download, manage references, trash and restore safely, with required idempotency and authentication.
+- Crash recovery does not automatically resend unresolved remote submissions or dispatch recovery-held work; uncertain cancellation retains its remote capacity reservation until reconciled or deliberately released.
+- Python alone mutates canonical music originals/references/trash, and Swift reference reconciliation prevents used songs from being deleted.
+- Files, actual audio metadata and generation parameters persist correctly through restart and upgrade.
+- Playback is usable and native; generated music is a first-class artifact.
+- Existing chat/images/voice, and Live Translate when present, retain their behavior.
+- Music control routes remain responsive during actual image generation and editing in the selected bundled runtime; an orphan worker cannot bypass compute admission after server restart.
+- Upstream merges and own binary updates are separate and tested.
+
+Engineering targets, not measured claims:
+- Submit a ready-model job and return its 202 acknowledgment within one second on an idle local server; do not wait for generation.
+- Local status, cancel acknowledgment and health remain below a one-second response target while an image worker is busy; record measured percentiles and distinguish network latency for remote canonical servers.
+- Reflect committed job state in the active UI within one second while connected, using bounded events/polling.
+- A Cancel click responds visually immediately; queued cancellation prevents execution; an owned unresponsive local worker is stopped within a documented bounded grace period, initially five seconds, plus verified OS termination time.
+- Playback/seek/scroll remains responsive while generation runs; no long model/decoder work on MainActor.
+- No growth in active workers, event queues, file descriptors or retained waveform buffers across 20 sequential jobs.
+- Preserve valid original audio even if preview generation, export conversion, or a cloud account later fails.
+
+There is no universal promised song-generation speed. Record real measurements for each Mac chip/RAM, duration, checkpoint, quantization, LM setting, sampler and cold/warm state. Only offer long durations and optional profiles after they pass their own measured limits. Do not use A100 numbers to market a Mac build.
+
+Verification commands must come from the actual project. Expected starting points include make xcode-generate, make xcode-build, targeted xcodebuild test invocations, and python3 -m unittest discover -s scripts/tests -p 'test_music*.py' -v where that matches the chosen test framework. If introducing pytest for worker tests, lock its test dependency and provide the exact reproducible command. A test file excluded by project.yml or -only-testing does not count as a passing gate.
+
+## 13. Final implementation handoff
+
+Report in Dutch:
+1. What works in Music, Chat, Artifacts and the API.
+2. Exact model/runtime versions, execution location and supported controls.
+3. Real hardware/audio results versus fixture-only tests and unavailable tests.
+4. How to install/prepare ACE-Step and configure each MiniMax/hosted option.
+5. Copyable API examples using a placeholder for the user's own Nativ token, including duplicate-key behavior, event observation, cancel and authenticated download.
+6. How existing translation and audio workflows coexist with music.
+7. How upstream sync and fork binary updates work, with exact remaining owner setup.
+8. Changed files/commits, test results, material limitations and any adapter left experimental or unavailable.
+
+Do not call the task finished because a view compiles or a selector lists model names. Complete the real paths and clearly identify any access/hardware gate that prevents verification. Prepare all reversible implementation work before asking for a concrete final action such as release publication.
+
+## 14. Research references and revalidation points
+
+Repository baseline and architecture:
+https://github.com/CharafChnioune/nativ/tree/5cb79ed65659414774745c1331cce08397d16055
+https://github.com/Neywa-Labs/nativ
+https://github.com/CharafChnioune/nativ/blob/5cb79ed65659414774745c1331cce08397d16055/Sources/Nativ/Features/Chat/ChatWorkspacePicker.swift
+https://github.com/CharafChnioune/nativ/blob/5cb79ed65659414774745c1331cce08397d16055/Sources/Nativ/Features/ControlPanel/ControlPanelDetail.swift
+https://github.com/CharafChnioune/nativ/blob/5cb79ed65659414774745c1331cce08397d16055/Sources/NativServerKit/NativImageClient.swift
+https://github.com/CharafChnioune/nativ/blob/5cb79ed65659414774745c1331cce08397d16055/PythonDistribution/Overlay/nativ_server.py
+https://github.com/CharafChnioune/nativ/blob/5cb79ed65659414774745c1331cce08397d16055/PythonDistribution/Scripts/build_mlx_vlm_server.py
+https://github.com/CharafChnioune/nativ/blob/5cb79ed65659414774745c1331cce08397d16055/PythonDistribution/Requirements/mlx-vlm-server-macos-arm64.txt
+https://github.com/Neywa-Labs/mlx-vlm/blob/a54f1a0d86fa45c466c00d819ac6ac5ba9d61ac4/mlx_vlm/server/app.py
+https://github.com/Neywa-Labs/mlx-vlm/blob/a54f1a0d86fa45c466c00d819ac6ac5ba9d61ac4/mlx_vlm/server/openai.py
+https://github.com/Neywa-Labs/mlx-audio/blob/ecd43b9f5af55982f4e1bd810d7b60cbc3dfae23/mlx_audio/server_inference.py
+
+ACE-Step:
+https://github.com/ace-step/ACE-Step-1.5
+https://github.com/ace-step/ACE-Step-1.5/releases/tag/v0.1.8
+https://github.com/ace-step/ACE-Step-1.5/blob/v0.1.8/pyproject.toml
+https://ace-step.github.io/ACE-Step-1.5/en/INSTALL
+https://ace-step.github.io/ACE-Step-1.5/en/API
+https://ace-step.github.io/ACE-Step-1.5/en/GPU_COMPATIBILITY
+https://huggingface.co/ACE-Step/Ace-Step1.5
+
+MiniMax:
+https://huggingface.co/MiniMaxAI/MiniMax-Music3
+https://huggingface.co/MiniMaxAI/MiniMax-Music3/blob/main/LICENSE
+https://github.com/MiniMax-AI/MiniMax-Music3
+https://platform.minimax.io/docs/guides/music-generation
+https://platform.minimax.io/docs/guides/local-deploy-music-3
+https://platform.minimax.io/docs/api-reference/music-generation
+https://platform.minimax.io/docs/api-reference/music/api/openapi.json
+https://github.com/appautomaton/mlx-minimax-music3
+https://pypi.org/project/mlx-minimax-music3/
+https://github.com/Neywa-Labs/mlx-audio/blob/ecd43b9f5af55982f4e1bd810d7b60cbc3dfae23/mlx_audio/music/models/minimax_music3/README.md
+https://github.com/Neywa-Labs/mlx-audio/blob/ecd43b9f5af55982f4e1bd810d7b60cbc3dfae23/mlx_audio/music/models/minimax_music3/minimax_music3.py
+https://github.com/Neywa-Labs/mlx-audio/blob/ecd43b9f5af55982f4e1bd810d7b60cbc3dfae23/docs/api-reference/music.md
+https://github.com/Neywa-Labs/mlx-audio/blob/ecd43b9f5af55982f4e1bd810d7b60cbc3dfae23/mlx_audio/music/utils.py
+https://huggingface.co/mlx-community/MiniMax-Music3-mxfp8
+
+Stable Audio local and other open-weight comparisons:
+https://github.com/Stability-AI/stable-audio-3/blob/790793b89ddceea612be9ce42ff6830d18f6fa57/README.md
+https://github.com/Stability-AI/stable-audio-3/blob/790793b89ddceea612be9ce42ff6830d18f6fa57/optimized/mlx/README.md
+https://huggingface.co/stabilityai/stable-audio-3-small-music
+https://huggingface.co/stabilityai/stable-audio-3-optimized
+https://stability.ai/license
+https://github.com/HeartMuLa/heartlib
+https://github.com/multimodal-art-projection/YuE/blob/main/docs/hardware.md
+https://huggingface.co/m-a-p/YuE2-3B
+https://huggingface.co/facebook/musicgen-small
+
+Official hosted alternatives:
+https://ai.google.dev/gemini-api/docs/music-generation
+https://ai.google.dev/gemini-api/docs/models/lyria-3.5
+https://ai.google.dev/gemini-api/docs/realtime-music-generation
+https://ai.google.dev/gemini-api/docs/pricing
+https://docs.stability.ai/api-reference/stable-audio/text-to-audio
+https://docs.stability.ai/api-reference/audio-results/fetch-audio-result
+https://docs.stability.ai/pricing
+https://platform.suno.com
+https://help.udio.com/en/articles/10756277-udio-public-api
+
+Updates and release behavior:
+https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow
+https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule
+https://sparkle-project.org/documentation/
+
+The research and this prompt do not certify a runtime or provider account. Re-read current primary documentation, resolve exact revisions, inspect code, and record real execution evidence before claiming a configuration supported.
+

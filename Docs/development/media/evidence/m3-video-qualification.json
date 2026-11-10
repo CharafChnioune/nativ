@@ -1,0 +1,76 @@
+{
+  "dates": ["2026-11-09", "2026-11-10"],
+  "evidence_class": "real model runs: pinned weights, real MLX inference through the canonical API of relocated ad-hoc candidates, canonical media probe and AVFoundation checks; not mocks and not codec fixtures",
+  "qualified": false,
+  "human_viewing_review": null,
+  "human_viewing_review_status": "open by owner decision (not now)",
+  "machine": "Apple M3 Max (16 cores), 128 GiB unified memory, macOS 27.2",
+  "runtime": "mlx-video-87db56a for both profiles; 87db56a was still the newest mlx-video commit on 2026-11-10",
+  "corpus": "scripts/benchmarks/video/qualify.py: seeds 42/123, landscape and portrait",
+  "units": "seconds; bytes; worker footprint in MiB (lifetime maximum per job)",
+  "wan2.2-ti2v-5b-q8-local": {
+    "candidate": "3f92ecdf (Wan worker code unchanged afterwards)",
+    "succeeded": 4,
+    "columns": ["case", "operation", "seed", "wall_s", "text_encode_s", "model_load_s", "denoise_50_steps_s", "vae_decode_tiled_s", "worker_total_s", "mlx_peak_bytes", "max_rss_bytes", "output_bytes"],
+    "cases": [
+      ["case0-t2v-landscape", "text_to_video", 42, 1079.1, 2.4, 0.2, 995.8, 78.2, 1077.2, 49174169736, 9839738880, 2540197],
+      ["case1-t2v-portrait", "text_to_video", 123, 1081.2, 3.7, 0.2, 996.7, 77.9, 1079.0, 49174169736, 9836298240, 2352851],
+      ["case2-i2v-landscape", "image_to_video", 123, 1102.7, 2.5, 0.2, 1019.5, 77.7, 1101.0, 49187195008, 9850388480, 1303971],
+      ["case3-i2v-portrait", "image_to_video", 42, 1102.5, 2.5, 0.2, 1019.7, 77.6, 1100.7, 49187195008, 9849536512, 563920]
+    ],
+    "worker_footprint_mib": [42127, 44020, 44042, 44043],
+    "output": "H.264 High yuv420p, 832x480 or 480x832, 81 frames, 24 fps, 3.375 s, no audio, rotation 0, 0 decode errors, AVFoundation playable, mid seek 1.6867 s lands on the frame at 1.6667 s",
+    "status_latency_ms": {"p50": "5.2-5.3", "p95": "8.2-9.7", "max": "14.3-23.8", "samples_per_job": "2098-2148"},
+    "swap_used": "673.94M before, 633.94M after (no growth)",
+    "memory_pressure_level": "1 (normal)",
+    "leftover_workers": 0,
+    "encoder": "imageio-ffmpeg pipes raw frames into the managed FFmpeg 9.0.2 (x264 core 165)",
+    "attempts": [
+      ["r1", "f17ea0a9", "failed system_swap_growth during the tiled VAE decode: the worker grew to 99 GB (MLX buffer cache; a decode-only probe showed 105.2 GB footprint vs 36.7 GB MLX active)", "29cbf1f4: 4 GiB MLX cache limit"],
+      ["r2", "29cbf1f4", "failed worker_failed at encode: the managed FFmpeg 9 lacked the fd protocol that imageio-ffmpeg uses for stdin (-i -)", "2f5b4be9: fd protocol enabled"],
+      ["r3", "3f92ecdf", "4/4 succeeded", null]
+    ]
+  },
+  "ltx-2.3-distilled-local": {
+    "candidate": "6f4ae0c3",
+    "operations": ["text_to_video"],
+    "succeeded": 4,
+    "columns": ["case", "seed", "wall_s", "text_encoder_loaded_s", "transformer_loaded_s", "stage1_end_s", "stage2_end_s", "decoded_s", "muxed_s", "mlx_peak_bytes", "max_rss_bytes", "output_bytes"],
+    "cases": [
+      ["case0-t2v-landscape", 42, 91.9, 5.1, 12.4, 36.9, 72.1, 91.4, 91.6, 40165350432, 39903412224, 582650],
+      ["case1-t2v-portrait", 123, 78.4, 3.1, 7.5, 32.1, 65.5, 77.5, 77.7, 40165350432, 39905968128, 296307],
+      ["case2-t2v-landscape", 123, 78.4, 3.4, 7.8, 32.2, 65.6, 77.6, 77.9, 40165350432, 39901790208, 196186],
+      ["case3-t2v-portrait", 42, 78.5, 3.2, 7.6, 32.0, 65.4, 77.4, 77.6, 40165350432, 39901872128, 562819]
+    ],
+    "phase_note": "offsets from job start; decoded_s = video and audio decoded; every job starts a fresh worker",
+    "worker_footprint_mib": [39798, 39798, 39799, 39801],
+    "output": "H.264 High yuv420p, 704x448 or 448x704, 97 frames, 24 fps, 4.041667 s; AAC 48 kHz stereo 4.01 s, start offset 0; rotation 0; 0 decode errors; AVFoundation playable with audio track; mid seek 2.02 s lands on the frame at 2.0 s",
+    "status_latency_ms": {"p50": "6.2-6.5", "p95": "12.9-15.5", "max": "19.4-29.4", "samples_per_job": "152-178"},
+    "swap_used": "619.69M before and after",
+    "memory_pressure_level": "1 (normal)",
+    "leftover_workers": 0,
+    "encoder": "OpenCV 4.13.0 FFmpeg backend (libavcodec 61.19, x264 core 164 r3108) writes H.264 High; the managed FFmpeg 9.0.2 muxes AAC with video stream copy, without -shortest since 862c0c3b",
+    "image_to_video": "unavailable: the LTX-2.3 VAE encoder in mlx-video 87db56a fails for every first frame ([broadcast_shapes] (1,1024,..) vs (1,2048,..); probed 224x352 to 512x768). Since 6f4ae0c3 the API returns HTTP 400 unsupported_parameter 'This operation is unavailable.' (field operation).",
+    "cancel_probes": {
+      "columns": ["cancel_after_s", "phase", "final", "cancel_to_terminal_s", "cancel_to_worker_exit_s", "leftover_workers", "compute_free_after"],
+      "rows": [
+        [2, "model and text-encoder load", "cancelled", 0.06, 0.08, 0, true],
+        [20, "stage-1 denoising", "cancelled", 0.06, 0.09, 0, true],
+        [70, "VAE decode", "cancelled", 0.06, 0.09, 0, true]
+      ]
+    },
+    "attempts": [
+      ["r1", "3f92ecdf", "rejected by the canonical probe (invalid_video: container and video duration disagree): 93 of 97 frames, 3.875 s video vs 4.01 s AAC; mlx-video muxes with -shortest", "862c0c3b: mux without -shortest"],
+      ["r2", "fca2a3d3", "byte-identical 93-frame rejection: the installed runtime still held the worker code copied at install time", "5288300c: refuse runtimes holding another build's worker code; then Repair"],
+      ["r3", "5288300c", "text-to-video landscape and portrait succeeded with 97 frames; the first image-to-video failed in the VAE encoder", "6f4ae0c3: text-to-video only"],
+      ["r4", "6f4ae0c3", "4/4 text-to-video succeeded", null]
+    ]
+  },
+  "color_tags": "absent in both outputs (no colr atom or VUI colour description); players choose BT.601 or BT.709 themselves (residual risk)",
+  "not_covered": [
+    "human viewing review of motion, subject fidelity and soundtrack (owner: not now)",
+    "LTX image-to-video (unavailable in mlx-video 87db56a)",
+    "MiniMax H3 (blocked: no checkpoint inventory; license excludes the EU)",
+    "16 GB Macs and other chips"
+  ]
+}

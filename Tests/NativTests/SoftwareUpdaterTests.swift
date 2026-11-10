@@ -167,4 +167,13 @@ final class SoftwareUpdaterTests: XCTestCase {
         ])!
         XCTAssertNil(updater(defaults()).bestUpdate(in: [upstream]))
     }
+
+    func testForkStorageStaysOutOfUpstreamNamespace() {
+        // Upstream Nativ uses ~/Library/{Application Support,Caches}/Nativ; the fork must never share them.
+        for url in [SystemTelemetryRecorder.defaultDirectory, ParakeetModelStore.cacheDirectory] {
+            XCTAssertTrue(url.path.contains("/\(NativBuildIdentity.namespace)/"), url.path)
+            XCTAssertFalse(url.path.contains("/Nativ/"), url.path)
+        }
+        XCTAssertEqual(KeychainGitHubOAuthCredentialStore.defaultService, NativBuildIdentity.namespace + ".github-oauth")
+    }
 }

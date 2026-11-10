@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "id": "ffmpeg-9.0.2-x264-b3560",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "deployment_target": "26.0",
+  "license": "GPL-2.0-or-later",
+  "network_protocols": false,
+  "sources": {
+    "ffmpeg": {
+      "version": "9.0.2",
+      "revision": "946fcce07b6dcd0331c8cc609192aeff5e1924f8",
+      "url": "https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz",
+      "filename": "ffmpeg-9.0.2.tar.xz",
+      "sha256": "8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e",
+      "bytes": 12040788
+    },
+    "x264": {
+      "version": "r3222",
+      "revision": "b35605ace3ddf7c1a5d67a2eb553f034aef41d55",
+      "url": "https://code.videolan.org/videolan/x264/-/archive/b35605ace3ddf7c1a5d67a2eb553f034aef41d55/x264-b35605ace3ddf7c1a5d67a2eb553f034aef41d55.tar.bz2",
+      "filename": "x264-b35605ace3ddf7c1a5d67a2eb553f034aef41d55.tar.bz2",
+      "sha256": "6eeb82934e69fd51e043bd8c5b0d152839638d1ce7aa4eea65a3fedcf83ff224",
+      "bytes": 848719
+    }
+  },
+  "encoders": ["libx264", "aac", "pcm_s16le", "pcm_f32le"],
+  "decoders": ["h264", "aac", "mp3float", "pcm_s16le", "pcm_f32le", "png", "mjpeg"],
+  "containers": ["mp4", "mov", "wav", "mp3", "flac", "rawvideo", "image2"],
+  "qualification": "build_and_media_smoke_required"
+}

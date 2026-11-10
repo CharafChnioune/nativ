@@ -1,0 +1,54 @@
+{
+  "date": "2026-11-09",
+  "scope": "Inactive Nativ compiler products, old development candidate and temporary test environments/bytecode only.",
+  "initial_cleanup_observed_bytes": 19287298048,
+  "final_compiler_cleanup_observed_bytes": 6500954112,
+  "additional_test_cache_cleanup_observed_bytes": 180867072,
+  "this_handoff_observed_free_bytes": 6681821184,
+  "measurement_note": "Observed free-space changes; APFS shared blocks and unrelated concurrent disk activity may affect these values. Logical directory sizes were not claimed as reclaimed bytes.",
+  "removed_compiler_paths": [
+    "build/NativeGenerationDerivedData",
+    ".build",
+    "build/codec-runtime/work",
+    "build/codec-runtime-final-1fffc874",
+    "build/validation/client-upload-probe/.build",
+    "build/validation/native-harness/.build",
+    "build/validation/codec-previous-1fffc874"
+  ],
+  "removed_additional_paths": [
+    "build/validation/media-triage-spm",
+    "build/video-contract-venv",
+    "build/validation/media-test-env",
+    "build/validation/audio-fixture-tools",
+    "scripts/__pycache__",
+    "scripts/tests/__pycache__",
+    "scripts/benchmarks/music/__pycache__",
+    "scripts/benchmarks/video/__pycache__",
+    "scripts/benchmarks/live_translation/__pycache__",
+    "scripts/benchmarks/chat_work_recovery/__pycache__",
+    "PythonDistribution/MusicRuntimes/__pycache__",
+    "PythonDistribution/Patches/__pycache__",
+    "PythonDistribution/Scripts/__pycache__",
+    "PythonDistribution/CodecRuntime/__pycache__",
+    "PythonDistribution/VideoRuntimes/__pycache__",
+    "PythonDistribution/Overlay/__pycache__",
+    "PythonDistribution/Overlay/nativ_generation/__pycache__",
+    "PythonDistribution/Overlay/nativ_music/__pycache__",
+    "PythonDistribution/Overlay/nativ_music/providers/__pycache__",
+    "PythonDistribution/Overlay/nativ_video/__pycache__",
+    "PythonDistribution/Overlay/nativ_video/providers/__pycache__"
+  ],
+  "skipped": [],
+  "preserved": [
+    "Signed c24781b7 candidate at build/Candidates/MusicVideo/Nativ.app",
+    "Active existing FinalReviewed app",
+    "Model weights, Hugging Face caches, original test audio, settings, user media and Keychain",
+    "Git/source, full XCResults and previous CI archives",
+    "Reusable SourcePackages at build/RetainedCaches/MusicVideoSourcePackages",
+    "Codec source/license notices and preserved build logs/archives"
+  ],
+  "audit_sha256": {
+    "build/validation/final-cleanup-execution.json": "a2c1d7fa3d92bc33dc29588fd3133c4720e11bf702b3ff77d5773a2a9c454726",
+    "build/validation/additional-cleanup-execution.json": "8fb59b46d55c013af5cbbb829d3bfebf09054be2f044694e67dde4d356d25895"
+  }
+}
