@@ -1,6 +1,6 @@
 # Cluster: one chat model across several Macs
 
-Nativ can split a chat model's layers across several Macs that each run Nativ, so a model can use their combined memory. The Macs talk over plain TCP inside your tailnet, so Thunderbolt is not required. Cluster traffic (the API token and the MLX ring) is unencrypted by itself, so Nativ only allows Tailscale addresses (100.64.0.0/10, fd7a:115c:a1e0::/48, *.ts.net) or loopback; a plain LAN address is refused with `cluster_untrusted_network`.
+Nativ can split a chat model's layers across several Macs that each run Nativ, so a model can use their combined memory. The Macs talk over plain TCP inside your tailnet, so Thunderbolt is not required. Cluster traffic (the API token and the MLX ring) is unencrypted by itself, so Nativ only allows Tailscale addresses (100.64.0.0/10, fd7a:115c:a1e0::/48) or loopback. Over plain http the node address must be such a literal IP; hostnames such as `*.ts.net` need https. A plain LAN address is refused with `cluster_untrusted_network`.
 
 The host Mac keeps serving the normal APIs (Chat, Responses, Chat Completions, tools). Each decoder step on the host is mirrored to the nodes, which run their own layers in lockstep (MLX ring backend, pipeline parallel). Tokens are only sampled on the host.
 

@@ -385,8 +385,10 @@ final class NativSettingsTests: XCTestCase {
         settings.draftModelID = "org/draft"
         settings.clusterNodeURLs = [" http://100.81.146.84:8080/ ", "http://100.81.146.84:8080", "ftp://x", "nonsense",
                                     "http://192.168.178.96:8080", "http://100.128.0.1:8080"]
-        XCTAssertEqual(NativSettings.normalizedClusterNodeURLs(["http://air.tail1234.ts.net:8080", "https://lan.example:8080"]),
-                       ["http://air.tail1234.ts.net:8080", "https://lan.example:8080"])
+        XCTAssertEqual(NativSettings.normalizedClusterNodeURLs([
+            "http://air.tail1234.ts.net:8080", "http://100.64.1.2.evil.example:8080", "http://[fd7a:115c:a1e0::5]:8080",
+            "https://air.tail1234.ts.net:8080", "http://127.0.0.1:8080",
+        ]), ["http://[fd7a:115c:a1e0::5]:8080", "https://air.tail1234.ts.net:8080", "http://127.0.0.1:8080"])
 
         let normalized = settings.normalized()
         XCTAssertEqual(normalized.clusterNodeURLs, ["http://100.81.146.84:8080"])

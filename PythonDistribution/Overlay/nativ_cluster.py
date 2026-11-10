@@ -350,8 +350,9 @@ def plan(config: dict, model_path: str) -> dict:
     from urllib.parse import urlparse
     for node in nodes:
         parsed = urlparse(node)
-        if parsed.scheme != "https":
-            require_trusted(socket.gethostbyname(parsed.hostname or ""))
+        # Plain http carries the token: only a literal Tailscale/loopback IP, never a name that DNS could re-point.
+        if parsed.scheme != "https" and parsed.hostname != "localhost":
+            require_trusted(parsed.hostname or "")
     statuses = [_request(f"{n}/v1/cluster/status", key) for n in nodes]
     mine = versions()
     for node, status in zip(nodes, statuses):

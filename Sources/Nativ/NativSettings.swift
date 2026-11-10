@@ -1,4 +1,5 @@
 import Foundation
+import Network
 import NativServerKit
 import Security
 
@@ -1513,14 +1514,19 @@ struct NativSettings: Codable, Equatable {
         }
     }
 
-    /// The API token and the MLX ring travel unencrypted over http; only Tailscale (WireGuard) or loopback may carry them.
+    /// The API token and the MLX ring travel unencrypted over http, so plain http only goes to a literal
+    /// Tailscale (WireGuard) or loopback address; any hostname needs https.
     static func isTailscaleOrLoopback(_ host: String) -> Bool {
         let host = host.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
-        if ["localhost", "127.0.0.1", "::1"].contains(host) || host.hasSuffix(".ts.net") || host.hasPrefix("fd7a:115c:a1e0:") {
-            return true
+        if host == "localhost" { return true }
+        if let ip = IPv6Address(host) {
+            let bytes = Array(ip.rawValue)
+            return ip == IPv6Address.loopback || bytes.starts(with: [0xfd, 0x7a, 0x11, 0x5c, 0xa1, 0xe0])
         }
-        let octets = host.split(separator: ".").compactMap { UInt8($0) }
-        return octets.count == 4 && octets[0] == 100 && (64...127).contains(octets[1])
+        let parts = host.split(separator: ".", omittingEmptySubsequences: false)
+        let octets = parts.compactMap { UInt8($0) }
+        guard parts.count == 4, octets.count == 4, IPv4Address(host) != nil else { return false }
+        return octets[0] == 127 || (octets[0] == 100 && (64...127).contains(octets[1]))
     }
 
     var encodedModelConfigs: String? {
