@@ -55,6 +55,14 @@ class ClusterPlanningTests(unittest.TestCase):
         with self.assertRaises(cluster.ClusterError):
             cluster.encode({"x": "y" * cluster.HEADER_BYTES})
 
+    def test_only_tailscale_or_loopback_carries_the_ring_and_token(self):
+        for address in ("100.81.146.84", "100.64.0.1", "127.0.0.1", "fd7a:115c:a1e0::1"):
+            self.assertTrue(cluster.trusted_address(address), address)
+        for address in ("192.168.178.96", "10.0.0.2", "8.8.8.8", "100.128.0.1", "nonsense"):
+            self.assertFalse(cluster.trusted_address(address), address)
+        with self.assertRaises(cluster.ClusterError):
+            cluster.require_trusted("192.168.178.96")
+
     def test_ring_hostfile_and_hub_models(self):
         self.assertEqual(cluster.ring_hostfile(["100.99.9.11", "100.81.146.84"]),
                          [["100.99.9.11:32400"], ["100.81.146.84:32401"]])

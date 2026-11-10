@@ -59,7 +59,7 @@ struct ClusterPanel: View {
                 Button("Refresh") { Task { await refresh() } }
                     .disabled(normalized.clusterNodeURLs.isEmpty)
             }
-            Text("Run one chat model across several Macs over Tailscale or your network. Every Mac needs this same Nativ build and the same server API token.")
+            Text("Run one chat model across several Macs over Tailscale (plain LAN addresses are refused: cluster traffic is unencrypted). Every Mac needs this same Nativ build and the same server API token.")
                 .font(.caption).foregroundStyle(.secondary)
 
             Toggle("Accept model layers from other Macs (node)", isOn: $settings.clusterNodeEnabled)

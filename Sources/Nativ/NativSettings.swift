@@ -1505,11 +1505,22 @@ struct NativSettings: Codable, Equatable {
         return urls.compactMap { raw in
             var value = raw.trimmingCharacters(in: .whitespacesAndNewlines)
             while value.hasSuffix("/") { value.removeLast() }
-            guard let url = URL(string: value), let scheme = url.scheme, ["http", "https"].contains(scheme),
-                url.host != nil, seen.insert(value).inserted
+            guard let url = URL(string: value), let scheme = url.scheme, let host = url.host,
+                scheme == "https" || (scheme == "http" && isTailscaleOrLoopback(host)),
+                seen.insert(value).inserted
             else { return nil }
             return value
         }
+    }
+
+    /// The API token and the MLX ring travel unencrypted over http; only Tailscale (WireGuard) or loopback may carry them.
+    static func isTailscaleOrLoopback(_ host: String) -> Bool {
+        let host = host.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
+        if ["localhost", "127.0.0.1", "::1"].contains(host) || host.hasSuffix(".ts.net") || host.hasPrefix("fd7a:115c:a1e0:") {
+            return true
+        }
+        let octets = host.split(separator: ".").compactMap { UInt8($0) }
+        return octets.count == 4 && octets[0] == 100 && (64...127).contains(octets[1])
     }
 
     var encodedModelConfigs: String? {

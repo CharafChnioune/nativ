@@ -11,6 +11,7 @@ every mirrored call checks that cache offsets still agree.
 from __future__ import annotations
 
 import inspect
+import ipaddress
 import json
 import os
 import re
@@ -34,6 +35,9 @@ RESERVE_BYTES = 4 << 30
 CONNECT_TIMEOUT = 1800
 _LAYER = re.compile(r"(?:^|\.)layers\.(\d+)\.")
 _NOT_LANGUAGE = re.compile(r"vision|visual|image|audio|mm_projector|multi_modal")
+_TRUSTED_NETWORKS = (ipaddress.ip_network("100.64.0.0/10"), ipaddress.ip_network("fd7a:115c:a1e0::/48"))
+_ARRAY_DTYPES = {"int32", "uint32", "int64", "float16", "bfloat16", "float32"}
+MAX_ARRAY_ELEMENTS = 1 << 28
 
 
 class ClusterError(RuntimeError):
@@ -92,6 +96,20 @@ def layer_range(split: list[int], rank: int) -> tuple[int, int]:
 
 def shard_files(weight_map: dict[str, str], start: int, end: int) -> set[str]:
     return {f for k, f in weight_map.items() if (layer := layer_of(k)) is None or start <= layer < end}
+
+
+def trusted_address(address: str) -> bool:
+    """The ring and the bearer token travel unencrypted: only Tailscale (WireGuard) or loopback carry them."""
+    try:
+        ip = ipaddress.ip_address(address)
+    except ValueError:
+        return False
+    return ip.is_loopback or any(ip in network for network in _TRUSTED_NETWORKS)
+
+
+def require_trusted(address: str) -> None:
+    if not trusted_address(address):
+        raise ClusterError("cluster_untrusted_network", f"{address} is not a Tailscale or loopback address; cluster traffic is unencrypted.")
 
 
 def ring_hostfile(addresses: list[str]) -> list[list[str]]:
@@ -280,6 +298,12 @@ class Mirror:
                 if mine["cls"] != state["cls"] or mine["offset"] != state["offset"]:
                     raise ClusterError("cluster_desync", f"Cache state diverged from the host ({mine} vs {state}).")
                 cache = self.caches
+            for shape, dtype in message["arrays"].values():
+                count = 1
+                for size in shape:
+                    count *= int(size)
+                if dtype not in _ARRAY_DTYPES or count > MAX_ARRAY_ELEMENTS or min(shape, default=1) < 0:
+                    raise ClusterError("cluster_invalid_message", "The host sent an array the node will not allocate.")
             arrays = {k: self._array(shape=shape, dtype=dtype) for k, (shape, dtype) in message["arrays"].items()}
             out = self.original(self.inner, **arrays, **message["scalars"], cache=cache)
             mx.eval(out)
@@ -323,6 +347,11 @@ def plan(config: dict, model_path: str) -> dict:
     repo, revision = repo_and_revision(model_path)
     key = os.environ.get("MLX_VLM_SERVER_API_KEY")
     nodes = [n.rstrip("/") for n in config["nodes"]]
+    from urllib.parse import urlparse
+    for node in nodes:
+        parsed = urlparse(node)
+        if parsed.scheme != "https":
+            require_trusted(socket.gethostbyname(parsed.hostname or ""))
     statuses = [_request(f"{n}/v1/cluster/status", key) for n in nodes]
     mine = versions()
     for node, status in zip(nodes, statuses):
@@ -332,9 +361,10 @@ def plan(config: dict, model_path: str) -> dict:
     per, shared = layer_bytes(sizes)
     capacities = [capacity_bytes()] + [int(s["capacity_bytes"]) for s in statuses]
     split = weighted_split(len(per), per, shared, capacities)
-    from urllib.parse import urlparse
     node_hosts = [urlparse(n).hostname for n in nodes]
     addresses = [_local_address_towards(node_hosts[0])] + [socket.gethostbyname(h) for h in node_hosts]
+    for address in addresses:
+        require_trusted(address)
     return {"repo": repo, "revision": revision, "split": split, "hostfile": ring_hostfile(addresses), "nodes": nodes, "key": key}
 
 
@@ -380,6 +410,9 @@ class NodeState:
     def join(self, body: dict) -> None:
         if body.get("versions") != versions():
             raise ClusterError("cluster_version_mismatch", "The host runs a different Nativ cluster build.")
+        for entry in body["hostfile"]:
+            for endpoint in entry:
+                require_trusted(endpoint.rsplit(":", 1)[0].strip("[]"))
         with self.lock:
             self.leave()
             hostfile = self.status_file.with_suffix(".hosts.json")
