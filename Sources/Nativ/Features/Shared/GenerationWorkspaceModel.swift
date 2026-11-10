@@ -77,8 +77,15 @@ class GenerationWorkspaceModel: ObservableObject {
     }
     func newDraft() { selectedSessionID = nil; prompt = ""; lyrics = ""; firstFrame = nil; lastFrame = nil; errorMessage = nil }
     func animate(image: Data, filename: String) {
-        newDraft(); operation = "image_to_video"
+        newDraft()
+        if let target = Self.animationProfileID(current: profile, among: library.profiles) { selectProfile(target) }
+        operation = "image_to_video"
         do { firstFrame = try snapshot(data: image, filename: filename) } catch { errorMessage = error.localizedDescription }
+    }
+    /// Some profiles are text-to-video only (LTX-2.3); animating a still moves to a ready local profile that accepts a first frame.
+    static func animationProfileID(current: GenerationProfile?, among profiles: [GenerationProfile]) -> String? {
+        guard current?.stringList("operations").contains("image_to_video") != true else { return nil }
+        return profiles.first { $0.deployment == "local" && $0.readiness == "ready" && $0.stringList("operations").contains("image_to_video") }?.id
     }
     func chooseImage(last: Bool = false) {
         let panel = NSOpenPanel(); panel.allowedContentTypes = [.png, .jpeg, .webP]; panel.allowsMultipleSelection = false

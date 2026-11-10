@@ -184,6 +184,16 @@ final class VideoPresentationStateTests: XCTestCase {
         }
         XCTAssertEqual(GenerationPresetDescription.label(["width": .number(704), "height": .number(448), "frame_count": .number(97), "fps": .number(24)]), "704 × 448 · 97 frames at 24 fps · approximately 4.04 seconds")
     }
+    func testAnimateLeavesATextOnlyProfileForAReadyLocalImageToVideoProfile() throws {
+        func profile(_ id: String, _ operations: String, readiness: String = "ready") throws -> GenerationProfile {
+            try JSONDecoder().decode(GenerationProfile.self, from: Data(#"{"id":"\#(id)","modality":"video","provider":"p","deployment":"local","model":"m","qualification":"experimental","profile_revision":"r","display_name":"\#(id)","readiness":"\#(readiness)","capabilities":{"operations":[\#(operations)]},"defaults":{}}"#.utf8))
+        }
+        let ltx = try profile("ltx", #""text_to_video""#), wan = try profile("wan", #""text_to_video","image_to_video""#)
+        let installing = try profile("installing", #""image_to_video""#, readiness: "unavailable")
+        XCTAssertEqual(VideoGenerationViewModel.animationProfileID(current: ltx, among: [ltx, installing, wan]), "wan")
+        XCTAssertNil(VideoGenerationViewModel.animationProfileID(current: wan, among: [ltx, wan]))
+        XCTAssertNil(VideoGenerationViewModel.animationProfileID(current: ltx, among: [ltx, installing]))
+    }
     func testRemoteConnectionRequiresHTTPSOrDeliberatePrivateDevelopmentHTTP() throws {
         XCTAssertThrowsError(try GenerationServerProfile.remote(name: "Public", url: "http://example.com", allowPrivateHTTP: true))
         XCTAssertThrowsError(try GenerationServerProfile.remote(name: "Credentials", url: "https://token@example.com", allowPrivateHTTP: false))
