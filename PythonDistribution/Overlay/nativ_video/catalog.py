@@ -29,7 +29,8 @@ def profiles():
                   output_count=1, negative_prompt=False,retrieval_supported=False)
     result=[_profile('ltx-2.3-distilled-local','ltx_mlx','prince-canuma/LTX-2.3-distilled',
         'mlx-video-87db56a', dict(output_preset='draft-landscape',audio_mode='native_generated'),
-        dict(common, input_roles=['first_frame'],audio_modes=['native_generated'],
+        # Text-to-video only: mlx-video 87db56a's LTX-2.3 VAE encoder rejects every first frame (channel mismatch).
+        dict(common, operations=['text_to_video'],input_roles=[],audio_modes=['native_generated'],
              audio_sample_rate=48000,audio_channels=2,frame_grid={'modulus':8,'remainder':1},
              spatial_alignment=64,fps=[24],seed=True,cancellation='owned_process',
              pipeline='distilled', runtime_revision=MLX_VIDEO_REVISION,

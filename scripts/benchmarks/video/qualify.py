@@ -31,6 +31,7 @@ def urlopen(request,timeout):
 def corpus(profile):
     wan=profile.startswith('wan')
     for index,(operation,portrait,seed) in enumerate((('text_to_video',False,42),('text_to_video',True,123),('image_to_video',False,123),('image_to_video',True,42))):
+        if not wan:operation='text_to_video'  # LTX-2.3 is text-to-video only (see nativ_video/catalog.py)
         yield dict(model=profile,operation=operation,prompt='A small wooden toy boat drifts left to right on a calm blue pond; the camera moves slowly forward.',
                    output_preset=('wan-draft-' if wan else 'draft-')+('portrait' if portrait else 'landscape'),
                    audio_mode='silent' if wan else 'native_generated',seed=seed,allow_remote=False)

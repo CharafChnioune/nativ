@@ -15,7 +15,8 @@ class VideoCatalogTests(unittest.TestCase):
         a = p.normalize({'model':'ltx-2.3-distilled-local','prompt':'boat','operation':'text_to_video','output_preset':'draft-landscape','audio_mode':'native_generated'})
         self.assertEqual((a['width'],a['height'],a['frame_count'],a['fps']), (704,448,97,24))
         self.assertEqual(a['audio_sample_rate'],48000)
-        for patch in ({'frame_count':98}, {'height':480}, {'negative_prompt':'x'}, {'seed':True}, {'steps':8}, {'inputs':[{'input_id':'x','role':'first_frame'}]}):
+        for patch in ({'frame_count':98}, {'height':480}, {'negative_prompt':'x'}, {'seed':True}, {'steps':8}, {'inputs':[{'input_id':'x','role':'first_frame'}]},
+                      {'operation':'image_to_video','inputs':[{'input_id':'x','role':'first_frame'}]}):
             with self.subTest(patch=patch), self.assertRaises(GenerationError): p.normalize(dict(a, **patch))
 
     def test_wan_rejects_last_frame_and_native_audio(self):
