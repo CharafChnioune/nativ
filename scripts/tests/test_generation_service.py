@@ -37,6 +37,12 @@ class GenerationServiceTests(unittest.TestCase):
     def test_acestep_is_disabled_as_non_mlx_runtime(self):
         reason=self.s.readiness(dict(self.profile,id='ace',provider='acestep'))['unavailable_reason']
         self.assertIn('MLX',reason)
+    def test_runtime_with_another_builds_worker_code_asks_for_repair_before_submit(self):
+        from unittest.mock import patch
+        stale=type('Runtimes',(),{'ready':lambda self,pid:True,'outdated':lambda self,pid:True})()
+        with patch.object(self.s,'runtimes',stale):
+            ready=self.s.readiness(dict(self.profile,runtime='fixture-runtime'))
+        self.assertEqual(ready['readiness'],'unavailable');self.assertIn('Repair',ready['unavailable_reason'])
     def test_submit_is_durable_and_duplicate_uses_frozen_defaults(self):
         j=self.s.submit('music',{'model':'fixture','prompt':'one'},'key')
         self.s.configure('fixture',{'enabled':False})

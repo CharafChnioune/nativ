@@ -117,6 +117,7 @@ class GenerationService:
             if not cfg.get('license_accepted'):reason='Review and accept the model license before installing or executing it.'
             elif p['provider']=='minimax_h3_mlx' and (not cfg.get('separate_license_approved') or self.runtimes is None or not self.runtimes.manifests.get(p['id'],{}).get('manifest',{}).get('qualified_hardware')):reason='MiniMax H3 execution is blocked until separate license eligibility and reviewed hardware qualification are established.'
             elif p.get('runtime') and (self.runtimes is None or not self.runtimes.ready(p['id'])):reason='Install or repair the isolated runtime and its pinned model components.'
+            elif p.get('runtime') and self.runtimes.outdated(p['id']):reason='Repair this runtime: it holds worker code from another Nativ build.'
             elif p['provider']=='minimax_h3_mlx' and not cfg.get('separate_license_approved'):reason='This model requires separate license and geographic eligibility approval.'
         elif p['provider']=='minimax_remote' and not cfg.get('endpoint'):reason='Configure the explicit MiniMax GPU server endpoint.'
         elif not cfg.get('account_id'):reason='Configure a stable provider account identity for recovery.'
