@@ -18,6 +18,8 @@ from .contracts import GenerationError
 from .resources import ComputeAdmission
 
 _request_host=contextvars.ContextVar('nativ_host_admission',default=None)
+# Set on a thread that already owns the exclusive lease (the Images executor); nested host calls reuse it.
+exclusive_owner=contextvars.ContextVar('nativ_exclusive_owner',default=False)
 _original_to_thread=asyncio.to_thread
 _MANAGER=None
 
@@ -89,6 +91,7 @@ def _synchronize():
 def _sync_wrapper(original,host):
     @functools.wraps(original)
     def wrapped(*args,**kwargs):
+        if exclusive_owner.get():return original(*args,**kwargs)
         with host.acquire():
             try:return original(*args,**kwargs)
             finally:_synchronize()

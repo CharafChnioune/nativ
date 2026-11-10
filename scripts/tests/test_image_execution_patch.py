@@ -54,6 +54,26 @@ class ImageExecutionPatchTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(observations[0][1],observations[-1][1]);self.assertNotEqual(observations[0][1],threading.get_ident())
             await helper.shutdown()
 
+    async def test_host_wrapped_model_load_inside_an_image_reuses_its_lease(self):
+        # mlx-vlm's image handlers load models through the host-wrapped get_cached_model on the image thread.
+        helper=self.helper()
+        from nativ_generation import host_admission
+        from nativ_generation.contracts import GenerationError
+        with tempfile.TemporaryDirectory() as directory:
+            admission=ComputeAdmission(Path(directory)/'compute.lock');helper.configure_admission(admission)
+            load=host_admission._sync_wrapper(lambda:'model',host_admission.HostAdmission(admission))
+            class MLX:
+                def default_device(self):return 'gpu'
+                def new_stream(self,device):return 'owned-stream'
+                @contextlib.contextmanager
+                def stream(self,stream):yield
+                def synchronize(self,stream):pass
+            with patch.object(helper,'_mlx',return_value=MLX()):self.assertEqual(await helper.run_image(load),'model')
+            music=admission.try_acquire('music')
+            try:
+                with self.assertRaises(GenerationError):load()  # the bypass stays on the image thread
+            finally:music.close();await helper.shutdown()
+
     async def test_conflicting_images_reject_without_queueing_or_loading(self):
         helper=self.helper()
         with tempfile.TemporaryDirectory() as directory:

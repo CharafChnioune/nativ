@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import threading
 from nativ_generation.contracts import GenerationError
+from nativ_generation.host_admission import exclusive_owner
 from nativ_generation.resources import ComputeAdmission
 
 _executor=None
@@ -48,6 +49,8 @@ def _infrastructure():
 def _invoke(function,args,lease=None):
     global _stream,_active_work
     mx=None
+    # Every image-thread job runs under the process's exclusive lease (its own, or the unloading scheduler's).
+    owner=exclusive_owner.set(True)
     try:
         mx=_mlx()
         if _stream is None:_stream=mx.new_stream(mx.default_device())
@@ -57,6 +60,7 @@ def _invoke(function,args,lease=None):
         try:
             if mx is not None and _stream is not None:mx.synchronize(_stream)
         finally:
+            exclusive_owner.reset(owner)
             if lease is not None:
                 lease.close()
                 with _mutex:_active_work-=1
