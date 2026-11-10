@@ -719,7 +719,8 @@ final class ChatWorktreeSessionTests: XCTestCase {
         do { try await chat.setCurrentProject(nil); XCTFail("Cannot detach an existing checkout from its project") }
         catch { }
         assertEqual((chat.currentWorktree, (ready.availableRootPath) != nil), (ready, true))
-        try await Task.sleep(for: .milliseconds(1_100))
+        // The finished status clears from a 1 s main-actor timer; poll (bounded) instead of racing it on a loaded runner.
+        for _ in 0..<50 where chat.currentWorktreeSetupProgress != nil { try await Task.sleep(for: .milliseconds(100)) }
         XCTAssertNil(chat.currentWorktreeSetupProgress)
     }
 
