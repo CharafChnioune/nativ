@@ -1,5 +1,6 @@
 """Explicit isolated setup and owned one-job process supervision."""
 from __future__ import annotations
+import functools
 import importlib.util
 import json
 import os
@@ -189,6 +190,7 @@ class RuntimeManager:
         runtime=Path(value['runtime_path']);model=Path(value['model_path'])
         return (runtime/'python/bin/python3').is_file() and (runtime/'nativ-runtime.json').is_file() and (model/'nativ-model.json').is_file() and (self.manifests[pid]['modality']!='video' or bool(self.codec_paths))
     @staticmethod
+    @functools.lru_cache(maxsize=None)  # the app's packages and each runtime-<uuid> folder are immutable once built
     def _code_digest(site,modality):
         files=sorted(p for package in ('nativ_'+modality,'nativ_generation') for p in (site/package).rglob('*') if p.is_file() and '__pycache__' not in p.parts and p.suffix!='.pyc')
         return fingerprint([[str(p.relative_to(site)),digest_file(p)] for p in files])
@@ -197,7 +199,8 @@ class RuntimeManager:
         value=self._installation(pid);modality=self.manifests[pid]['modality']
         if not value:return False
         site=next((Path(value['runtime_path'])/'python/lib').glob('python*/site-packages'),None)
-        return site is None or self._code_digest(site,modality)!=self._code_digest(Path(__file__).resolve().parents[1],modality)
+        try:return site is None or self._code_digest(site,modality)!=self._code_digest(Path(__file__).resolve().parents[1],modality)
+        except OSError:return True  # e.g. Repair retiring this folder mid-read: ask for Repair, never fail the model list
     def prepared(self,pid):
         if not self.ready(pid):raise GenerationError('runtime_not_ready','Install or repair the complete isolated runtime and model before generation.',status=409)
         if self.outdated(pid):raise GenerationError('runtime_outdated','This runtime holds worker code from another Nativ build. Repair it before generating.',status=409)

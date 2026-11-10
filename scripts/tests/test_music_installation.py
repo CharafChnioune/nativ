@@ -7,6 +7,7 @@ import tarfile
 import tempfile
 from threading import Event
 import unittest
+from unittest.mock import patch
 
 FILE = Path(__file__).resolve().parents[2] / 'PythonDistribution/MusicRuntimes/manage.py'
 
@@ -115,8 +116,11 @@ class MusicInstallationTests(unittest.TestCase):
             # Worker code copied by an older app build must not run until Repair refreshes it.
             stale=first/'python/lib/python3.12/site-packages/nativ_generation/contracts.py'
             stale.write_text(stale.read_text()+'\n# older build\n')
+            RuntimeManager._code_digest.cache_clear()  # real runtime folders never change after their build
             with self.assertRaises(GenerationError) as outdated:runtime.prepared(pid)
             self.assertEqual(outdated.exception.code,'runtime_outdated')
+            with patch.object(RuntimeManager,'_code_digest',side_effect=FileNotFoundError):
+                self.assertTrue(runtime.outdated(pid))  # Repair retiring the folder mid-read must not fail the model list
             runtime.action(manifest['id'],'repair',pid)
             deadline=time.monotonic()+10
             while runtime._tasks and time.monotonic()<deadline:time.sleep(.01)
