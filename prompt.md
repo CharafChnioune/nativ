@@ -3,9 +3,12 @@
 > **Status (10 november 2026):** dit is de oorspronkelijke overdracht. De
 > profiellijst hieronder is historisch: lokale media draait nu alleen op MLX
 > (mlx-video met LTX-2.3, alleen tekst-naar-video, en Wan2.2; LTX-2.5 Q8/Q4
-> verwijderd, ACE-Step uitgeschakeld). Muziek, video, Images, gedeelde jobflows,
-> runtimebeheer en de Translate-matrix zijn op de M3 Max gemeten; de
-> Translate-duurproef volgt. Niets is gekwalificeerd. Actuele stand, metingen en bewust open gates:
+> verwijderd, ACE-Step uitgeschakeld). De technische M3 Max-ronde is afgerond:
+> muziek, video, Images, gedeelde jobflows, runtimebeheer en Translate (matrix en
+> duurproef van 30 minuten). Niets is gekwalificeerd. Open gates: menselijke
+> luister-, kijk- en Translate-beoordeling met echte opnames, fysieke UI-tests, H3
+> (geblokkeerd), Developer ID/notarisatie/echte Sparkle-upgrade en betaalde
+> cloudproeven. Actuele stand en metingen:
 > [`Docs/development/media/testen-op-sterkere-mac.md`](Docs/development/media/testen-op-sterkere-mac.md#stand-op-de-m3-max-10-november-2026).
 
 Voer deze opdracht uit; stop niet na een nieuw plan. Je neemt bestaand werk over

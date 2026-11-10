@@ -1,0 +1,44 @@
+{
+  "date": "2026-11-10",
+  "evidence_class": "real model run through the repo harness with synthetic speech; technical transport only, no human review",
+  "status": "technical-run-complete",
+  "qualified": false,
+  "human_review": null,
+  "host": "Apple M3 Max, 128 GB, macOS 27.2",
+  "model": "LFM3-Omni-2B Q8_0 + mmproj Q8_0 via llama.cpp cd959bae (Metal)",
+  "harness_revision": "b79f680359bdd940a4286a59f4500254f9ac190b",
+  "contract": "production prompt and output guard",
+  "window_utc": ["2026-11-10T00:54:21Z", "2026-11-10T01:24:47Z"],
+  "measurement": "synthetic fixture end-input commit to received loopback text/PCM; excludes capture, VAD endpointing, playback, acoustic output and human interpretation quality",
+  "warm": {
+    "duration_s": 1801.8,
+    "turns": 380,
+    "turns_by_mode": {"direct": 190, "two_pass": 190},
+    "errors": 0,
+    "aborts": 0,
+    "columns": ["metric", "min_s", "p50_s", "p95_s", "max_s"],
+    "rows": [
+      ["direct first text", 0.03, 0.058, 0.077, 0.084],
+      ["direct first audio", 0.077, 0.111, 0.127, 0.133],
+      ["direct first nonzero PCM", 0.088, 0.127, 0.149, 0.158],
+      ["two-pass first text", 0.031, 0.059, 0.071, 0.08],
+      ["two-pass first audio", 1.193, 1.284, 1.335, 1.344]
+    ]
+  },
+  "cold_starts": {
+    "count": 10,
+    "definition": "new helper process and model load; OS file cache retained",
+    "ready_s": [0.45, 0.45, 0.48, 0.47, 0.45, 0.46, 0.46, 0.47, 0.46, 0.47]
+  },
+  "cancellations": {
+    "count": 5,
+    "final_state": "cancelled (5 of 5)",
+    "cancel_to_socket_closed_s": [1.027, 1.029, 1.03, 1.03, 1.036],
+    "measurement": "local cancel send to WebSocket closure; not an acoustic stop or model completion"
+  },
+  "memory": {"samples": 1763, "max_pressure_level": 1, "peak_helper_rss_bytes": 2872197120, "peak_swap_growth_mib": 0.0},
+  "output_guard": {"accepted": 380, "rejected": 0},
+  "content": "deterministic, not occasional: every NL turn returned 'The call is at half past four, not at four o'clock.' (source 'half vier' = 15:30); every EN turn changed 'book' into 'Bekijk' or 'Vul' ('... vrijdag, niet voor donderdag'). The production LFM3 path validates the target language only.",
+  "concurrent_activity": "one ~16 s Python unit-test run at 01:10:47 UTC during the warm phase; otherwise idle apart from read-only code review",
+  "status_change": "none: LFM3 stays unqualified"
+}

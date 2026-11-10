@@ -176,6 +176,14 @@ p50/p95 is reported. Observed median first network PCM was 232 ms direct and
 All 80 completed NL→EN outputs retained the wrong clock time, and all 80 EN→NL
 outputs changed the booking action. Technical completion is not semantic success.
 
+On an M3 Max (128 GB), a later Q8 run with the same production contract completed
+the 30-minute warm phase technically: 380 turns (190 per mode), no errors, ten
+cold starts ready in 0.45–0.48 s and five cancellations, without swap growth. Over
+loopback, direct first audio had p50 111 ms / p95 127 ms and two-pass first audio
+p50 1.28 s / p95 1.34 s. Every NL turn still said “half past four” and the output
+guard accepted all 380 turns, so this does not qualify LFM3 either. See the
+[M3 acceptance evidence](../development/live-translation-acceptance.md#m3-max-productiepromptmatrix-10-november-2026).
+
 The [native cascade content test](../development/translation-host-cascade-content-evidence.json)
 retained two correct text examples: “half past three, not four o'clock” and
 “Boek twee plaatsen voor vrijdag, niet voor donderdag”, with finite nonzero PCM.

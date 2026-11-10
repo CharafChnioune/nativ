@@ -11,9 +11,9 @@ meting kwalificeert een model niet.
 Apple M3 Max (16 cores), 128 GiB, macOS 27.2, Xcode 27.2/Swift 6.4.2. Elke meting
 hoort bij de verplaatste ad-hoc-kandidaat waarop ze is gedaan. De productcode is
 gemeten op `6f4ae0c3` en Wan op `3f92ecdf` (de Wan-workercode is daarna niet
-gewijzigd); Images op `2e5bf71e` en de Translate-matrix met de harness van
-`b79f6803`, waarop ook de Translate-duurproef nog loopt. Eerdere kandidaten:
-`181a78c3`, `f17ea0a9`, `29cbf1f4`, `fca2a3d3` en `5288300c`. Lokale media draait
+gewijzigd); Images op `2e5bf71e` en de Translate-matrix en -duurproef met de
+harness van `b79f6803`. De technische M3-ronde is daarmee afgerond. Eerdere
+kandidaten: `181a78c3`, `f17ea0a9`, `29cbf1f4`, `fca2a3d3` en `5288300c`. Lokale media draait
 alleen op MLX: video via [mlx-video](https://github.com/Blaizzy/mlx-video) `87db56a`
 met LTX-2.3 distilled (alleen tekst-naar-video) en Wan2.2 TI2V-5B Q8, muziek via
 MiniMax Music3 (mlx-audio) en Stable Audio 3 Small (officieel, pure MLX). De
@@ -67,6 +67,11 @@ Gedaan:
   `nl_NL.UTF-8` (`b79f6803`): `sysctl` drukt daar "619,69M" af, waardoor de
   MemoryGuard van de server niets las en zijn swap- en drukstops stil uit stonden,
   en de Translate-harness bij de baseline faalde. Beide lezen nu met `LC_ALL=C`.
+- Reviewcorrecties daarna: de codedigest van een runtime wordt per runtimemap
+  gecachet en een leesfout tijdens het hashen betekent "Repair nodig" in plaats van
+  een mislukte modellijst (`6f6f9bf0`); Images → Animate kiest een gereed lokaal
+  profiel met beeld-naar-video (Wan2.2) als het huidige profiel alleen
+  tekst-naar-video biedt (LTX-2.3) (`31f500e9`).
 
 Bewust open (eigenaar: "nu niet"): menselijke luister- en kijkbeoordeling,
 menselijke Translate-opnames en fysieke UI-tests. H3 blijft geblokkeerd (geen
@@ -108,10 +113,23 @@ productieroute accepteerde alle acht teksten; de volledige guard met bron weiger
 de kloktijdfout, maar niet de weekdagwissel. LFM3 blijft ongekwalificeerd. Zie
 [Translate-acceptatie](../live-translation-acceptance.md#m3-max-productiepromptmatrix-10-november-2026).
 
-### TODO: Translate-duurproef (Q8_0)
+### Translate-duurproef (Q8_0)
 
-Loopt nog met de harness van `b79f6803`: minimaal 30 minuten, minimaal 100 warme
-turns, 10 koude starts en 5 onderbrekingen. De cijfers volgen.
+Met de harness van `b79f6803` en het productiecontract liep de warme fase 1801,8 s
+zonder afbreking: 380 turns (190 direct, 190 twee passes) en nul fouten. Direct:
+eerste tekst p50 58 ms / p95 77 ms, eerste audio p50 111 ms / p95 127 ms; twee
+passes: eerste audio p50 1,28 s / p95 1,34 s. Dit zijn loopbackmetingen vanaf het
+einde van de synthetische invoer, zonder capture, VAD, playback of akoestiek. Tien
+koude starts (nieuw helperproces plus modellading, OS-bestandscache behouden)
+waren klaar in 0,45–0,48 s. Vijf annuleringen sloten de WebSocket circa 1,03 s na
+het cancelverzoek (lokale meting, geen akoestische stop). De druk bleef op niveau
+1, helper-piek-RSS 2,87 GB, nul swapgroei. De uitvoerguard accepteerde alle 380
+turns, terwijl elke NL-turn "half past four" zei (half vier is 15:30): de
+inhoudsfout is deterministisch. Gelijktijdige activiteit: één Python-unittestrun
+van circa 16 s tijdens de warme fase. De status blijft open; LFM3 blijft
+ongekwalificeerd. Zie
+[Translate-acceptatie](../live-translation-acceptance.md#m3-max-productiepromptmatrix-10-november-2026)
+en [`translation-m3-endurance-evidence.json`](../translation-m3-endurance-evidence.json).
 
 ## Dezelfde kandidaat bouwen
 
