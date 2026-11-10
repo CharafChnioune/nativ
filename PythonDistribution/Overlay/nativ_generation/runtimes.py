@@ -188,9 +188,17 @@ class RuntimeManager:
         if not value:return False
         runtime=Path(value['runtime_path']);model=Path(value['model_path'])
         return (runtime/'python/bin/python3').is_file() and (runtime/'nativ-runtime.json').is_file() and (model/'nativ-model.json').is_file() and (self.manifests[pid]['modality']!='video' or bool(self.codec_paths))
+    @staticmethod
+    def _code_digest(site,modality):
+        files=sorted(p for package in ('nativ_'+modality,'nativ_generation') for p in (site/package).rglob('*') if p.is_file() and '__pycache__' not in p.parts and p.suffix!='.pyc')
+        return fingerprint([[str(p.relative_to(site)),digest_file(p)] for p in files])
     def prepared(self,pid):
         if not self.ready(pid):raise GenerationError('runtime_not_ready','Install or repair the complete isolated runtime and model before generation.',status=409)
-        value=self._installation(pid);m=self.manifests[pid]['manifest'];model=value['model_path']
+        value=self._installation(pid);m=self.manifests[pid]['manifest'];model=value['model_path'];modality=self.manifests[pid]['modality']
+        # Builders copy these worker packages into the runtime; after an app update the copy is stale until Repair.
+        site=next((Path(value['runtime_path'])/'python/lib').glob('python*/site-packages'),None)
+        if site is None or self._code_digest(site,modality)!=self._code_digest(Path(__file__).resolve().parents[1],modality):
+            raise GenerationError('runtime_outdated','This runtime holds worker code from another Nativ build. Repair it before generating.',status=409)
         return {'model_path':model,'checkpoints_dir':model,'source_path':str(Path(value['runtime_path'])/'source'),'codec_paths':self.codec_paths,'profile_id':pid,'model_revision':m['models']['revision']}
     def status(self,modality):
         items=[]

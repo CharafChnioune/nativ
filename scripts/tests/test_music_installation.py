@@ -111,15 +111,21 @@ class MusicInstallationTests(unittest.TestCase):
             self.assertTrue(runtime.ready(pid))
             self.assertTrue(Path(runtime.prepared(pid)['model_path']).is_relative_to((root/'state').resolve()))
             first=Path(runtime._installation(pid)['runtime_path'])
+            from nativ_generation.contracts import GenerationError
+            # Worker code copied by an older app build must not run until Repair refreshes it.
+            stale=first/'python/lib/python3.12/site-packages/nativ_generation/contracts.py'
+            stale.write_text(stale.read_text()+'\n# older build\n')
+            with self.assertRaises(GenerationError) as outdated:runtime.prepared(pid)
+            self.assertEqual(outdated.exception.code,'runtime_outdated')
             runtime.action(manifest['id'],'repair',pid)
             deadline=time.monotonic()+10
             while runtime._tasks and time.monotonic()<deadline:time.sleep(.01)
             self.assertTrue(runtime.ready(pid),runtime.status('music'))
             self.assertFalse(first.exists(),'Repair must retire the verified inactive old runtime')
             self.assertEqual((model/'weight').read_bytes(),b'fixture')
+            runtime.prepared(pid)
             service._active={'active':{}}
             service.repo=SimpleNamespace(get_job=lambda _:dict(profile={'id':pid}))
-            from nativ_generation.contracts import GenerationError
             with self.assertRaises(GenerationError):runtime.action(manifest['id'],'remove',pid)
             self.assertTrue(runtime.ready(pid))
             service._active={}
