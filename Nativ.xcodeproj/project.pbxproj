@@ -790,6 +790,7 @@
 		EFF78F78C328BE749FB29F9A /* ChatGitHubPullRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28E03D8A56F9599760BFA6E2 /* ChatGitHubPullRequest.swift */; };
 		F00405D7F120A7982050509E /* TranslationStageCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40CE2B3CA2895CB91534E4B3 /* TranslationStageCatalog.swift */; };
 		F00B080047674A6719C3F89E /* Xet in Frameworks */ = {isa = PBXBuildFile; productRef = EF49B89104DD30468240655A /* Xet */; };
+		F02A001B7466175AF50824AD /* ClusterPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEAD5E51E7C6517059CAFB7B /* ClusterPanel.swift */; };
 		F110515E63D4C200A8930120 /* Perplexity.png in Resources */ = {isa = PBXBuildFile; fileRef = F84C7B764CE1B6F63746E3BB /* Perplexity.png */; };
 		F118E505C0B99F19BFAEC8C2 /* SwiftTerm in Frameworks */ = {isa = PBXBuildFile; productRef = F16FD8B24B12F6B12FCC606D /* SwiftTerm */; };
 		F14A3E893E8DE4DE035C3925 /* ChatConversationBranchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B059AF48F10F1B0502DC5E6F /* ChatConversationBranchTests.swift */; };
@@ -1497,6 +1498,7 @@
 		DE77E6246A3E3A186C3E8F54 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		DE94F230299FF8E794099BB4 /* SystemMonitorObservationPolicyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemMonitorObservationPolicyTests.swift; sourceTree = "<group>"; };
 		DEA2800A7149B39035E2D0C1 /* get_scaling_square.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = get_scaling_square.c; sourceTree = "<group>"; };
+		DEAD5E51E7C6517059CAFB7B /* ClusterPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClusterPanel.swift; sourceTree = "<group>"; };
 		DED337312E3F6206B56477D2 /* ChatRenderingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatRenderingTests.swift; sourceTree = "<group>"; };
 		E081ED3F6C132DA797894E77 /* libWebRTCVAD.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libWebRTCVAD.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		E0B1BD48C29F03DACF242B7F /* AudioSummaryGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSummaryGenerator.swift; sourceTree = "<group>"; };
@@ -1719,6 +1721,7 @@
 		1DE309DC3FB91D09768CD66E /* Developer */ = {
 			isa = PBXGroup;
 			children = (
+				DEAD5E51E7C6517059CAFB7B /* ClusterPanel.swift */,
 				4157CCE5D9CD6B779FF7FFCE /* DeveloperView.swift */,
 				E646A2A68BB20D0CD4933E2A /* DevHubView.swift */,
 				54B0E640985EEB0E4E0AEE79 /* LogTextStorageMutation.swift */,
@@ -3245,6 +3248,7 @@
 				AB4F018D0DAE2FA8A0E33D9D /* ChatWorkTool.swift in Sources */,
 				BF5A1AD007F259A2F926AF57 /* ChatWorkspacePicker.swift in Sources */,
 				978E977BB9C1D3CB2A05D0F6 /* ChatWorktreeRecoveryView.swift in Sources */,
+				F02A001B7466175AF50824AD /* ClusterPanel.swift in Sources */,
 				FD18166B4B3FAEB77E0D8C69 /* CodexCLIProfile.swift in Sources */,
 				5196EA3B5CC4CE166899FE19 /* ControlPanelActions.swift in Sources */,
 				276CD3A0BBC5127714E407CA /* ControlPanelDependencies.swift in Sources */,
