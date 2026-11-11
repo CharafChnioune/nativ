@@ -17,9 +17,11 @@ enum MeetingActionsSpreadsheet {
     static func csv(_ rows: [[String]]) -> String {
         rows.map { row in
             row.map { cell in
-                // Transcript text must never run as a spreadsheet formula when the CSV is opened.
-                let cell = cell.first.map { "=+-@\t\r".contains($0) } == true ? "'" + cell : cell
-                return cell.contains(where: { ",\"\n\r".contains($0) }) ? "\"" + cell.replacingOccurrences(of: "\"", with: "\"\"") + "\"" : cell
+                // Transcript text must never run as a spreadsheet formula when the CSV is opened; every field is
+                // quoted so a ';'-splitting (Dutch) Excel cannot start a new cell inside it either.
+                let start = cell.first { !$0.isWhitespace } ?? cell.first
+                let cell = start.map { "=+-@\t\r".contains($0) } == true ? "'" + cell : cell
+                return "\"" + cell.replacingOccurrences(of: "\"", with: "\"\"") + "\""
             }.joined(separator: ",")
         }.joined(separator: "\r\n") + "\r\n"
     }

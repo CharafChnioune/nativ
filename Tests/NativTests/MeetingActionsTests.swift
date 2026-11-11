@@ -174,6 +174,8 @@ final class MeetingActionsTests: XCTestCase {
 
         let formula = MeetingActionsSpreadsheet.csv([["Item"], ["=HYPERLINK(\"http://x\")"]])
         XCTAssertTrue(formula.contains("\"'=HYPERLINK"), "Formula cells are neutralised: \(formula)")
+        XCTAssertEqual(MeetingActionsSpreadsheet.csv([["a;=1+1", " @SUM(1)"]]), "\"a;=1+1\",\"' @SUM(1)\"\r\n",
+                       "Every field is quoted and leading whitespace does not hide a formula")
         XCTAssertEqual(MeetingActionsSpreadsheet.items(from: MeetingActionsSpreadsheet.parseCSV(formula)).map(\.text), ["=HYPERLINK(\"http://x\")"])
     }
 
