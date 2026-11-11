@@ -3,8 +3,15 @@ import SwiftUI
 enum AudioRecordingSection: String, CaseIterable {
     case summary = "Summary"
     case transcript = "Transcript"
+    case actions = "Actions"
 
-    var systemImage: String { self == .summary ? "sparkles" : "text.alignleft" }
+    var systemImage: String {
+        switch self {
+        case .summary: "sparkles"
+        case .transcript: "text.alignleft"
+        case .actions: "checklist"
+        }
+    }
 }
 
 struct AudioRecordingDetail: View {
@@ -140,6 +147,9 @@ struct AudioRecordingDetail: View {
                 .disabled(section != .transcript)
                 .allowsHitTesting(section == .transcript)
                 .accessibilityHidden(section != .transcript)
+            if section == .actions {
+                MeetingActionsPane(record: record, library: library, store: MeetingActionStore.shared)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -221,7 +231,7 @@ struct AudioRecordingDetail: View {
             .buttonStyle(.plain)
             .help(copiedSection == section ? "Copied" : "Copy \(section.rawValue.lowercased())")
             .accessibilityLabel("Copy \(section.rawValue.lowercased())")
-            .disabled(section == .summary ? summary == nil : record.transcript.isEmpty)
+            .disabled(section == .actions || (section == .summary ? summary == nil : record.transcript.isEmpty))
             if record.diarization?.speakerIDs.isEmpty == false {
                 Button { showsSpeakers.toggle() } label: {
                     Label("Speakers", systemImage: "person.2")

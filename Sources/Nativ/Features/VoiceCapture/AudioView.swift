@@ -9,6 +9,7 @@ private enum AudioDestination: String, CaseIterable, Identifiable {
     case record
     case history
     case speakers
+    case actions
     case model
     case animation
     case shortcuts
@@ -21,6 +22,7 @@ private enum AudioDestination: String, CaseIterable, Identifiable {
         case .overview: "Overview"
         case .history: "Library"
         case .speakers: "Speakers"
+        case .actions: "Action Lists"
         case .model: "Models"
         case .animation: "Animation"
         case .shortcuts: "Shortcuts"
@@ -33,6 +35,7 @@ private enum AudioDestination: String, CaseIterable, Identifiable {
         case .overview: "square.grid.2x2"
         case .history: "books.vertical"
         case .speakers: "person.2"
+        case .actions: "checklist"
         case .model: "cpu"
         case .animation: "sparkles"
         case .shortcuts: "keyboard"
@@ -478,6 +481,13 @@ struct AudioView: View {
                 selectedRecordingID = recordID
                 selectedRecordingSection = .summary
                 destination = .history
+            }
+        case .actions:
+            AudioPage(
+                title: "Action Lists",
+                subtitle: "Actions and decisions from your meetings, kept per series"
+            ) {
+                MeetingActionListsView(store: MeetingActionStore.shared, analytics: analytics)
             }
         case .model:
             AudioPage(
@@ -3072,7 +3082,7 @@ struct AudioView: View {
             refreshLocalModels()
         case .overview, .history:
             importExistingTranscripts()
-        case .animation, .shortcuts, .speakers:
+        case .animation, .shortcuts, .speakers, .actions:
             break
         }
     }
@@ -3089,7 +3099,7 @@ struct AudioView: View {
         case .overview, .history:
             importExistingTranscripts()
             inputLevelMonitor.stop()
-        case .animation, .shortcuts, .speakers:
+        case .animation, .shortcuts, .speakers, .actions:
             inputLevelMonitor.stop()
         }
     }

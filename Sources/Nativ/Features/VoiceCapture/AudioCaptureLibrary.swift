@@ -634,6 +634,7 @@ final class AudioCaptureLibrary: ObservableObject {
                       latest.summary == current.summary else { throw AudioSpeakerProfileError.recordingChanged }
                 self.analytics.updateSummary(summary, for: record.id)
                 try self.writeSummary(summary, recordID: record.id)
+                if current.resolvedKind == .meeting, let saved = self.analytics.record(withID: record.id) { self.extractActions(for: saved) }
             } catch {
                 self.lastErrorMessage = error.localizedDescription
             }
@@ -1028,6 +1029,7 @@ final class AudioCaptureLibrary: ObservableObject {
                           latest.summary == current.summary else { throw AudioSpeakerProfileError.recordingChanged }
                     analytics.updateSummary(summary, for: recordID)
                     try writeSummary(summary, recordID: recordID)
+                    if kind == .meeting, let saved = analytics.record(withID: recordID) { extractActions(for: saved) }
                 } catch {
                     lastErrorMessage = "The transcript was saved, but the summary failed: \(error.localizedDescription)"
                 }
@@ -1157,11 +1159,15 @@ final class AudioCaptureLibrary: ObservableObject {
         })
     }
 
-    private func generateSummary(for record: AudioTranscriptionRecord) async throws -> String {
-        // Snapshot both stages so editing preferences cannot change a summary in progress.
-        let summaryLanguage = AudioCapturePreferences.summaryLanguage
-        let summaryPrompt = AudioCapturePreferences.summaryPrompt
-        let mergePrompt = AudioCapturePreferences.summaryMergePrompt
+    private struct LanguageModelContext {
+        let client: NativChatClient
+        let modelID: String
+        let maxTokens: Int
+        let supportsReasoning: Bool
+        let contextSize: Int?
+    }
+
+    private func languageModelContext() async throws -> LanguageModelContext {
         guard let configuration = transcriptionConfigurationProvider?(),
               configuration.serverIsRunning
         else {
@@ -1186,12 +1192,50 @@ final class AudioCaptureLibrary: ObservableObject {
             apiKey: configuration.serverAPIKey,
             resourceTimeout: 1_800
         )
+        let model = languageModels.first { $0.repoID == modelID }
+        return LanguageModelContext(client: client, modelID: modelID, maxTokens: configuration.maxTokens,
+                                    supportsReasoning: model?.capabilities.contains(.reasoning) == true,
+                                    contextSize: model?.contextSize)
+    }
+
+    private func generateSummary(for record: AudioTranscriptionRecord) async throws -> String {
+        // Snapshot both stages so editing preferences cannot change a summary in progress.
+        let summaryLanguage = AudioCapturePreferences.summaryLanguage
+        let summaryPrompt = AudioCapturePreferences.summaryPrompt
+        let mergePrompt = AudioCapturePreferences.summaryMergePrompt
+        let context = try await languageModelContext()
         return try await AudioSummaryGenerator.generate(
-            record: record, client: client, modelID: modelID, maxTokens: configuration.maxTokens,
-            supportsReasoning: languageModels.first { $0.repoID == modelID }?.capabilities.contains(.reasoning) == true,
-            contextSize: languageModels.first { $0.repoID == modelID }?.contextSize,
+            record: record, client: context.client, modelID: context.modelID, maxTokens: context.maxTokens,
+            supportsReasoning: context.supportsReasoning, contextSize: context.contextSize,
             summaryPrompt: summaryPrompt, mergePrompt: mergePrompt, languageInstruction: summaryLanguage.instruction
         )
+    }
+
+    /// Proposes action and decision changes for a meeting against its linked series' open items.
+    /// Proposals wait for the user's review; nothing is applied automatically.
+    func extractActions(for record: AudioTranscriptionRecord) {
+        let actions = MeetingActionStore.shared
+        guard !record.transcript.isEmpty, !actions.extractingRecordIDs.contains(record.id) else { return }
+        actions.setExtracting(record.id, true)
+        Task { [weak self] in
+            defer { actions.setExtracting(record.id, false) }
+            guard let self else { return }
+            do {
+                let context = try await self.languageModelContext()
+                let openItems = actions.seriesContaining(recordID: record.id)?.items
+                    .filter { $0.status == .open || $0.status == .inProgress } ?? []
+                let proposals = try await MeetingActionExtractor.extract(
+                    record: record, openItems: openItems, maxTokens: context.maxTokens, contextSize: context.contextSize,
+                    languageInstruction: AudioCapturePreferences.summaryLanguage.instruction,
+                    complete: { request in
+                        let completion = try await context.client.completeChat(request)
+                        return (completion.content, completion.finishReason)
+                    }, modelID: context.modelID)
+                actions.replacePendingProposals(proposals, for: record.id)
+            } catch {
+                self.lastErrorMessage = "The action list could not be updated: \(error.localizedDescription)"
+            }
+        }
     }
 
     private func writeSummary(_ summary: String, recordID: String) throws {

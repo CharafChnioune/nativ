@@ -349,6 +349,9 @@ targets:
       - path: Sources/Nativ/Features/VoiceCapture/MeetingAudioAnalysis.swift
       - path: Sources/Nativ/Features/VoiceCapture/AudioSummaryView.swift
       - path: Sources/Nativ/Features/VoiceCapture/AudioSummaryGenerator.swift
+      - path: Sources/Nativ/Features/VoiceCapture/MeetingActions.swift
+      - path: Sources/Nativ/Features/VoiceCapture/MeetingActionExtractor.swift
+      - path: Sources/Nativ/Features/VoiceCapture/MeetingActionsSpreadsheet.swift
       - path: Sources/Nativ/Features/VoiceCapture/AudioPlaybackState.swift
       - path: Sources/Nativ/Features/VoiceCapture/AudioRecordExport.swift
       - path: Sources/Nativ/Features/VoiceCapture/AudioCaptureSleepMonitor.swift
