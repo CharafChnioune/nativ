@@ -171,6 +171,10 @@ final class MeetingActionsTests: XCTestCase {
         XCTAssertEqual(items[0].due, "2026-12-01")
         XCTAssertEqual(items[1].remark, "Status: Geparkeerd", "Unknown statuses are kept, not lost")
         XCTAssertTrue(MeetingActionsSpreadsheet.items(from: [["Foo", "Bar"], ["x", "y"]]).isEmpty)
+
+        let formula = MeetingActionsSpreadsheet.csv([["Item"], ["=HYPERLINK(\"http://x\")"]])
+        XCTAssertTrue(formula.contains("\"'=HYPERLINK"), "Formula cells are neutralised: \(formula)")
+        XCTAssertEqual(MeetingActionsSpreadsheet.items(from: MeetingActionsSpreadsheet.parseCSV(formula)).map(\.text), ["=HYPERLINK(\"http://x\")"])
     }
 
     func testXLSXExportReadsBackThroughTheImporter() async throws {

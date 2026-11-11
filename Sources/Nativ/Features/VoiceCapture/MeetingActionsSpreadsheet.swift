@@ -17,7 +17,9 @@ enum MeetingActionsSpreadsheet {
     static func csv(_ rows: [[String]]) -> String {
         rows.map { row in
             row.map { cell in
-                cell.contains(where: { ",\"\n\r".contains($0) }) ? "\"" + cell.replacingOccurrences(of: "\"", with: "\"\"") + "\"" : cell
+                // Transcript text must never run as a spreadsheet formula when the CSV is opened.
+                let cell = cell.first.map { "=+-@\t\r".contains($0) } == true ? "'" + cell : cell
+                return cell.contains(where: { ",\"\n\r".contains($0) }) ? "\"" + cell.replacingOccurrences(of: "\"", with: "\"\"") + "\"" : cell
             }.joined(separator: ",")
         }.joined(separator: "\r\n") + "\r\n"
     }
@@ -65,7 +67,8 @@ enum MeetingActionsSpreadsheet {
         return rows.dropFirst().compactMap { row in
             func cell(_ index: Int?) -> String? {
                 guard let index, index < row.count else { return nil }
-                let value = row[index].trimmingCharacters(in: .whitespacesAndNewlines)
+                var value = row[index].trimmingCharacters(in: .whitespacesAndNewlines)
+                if value.hasPrefix("'"), let next = value.dropFirst().first, "=+-@".contains(next) { value.removeFirst() }
                 return value.isEmpty ? nil : value
             }
             guard let itemText = cell(text) else { return nil }
